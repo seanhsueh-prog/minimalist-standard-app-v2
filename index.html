@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minimalist V12.2 - Final Polish</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* [V12.2 Client Demo 最終版] */
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; background-color: #f3f4f6; color: #111; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .ghost-canvas-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 177.77%; 
+            background-color: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+
+        .ghost-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        @keyframes pulse-white {
+            0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            70% { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+            100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+        .marker-pulse {
+            animation: pulse-white 2s infinite;
+        }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen overflow-hidden selection:bg-gray-200 font-sans">
+    <div id="root" class="h-full w-full"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- 1. CONFIGURATION ---
+        const DEFAULT_ASSETS = {
+            inner: './inner.png',
+            outer: './outer.png',
+            bottom: './bottom.png',
+            shoes: './shoes.png'
+        };
+
+        const MARKER_POS = {
+            inner: { x: 50, y: 20 },
+            outer: { x: 50, y: 30 },
+            bottom: { x: 50, y: 55 },
+            shoes: { x: 50, y: 88 }
+        };
+
+        const getAssetUrl = (item) => {
+            if (!item) return null;
+            if (item.image) return item.image; 
+            if (item.slot === 'inner') return DEFAULT_ASSETS.inner;
+            if (item.slot === 'outer' || item.slot === 'coat') return DEFAULT_ASSETS.outer;
+            if (item.slot === 'bottom') return DEFAULT_ASSETS.bottom;
+            if (item.slot === 'shoes') return DEFAULT_ASSETS.shoes;
+            return null;
+        };
+
+        const getSlotDefaultPos = (slotId) => {
+            if (slotId === 'inner') return MARKER_POS.inner;
+            if (slotId === 'outer' || slotId === 'coat') return MARKER_POS.outer;
+            if (slotId === 'bottom') return MARKER_POS.bottom;
+            if (slotId === 'shoes') return MARKER_POS.shoes;
+            return null;
+        };
+
+        // --- 2. LOCALIZATION DATA (Cleaned Up V12.2) ---
+        // 移除所有 (Layer X) 等工程用語，僅保留純中文
+        const SLOTS = [
+            { id: 'coat', label: '大衣' },
+            { id: 'outer', label: '外套' },
+            { id: 'inner', label: '內搭' },
+            { id: 'bottom', label: '下身' },
+            { id: 'shoes', label: '鞋款' },
+            { id: 'bag', label: '包款' },
+            { id: 'jewelry', label: '配飾' }
+        ];
+
+        const CATEGORIES = {
+            coat: ['Coat (長版大衣/風衣)'],
+            outer: ['Riders (皮衣/騎士)', 'Suit Blazer (西裝外套)', 'Jacket (短版夾克)'],
+            inner: ['Pro Tee (修身羅紋)', 'Casual Tee (寬鬆棉質)', 'Shirt (襯衫/立領)', 'Knitwear (針織衫)'],
+            bottom: ['西裝褲 (Slacks)', '丹寧褲 (Jeans)', '白褲 (White)', '短褲', '休閒褲'],
+            shoes: ['牛津/德比', '樂福鞋 (Loafers)', '極簡球鞋', '靴子'],
+            bag: ['公事包', '托特包', '手拿包', '後背包'],
+            jewelry: ['手環', '手錶', '戒指', '眼鏡', '無配飾']
+        };
+
+        const ALL_COLORS = [
+            { id: 'black', hex: '#1a1a1a', name: '黑' },
+            { id: 'white', hex: '#ffffff', name: '白', border: true },
+            { id: 'gray', hex: '#6b7280', name: '灰' },
+            { id: 'navy', hex: '#1e3a8a', name: '深藍' },
+            { id: 'beige', hex: '#d2b48c', name: '駝' },
+            { id: 'khaki', hex: '#F0E68C', name: '卡其' },
+            { id: 'green', hex: '#014421', name: '森綠' }
+        ];
+
+        const SEASON_TAGS = [
+            { id: 'SS', label: '春夏 S/S', icon: 'sun' },
+            { id: 'FW', label: '秋冬 F/W', icon: 'snow' },
+            { id: 'ALL', label: '全年 ALL', icon: 'all' }
+        ];
+
+        const DEFAULT_WARDROBE = [
+            { id: 1, slot: 'outer', category: 'Riders (皮衣/騎士)', color: 'black', seasonTag: 'FW' },
+            { id: 2, slot: 'inner', category: 'Pro Tee (修身羅紋)', color: 'white', seasonTag: 'ALL' },
+            { id: 3, slot: 'bottom', category: '西裝褲 (Slacks)', color: 'black', seasonTag: 'ALL' },
+            { id: 4, slot: 'shoes', category: '極簡球鞋', color: 'white', seasonTag: 'ALL' },
+        ];
+        
+        const DEFAULT_OUTFIT = { coat: null, outer: DEFAULT_WARDROBE[0], inner: DEFAULT_WARDROBE[1], bottom: DEFAULT_WARDROBE[2], shoes: DEFAULT_WARDROBE[3], bag: null, jewelry: null };
+        const WARDROBE_KEY = 'minimalist_v12_2_data'; 
+
+        // --- 3. UI ICONS ---
+        const Icon = ({ name, className }) => {
+            const icons = {
+                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+                camera: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+                star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+                sun: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/></svg>,
+                snow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h20"/><path d="M12 2v20"/></svg>,
+                all: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            };
+            return icons[name] ? React.cloneElement(icons[name], { className }) : null;
+        };
+
+        // --- 4. COMPONENTS ---
+
+        const AddItemModal = ({ isOpen, onClose, onAdd }) => {
+            const [data, setData] = useState({ 
+                slot: 'outer', 
+                category: CATEGORIES['outer'][0], 
+                color: 'black', 
+                seasonTag: 'ALL',
+                image: null 
+            });
+            const fileInputRef = useRef(null);
+            
+            const handleSlotChange = (newSlot) => {
+                const defaultCat = CATEGORIES[newSlot] ? CATEGORIES[newSlot][0] : '';
+                setData(prev => ({ ...prev, slot: newSlot, category: defaultCat }));
+            };
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    setData(prev => ({ ...prev, image: url }));
+                }
+            };
+
+            if(!isOpen) return null;
+
+            const handleSave = () => {
+                const finalCategory = data.category || CATEGORIES[data.slot][0];
+                const finalColor = data.color || 'black';
+                const newItem = { ...data, category: finalCategory, color: finalColor, id: Date.now() };
+                onAdd(newItem); 
+                alert(`✅ ${finalCategory} 已入庫並自動穿上`);
+                onClose();
+            };
+            
+            const currentCategories = CATEGORIES[data.slot] || [];
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white w-full max-w-sm rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold tracking-tight">新增單品</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
+                        </div>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">部位與類別</label>
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2 pb-1">
+                                    {SLOTS.map(s => (
+                                        <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${data.slot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                    ))}
+                                </div>
+                                <select className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-black mt-2" value={data.category} onChange={e => setData({...data, category: e.target.value})}>
+                                    {currentCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">單品照片</label>
+                                <div 
+                                    onClick={() => fileInputRef.current.click()}
+                                    className={`w-full h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${data.image ? 'border-black bg-white' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
+                                >
+                                    {data.image ? (
+                                        <>
+                                            <img src={data.image} className="w-full h-full object-contain" alt="Preview" />
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-white text-xs font-bold">點擊更換</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center text-gray-400">
+                                            <div className="bg-gray-100 p-3 rounded-full mb-2 mx-auto w-fit">
+                                                <Icon name="camera" className="w-6 h-6 text-gray-500" />
+                                            </div>
+                                            <span className="text-xs font-bold block text-gray-500">上傳去背 PNG</span>
+                                            <span className="text-[9px] block mt-1">支援相機或檔案選取</span>
+                                        </div>
+                                    )}
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        onChange={handleFileChange} 
+                                        accept="image/png, image/jpeg" 
+                                        style={{ display: 'none' }} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">季節</label>
+                                    <div className="flex gap-2">
+                                        {SEASON_TAGS.map(tag => (
+                                            <button key={tag.id} onClick={() => setData({...data, seasonTag: tag.id})} className={`flex-1 py-2 rounded-lg border text-[10px] font-bold flex justify-center ${data.seasonTag === tag.id ? 'bg-black text-white' : 'text-gray-500'}`}>{tag.label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">色調</label>
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                                        {ALL_COLORS.map(c => (
+                                            <div key={c.id} className="flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
+                                                <div className={`w-6 h-6 rounded-full transition-transform ${data.color === c.id ? 'scale-125 ring-1 ring-black' : ''}`} style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={handleSave} className="w-full mt-8 py-4 bg-black text-white text-sm font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg">確認入庫並穿上</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const InteractiveMarker = ({ x, y, onClick }) => (
+            <div 
+                onClick={(e) => { e.stopPropagation(); onClick(); }}
+                className="absolute z-50 w-3 h-3 bg-white rounded-full cursor-pointer marker-pulse transform -translate-x-1/2 -translate-y-1/2 hover:scale-150 transition-transform duration-200 shadow-lg"
+                style={{ left: `${x}%`, top: `${y}%` }}
+            />
+        );
+
+        const GhostEngine = ({ outfit, onSlotClick }) => {
+            const { coat, outer, inner, bottom, shoes } = outfit;
+            const renderMarkers = () => {
+                const targetSlots = ['outer', 'inner', 'bottom', 'shoes'];
+                return targetSlots.map(sid => {
+                    const pos = getSlotDefaultPos(sid);
+                    if(pos) return <InteractiveMarker key={sid} x={pos.x} y={pos.y} onClick={() => onSlotClick(sid)} />;
+                });
+            };
+
+            return (
+                <div className="w-full mb-6 flex flex-col items-center animate-fade-in">
+                    <div className="w-full max-w-[280px] ghost-canvas-container rounded-3xl border border-gray-100 relative bg-white">
+                        {shoes && <img src={getAssetUrl(shoes)} className="ghost-layer z-10" alt="Shoes" />}
+                        {bottom && <img src={getAssetUrl(bottom)} className="ghost-layer z-20" alt="Bottom" />}
+                        {inner && <img src={getAssetUrl(inner)} className="ghost-layer z-30" alt="Inner" />}
+                        {(coat || outer) && <img src={getAssetUrl(coat || outer)} className="ghost-layer z-40" alt="Outer" />}
+                        {renderMarkers()}
+                    </div>
+                </div>
+            );
+        };
+
+        const CritiquePanel = ({ outfit }) => {
+            const { outer, inner, bottom, shoes } = outfit;
+            
+            const analysis = useMemo(() => {
+                const items = [outer, inner, bottom, shoes].filter(Boolean);
+                if (items.length < 3) return { title: "等待校準...", msg: "請至少穿著 3 件單品以啟動 AI 分析。", type: "neutral" };
+
+                const isLeather = outer?.category?.includes('皮衣') || outer?.category?.includes('Riders');
+                const isDenimOrSlacks = bottom?.category?.includes('丹寧') || bottom?.category?.includes('西裝褲');
+                if (isLeather && isDenimOrSlacks) {
+                    return { title: "✨ 干場流：黃金三角", msg: "皮衣的硬挺與下身的俐落形成完美對比，展現成熟男性的洗鍊感。", type: "success" };
+                }
+
+                const colors = items.map(i => i.color);
+                const isMono = colors.every(c => c === 'black') || colors.every(c => c === 'white') || colors.every(c => c === 'navy');
+                if (isMono) {
+                    return { title: "⚫ 極簡同色系", msg: "全身同色系營造出修長視覺。建議利用不同材質（如霧面棉 vs 亮面皮）增加層次。", type: "info" };
+                }
+
+                return { title: "結構穩定", msg: "目前的穿搭符合極簡原則。可嘗試調整鞋款或內搭顏色來增加亮點。", type: "neutral" };
+            }, [outfit]);
+
+            return (
+                <div className={`mt-6 w-full rounded-xl p-5 border shadow-lg transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
+                    <div className="flex items-start gap-3">
+                        <div className={`mt-0.5 p-1.5 rounded-full ${analysis.type === 'success' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}>
+                            <Icon name="star" className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold uppercase tracking-widest mb-1">{analysis.title}</h4>
+                            <p className="text-sm leading-relaxed opacity-90">{analysis.msg}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [wardrobe, setWardrobe] = useState(() => {
+                try {
+                    const saved = localStorage.getItem(WARDROBE_KEY);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        return parsed.length > 0 ? parsed : DEFAULT_WARDROBE;
+                    }
+                } catch (e) { console.error("Data Load Error"); }
+                return DEFAULT_WARDROBE;
+            });
+
+            const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
+            const [pickingSlot, setPickingSlot] = useState(null);
+            const [activeTab, setActiveTab] = useState('align');
+            const [showAddModal, setShowAddModal] = useState(false);
+
+            useEffect(() => { localStorage.setItem(WARDROBE_KEY, JSON.stringify(wardrobe)); }, [wardrobe]);
+
+            const handleReset = () => {
+                if(confirm("確定重置為出廠預設值？")) {
+                    setWardrobe(DEFAULT_WARDROBE);
+                    setOutfit(DEFAULT_OUTFIT);
+                    window.location.reload();
+                }
+            };
+
+            const handleAddItem = (newItem) => {
+                setWardrobe(prev => [...prev, newItem]);
+                setOutfit(prev => ({ ...prev, [newItem.slot]: newItem })); 
+            };
+
+            const renderItemCard = (item, onClick, isSelected, onDelete) => {
+                const color = ALL_COLORS.find(c => c.id === item.color) || ALL_COLORS[0];
+                const catLabel = item.category ? item.category.split('(')[0] : '未知';
+                return (
+                    <div key={item.id} onClick={() => onClick(item)} className={`p-3 bg-white rounded-xl border relative cursor-pointer transition-all ${isSelected ? 'border-black shadow-md bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}>
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-[9px] font-bold uppercase text-gray-400">{item.slot}</span>
+                            <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: color.hex}}></div>
+                        </div>
+                        <div className="font-bold text-xs text-gray-900 truncate">{catLabel}</div>
+                        {item.image && <span className="absolute top-1 right-6 text-[8px] bg-gray-100 px-1 rounded text-gray-500">IMG</span>}
+                        {onDelete && <button onClick={(e)=>{e.stopPropagation(); onDelete(item.id)}} className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>}
+                        {isSelected && <div className="absolute bottom-1 right-1 text-black"><Icon name="check" className="w-3 h-3"/></div>}
+                    </div>
+                );
+            };
+
+            const renderPicker = () => {
+                if (!pickingSlot) return null;
+                const items = wardrobe.filter(i => i.slot === pickingSlot || (pickingSlot === 'outer' && i.slot === 'coat')); 
+                return (
+                    <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center pt-12 md:pt-6">
+                            <h3 className="font-bold text-lg uppercase">選擇 {pickingSlot}</h3>
+                            <button onClick={() => setPickingSlot(null)} className="text-sm font-bold text-gray-400">關閉</button>
+                        </div>
+                        <div className="p-6 grid grid-cols-2 gap-3 overflow-y-auto pb-24">
+                            <div onClick={() => { setOutfit({...outfit, [pickingSlot]: null}); setPickingSlot(null); }} className="p-4 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 text-xs font-bold">卸下 (NONE)</div>
+                            {items.map(item => renderItemCard(item, (i) => { setOutfit({...outfit, [pickingSlot]: i}); setPickingSlot(null); }, outfit[pickingSlot]?.id === item.id))}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-md mx-auto h-full flex flex-col bg-gray-50 md:my-8 md:rounded-[2rem] md:shadow-2xl md:h-[90dvh] overflow-hidden relative border border-gray-200">
+                    <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10">
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
+                            Minimalist 
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V12.2 Demo</span>
+                        </h1>
+                        <div className="flex gap-2">
+                            <button onClick={() => setActiveTab('wardrobe')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='wardrobe' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>衣櫥</button>
+                            <button onClick={() => setActiveTab('align')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='align' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>校準</button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-6 relative">
+                        {activeTab === 'align' && (
+                            <>
+                                <GhostEngine outfit={outfit} onSlotClick={setPickingSlot} />
+                                <CritiquePanel outfit={outfit} />
+                                
+                                <div className="grid grid-cols-4 gap-2 mt-8 opacity-50 hover:opacity-100 transition-opacity">
+                                    {['outer','inner','bottom','shoes'].map(slot => (
+                                        <div key={slot} onClick={() => setPickingSlot(slot)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-transparent'}`}>
+                                            <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
+                                            {outfit[slot] ? <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: ALL_COLORS.find(c=>c.id===outfit[slot].color)?.hex}}></div> : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'wardrobe' && (
+                            <div className="pb-24 flex flex-col min-h-full">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">目前庫存 (點擊穿上)</h2>
+                                    <span className="text-xs font-bold text-black">{wardrobe.length} 件單品</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 mb-8">
+                                    {wardrobe.map(item => renderItemCard(
+                                        item, 
+                                        (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
+                                        outfit[item.slot]?.id === item.id,
+                                        (id) => setWardrobe(w => w.filter(x => x.id !== id))
+                                    ))}
+                                </div>
+                                
+                                <button onClick={() => setShowAddModal(true)} className="absolute bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-30 cursor-pointer border border-gray-800"><Icon name="plus" className="w-6 h-6" /></button>
+
+                                <div className="mt-auto border-t border-gray-200 pt-6 text-center">
+                                    <button onClick={handleReset} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">強制恢復預設值 (Reset)</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {renderPicker()}
+                    <AddItemModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
