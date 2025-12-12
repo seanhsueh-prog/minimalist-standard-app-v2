@@ -3,11 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V12.2 - Final Polish</title>
+    <title>Minimalist V13.5 - Mobile UX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V12.2 Client Demo 最終版] */
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; background-color: #f3f4f6; color: #111; }
+        /* [V13.5 核心樣式] */
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+            background-color: #f3f4f6; /* 桌機背景色 */
+            color: #111; 
+            margin: 0;
+        }
+        
+        /* V13.5 FIX: 手機版面模擬容器 */
+        .app-container {
+            max-width: 480px; /* 鎖定手機寬度 */
+            margin: 0 auto;   /* 置中 */
+            min-height: 100dvh;
+            background-color: #ffffff; /* App 本體背景 */
+            box-shadow: 0 0 40px rgba(0,0,0,0.1); /* 懸浮感陰影 */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -17,13 +36,15 @@
         }
         .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+        /* V13.5 FIX: 強制 9:16 黃金比例 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
-            padding-bottom: 177.77%; 
+            aspect-ratio: 9/16; /* 關鍵: 鎖定長寬比 */
+            max-height: 75vh;   /* 避免過長 */
             background-color: #ffffff;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            /* 移除舊版強制 height: 60vh，改用 aspect-ratio 自適應 */
         }
 
         .ghost-layer {
@@ -32,7 +53,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain; 
+            object-position: bottom center; /* 貼底對齊 */
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
         }
@@ -47,8 +69,8 @@
         }
     </style>
 </head>
-<body class="h-[100dvh] w-screen overflow-hidden selection:bg-gray-200 font-sans">
-    <div id="root" class="h-full w-full"></div>
+<body>
+    <div id="root"></div>
 
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -66,10 +88,10 @@
         };
 
         const MARKER_POS = {
-            inner: { x: 50, y: 20 },
-            outer: { x: 50, y: 30 },
-            bottom: { x: 50, y: 55 },
-            shoes: { x: 50, y: 88 }
+            inner: { x: 50, y: 35 },
+            outer: { x: 50, y: 45 },
+            bottom: { x: 50, y: 65 },
+            shoes: { x: 50, y: 92 }
         };
 
         const getAssetUrl = (item) => {
@@ -90,8 +112,7 @@
             return null;
         };
 
-        // --- 2. LOCALIZATION DATA (Cleaned Up V12.2) ---
-        // 移除所有 (Layer X) 等工程用語，僅保留純中文
+        // --- 2. DATA STRUCTURES ---
         const SLOTS = [
             { id: 'coat', label: '大衣' },
             { id: 'outer', label: '外套' },
@@ -102,41 +123,48 @@
             { id: 'jewelry', label: '配飾' }
         ];
 
+        const INVENTORY_TABS = [
+            { id: 'outer', label: '外套', slots: ['outer', 'coat'] },
+            { id: 'inner', label: '內搭', slots: ['inner'] },
+            { id: 'bottom', label: '下身', slots: ['bottom'] },
+            { id: 'shoes', label: '鞋款', slots: ['shoes'] }
+        ];
+
         const CATEGORIES = {
-            coat: ['Coat (長版大衣/風衣)'],
-            outer: ['Riders (皮衣/騎士)', 'Suit Blazer (西裝外套)', 'Jacket (短版夾克)'],
-            inner: ['Pro Tee (修身羅紋)', 'Casual Tee (寬鬆棉質)', 'Shirt (襯衫/立領)', 'Knitwear (針織衫)'],
-            bottom: ['西裝褲 (Slacks)', '丹寧褲 (Jeans)', '白褲 (White)', '短褲', '休閒褲'],
-            shoes: ['牛津/德比', '樂福鞋 (Loafers)', '極簡球鞋', '靴子'],
+            coat: ['大衣', '風衣'],
+            outer: ['西裝外套', '皮衣', '短版外套', '羽絨外套', '運動外套'],
+            inner: ['T恤', '針織衫', '襯衫', '衛衣'],
+            bottom: ['西裝褲', '丹寧褲', '休閒褲', '運動褲', '短褲'],
+            shoes: ['運動鞋', '皮鞋', '靴子', '樂福鞋'],
             bag: ['公事包', '托特包', '手拿包', '後背包'],
             jewelry: ['手環', '手錶', '戒指', '眼鏡', '無配飾']
         };
 
         const ALL_COLORS = [
-            { id: 'black', hex: '#1a1a1a', name: '黑' },
-            { id: 'white', hex: '#ffffff', name: '白', border: true },
-            { id: 'gray', hex: '#6b7280', name: '灰' },
-            { id: 'navy', hex: '#1e3a8a', name: '深藍' },
-            { id: 'beige', hex: '#d2b48c', name: '駝' },
-            { id: 'khaki', hex: '#F0E68C', name: '卡其' },
-            { id: 'green', hex: '#014421', name: '森綠' }
+            { id: 'black', hex: '#1A1A1A', name: '黑' },
+            { id: 'white', hex: '#FFFFFF', name: '白', border: true },
+            { id: 'gray', hex: '#808080', name: '灰' },
+            { id: 'navy', hex: '#1E3A8A', name: '深藍' },
+            { id: 'earth', hex: '#C3B091', name: '大地' },
+            { id: 'burgundy', hex: '#991b1b', name: '酒紅' },
+            { id: 'mustard', hex: '#d97706', name: '芥黃' },
+            { id: 'olive', hex: '#4d7c0f', name: '軍綠' },
+            { id: 'royalblue', hex: '#2563eb', name: '寶藍' }
         ];
 
-        const SEASON_TAGS = [
-            { id: 'SS', label: '春夏 S/S', icon: 'sun' },
-            { id: 'FW', label: '秋冬 F/W', icon: 'snow' },
-            { id: 'ALL', label: '全年 ALL', icon: 'all' }
-        ];
-
+        // V13.5: Hardcoded Demo Data
         const DEFAULT_WARDROBE = [
-            { id: 1, slot: 'outer', category: 'Riders (皮衣/騎士)', color: 'black', seasonTag: 'FW' },
-            { id: 2, slot: 'inner', category: 'Pro Tee (修身羅紋)', color: 'white', seasonTag: 'ALL' },
-            { id: 3, slot: 'bottom', category: '西裝褲 (Slacks)', color: 'black', seasonTag: 'ALL' },
-            { id: 4, slot: 'shoes', category: '極簡球鞋', color: 'white', seasonTag: 'ALL' },
+            { id: 1, slot: 'outer', category: '皮衣', color: 'black' },
+            { id: 2, slot: 'inner', category: 'T恤', color: 'white' },
+            { id: 3, slot: 'bottom', category: '西裝褲', color: 'black' },
+            { id: 4, slot: 'shoes', category: '運動鞋', color: 'white' },
+            // V13.5 Demo Data
+            { id: 991, slot: 'outer', category: '皮衣', category_detail: '演示皮衣', color: 'black', image: './outer_demo.png' },
+            { id: 992, slot: 'bottom', category: '西裝褲', category_detail: '演示西褲', color: 'black', image: './bottom_demo.png' }
         ];
         
-        const DEFAULT_OUTFIT = { coat: null, outer: DEFAULT_WARDROBE[0], inner: DEFAULT_WARDROBE[1], bottom: DEFAULT_WARDROBE[2], shoes: DEFAULT_WARDROBE[3], bag: null, jewelry: null };
-        const WARDROBE_KEY = 'minimalist_v12_2_data'; 
+        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null };
+        const WARDROBE_KEY = 'minimalist_v13_5_data'; 
 
         // --- 3. UI ICONS ---
         const Icon = ({ name, className }) => {
@@ -146,9 +174,9 @@
                 camera: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
                 star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                 check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
-                sun: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/></svg>,
-                snow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h20"/><path d="M12 2v20"/></svg>,
-                all: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>,
+                download: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+                x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
@@ -160,7 +188,6 @@
                 slot: 'outer', 
                 category: CATEGORIES['outer'][0], 
                 color: 'black', 
-                seasonTag: 'ALL',
                 image: null 
             });
             const fileInputRef = useRef(null);
@@ -180,12 +207,21 @@
 
             if(!isOpen) return null;
 
-            const handleSave = () => {
+            // V13.5: Handle Save accepts 'equip' boolean
+            const handleSave = (shouldEquip) => {
                 const finalCategory = data.category || CATEGORIES[data.slot][0];
-                const finalColor = data.color || 'black';
-                const newItem = { ...data, category: finalCategory, color: finalColor, id: Date.now() };
-                onAdd(newItem); 
-                alert(`✅ ${finalCategory} 已入庫並自動穿上`);
+                const finalColor = data.color || 'black'; 
+                const newItem = { 
+                    ...data, 
+                    category: finalCategory, 
+                    color: finalColor,
+                    id: Date.now() 
+                };
+                
+                onAdd(newItem, shouldEquip); 
+                
+                const msg = shouldEquip ? `✅ 已入庫並穿上` : `✅ 已加入衣櫥`;
+                alert(msg);
                 onClose();
             };
             
@@ -199,6 +235,7 @@
                             <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
                         </div>
                         <div className="space-y-6">
+                            {/* Slot & Category */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">部位與類別</label>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2 pb-1">
@@ -211,6 +248,7 @@
                                 </select>
                             </div>
 
+                            {/* Image Upload */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">單品照片</label>
                                 <div 
@@ -243,28 +281,38 @@
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">季節</label>
-                                    <div className="flex gap-2">
-                                        {SEASON_TAGS.map(tag => (
-                                            <button key={tag.id} onClick={() => setData({...data, seasonTag: tag.id})} className={`flex-1 py-2 rounded-lg border text-[10px] font-bold flex justify-center ${data.seasonTag === tag.id ? 'bg-black text-white' : 'text-gray-500'}`}>{tag.label}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">色調</label>
-                                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                                        {ALL_COLORS.map(c => (
-                                            <div key={c.id} className="flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
-                                                <div className={`w-6 h-6 rounded-full transition-transform ${data.color === c.id ? 'scale-125 ring-1 ring-black' : ''}`} style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}></div>
-                                            </div>
-                                        ))}
-                                    </div>
+                            {/* Colors */}
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">主要顏色</label>
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
+                                    {ALL_COLORS.map(c => (
+                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer group flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
+                                            <div 
+                                                className={`w-6 h-6 rounded-full transition-all shadow-sm ${data.color === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
+                                                style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
+                                            ></div>
+                                            <span className={`text-[8px] font-bold ${data.color === c.id ? 'text-black' : 'text-gray-400'}`}>{c.name}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
-                        <button onClick={handleSave} className="w-full mt-8 py-4 bg-black text-white text-sm font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg">確認入庫並穿上</button>
+                        
+                        {/* V13.5: Split Buttons */}
+                        <div className="mt-8 flex gap-3">
+                            <button 
+                                onClick={() => handleSave(false)} 
+                                className="flex-1 py-4 bg-white border border-gray-200 text-gray-600 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50"
+                            >
+                                僅加入衣櫥
+                            </button>
+                            <button 
+                                onClick={() => handleSave(true)} 
+                                className="flex-[2] py-4 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg"
+                            >
+                                穿上並預覽
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -290,7 +338,8 @@
 
             return (
                 <div className="w-full mb-6 flex flex-col items-center animate-fade-in">
-                    <div className="w-full max-w-[280px] ghost-canvas-container rounded-3xl border border-gray-100 relative bg-white">
+                    {/* V13.5: 9:16 Aspect Ratio Container */}
+                    <div className="ghost-canvas-container rounded-3xl border border-gray-100 relative bg-white">
                         {shoes && <img src={getAssetUrl(shoes)} className="ghost-layer z-10" alt="Shoes" />}
                         {bottom && <img src={getAssetUrl(bottom)} className="ghost-layer z-20" alt="Bottom" />}
                         {inner && <img src={getAssetUrl(inner)} className="ghost-layer z-30" alt="Inner" />}
@@ -306,25 +355,32 @@
             
             const analysis = useMemo(() => {
                 const items = [outer, inner, bottom, shoes].filter(Boolean);
-                if (items.length < 3) return { title: "等待校準...", msg: "請至少穿著 3 件單品以啟動 AI 分析。", type: "neutral" };
+                if (items.length < 3) return { title: "準備就緒", msg: "系統待命中...", type: "neutral" };
 
-                const isLeather = outer?.category?.includes('皮衣') || outer?.category?.includes('Riders');
-                const isDenimOrSlacks = bottom?.category?.includes('丹寧') || bottom?.category?.includes('西裝褲');
-                if (isLeather && isDenimOrSlacks) {
-                    return { title: "✨ 干場流：黃金三角", msg: "皮衣的硬挺與下身的俐落形成完美對比，展現成熟男性的洗鍊感。", type: "success" };
+                const isLeather = outer?.category?.includes('皮衣');
+                const isFormalOuter = outer?.category?.includes('西裝外套');
+                const isFormalBottom = bottom?.category?.includes('西裝褲');
+                const isDenim = bottom?.category?.includes('丹寧');
+
+                if (isLeather && (isDenim || isFormalBottom)) {
+                    return { title: "✨ 經典極簡 (Classic Minimalist)", msg: "利用硬挺材質與俐落剪裁形成對比，展現成熟且洗鍊的黃金比例。", type: "success" };
+                }
+                
+                if (isFormalOuter && isFormalBottom) {
+                     return { title: "🎩 經典紳士 (Modern Gentleman)", msg: "成套或半正式的搭配，展現專業與穩重感，適合商務或正式場合。", type: "success" };
                 }
 
                 const colors = items.map(i => i.color);
                 const isMono = colors.every(c => c === 'black') || colors.every(c => c === 'white') || colors.every(c => c === 'navy');
                 if (isMono) {
-                    return { title: "⚫ 極簡同色系", msg: "全身同色系營造出修長視覺。建議利用不同材質（如霧面棉 vs 亮面皮）增加層次。", type: "info" };
+                    return { title: "⚫ 極簡同色系 (Monochrome)", msg: "全身同色系能有效延伸視覺比例。建議混搭不同材質（如霧面與亮面）增加層次。", type: "info" };
                 }
 
-                return { title: "結構穩定", msg: "目前的穿搭符合極簡原則。可嘗試調整鞋款或內搭顏色來增加亮點。", type: "neutral" };
+                return { title: "🌿 舒適休閒 (Relaxed Casual)", msg: "結構穩定的日常搭配。可嘗試更換內搭顏色或鞋款風格，為造型增添亮點。", type: "neutral" };
             }, [outfit]);
 
             return (
-                <div className={`mt-6 w-full rounded-xl p-5 border shadow-lg transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
+                <div className={`w-full rounded-xl p-5 border shadow-lg transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
                     <div className="flex items-start gap-3">
                         <div className={`mt-0.5 p-1.5 rounded-full ${analysis.type === 'success' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}>
                             <Icon name="star" className="w-4 h-4" />
@@ -338,13 +394,23 @@
             );
         };
 
+        // --- 5. MAIN APPLICATION ---
         const App = () => {
             const [wardrobe, setWardrobe] = useState(() => {
                 try {
                     const saved = localStorage.getItem(WARDROBE_KEY);
                     if (saved) {
-                        const parsed = JSON.parse(saved);
-                        return parsed.length > 0 ? parsed : DEFAULT_WARDROBE;
+                        let parsed = JSON.parse(saved);
+                        if (parsed && Array.isArray(parsed)) {
+                            // Patch legacy
+                            parsed = parsed.map(item => ({
+                                ...item,
+                                color: item.color || 'black', 
+                                category: item.category || '未分類單品',
+                                id: item.id || Date.now() + Math.random()
+                            }));
+                            return parsed.length > 0 ? parsed : DEFAULT_WARDROBE;
+                        }
                     }
                 } catch (e) { console.error("Data Load Error"); }
                 return DEFAULT_WARDROBE;
@@ -353,26 +419,61 @@
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [pickingSlot, setPickingSlot] = useState(null);
             const [activeTab, setActiveTab] = useState('align');
+            const [inventoryTab, setInventoryTab] = useState('outer'); 
             const [showAddModal, setShowAddModal] = useState(false);
 
             useEffect(() => { localStorage.setItem(WARDROBE_KEY, JSON.stringify(wardrobe)); }, [wardrobe]);
 
             const handleReset = () => {
-                if(confirm("確定重置為出廠預設值？")) {
+                if(confirm("⚠️ 確定重置？這將清除您所有的自訂單品資料。")) {
                     setWardrobe(DEFAULT_WARDROBE);
                     setOutfit(DEFAULT_OUTFIT);
                     window.location.reload();
                 }
             };
 
-            const handleAddItem = (newItem) => {
+            // V13.5: Modified to accept equip boolean
+            const handleAddItem = (newItem, shouldEquip) => {
                 setWardrobe(prev => [...prev, newItem]);
-                setOutfit(prev => ({ ...prev, [newItem.slot]: newItem })); 
+                if (shouldEquip) {
+                    setOutfit(prev => ({ ...prev, [newItem.slot]: newItem })); 
+                }
+            };
+
+            const handleRandomStyle = () => {
+                const newOutfit = { ...outfit }; 
+                const targets = ['outer', 'inner', 'bottom', 'shoes'];
+                let filledCount = 0;
+
+                targets.forEach(slot => {
+                    if (outfit[slot] || (slot === 'outer' && outfit.coat)) return; 
+
+                    const candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
+                    if (candidates.length > 0) {
+                        const randomItem = candidates[Math.floor(Math.random() * candidates.length)];
+                        newOutfit[slot] = randomItem;
+                        filledCount++;
+                    }
+                });
+                
+                if (filledCount === 0) {
+                    alert("⚠️ 提示：目前所有部位都已穿上。請先移除部分單品，AI 才能為您隨機填補。");
+                } else {
+                    setOutfit(newOutfit);
+                }
+            };
+
+            const handleClearAll = () => {
+                setOutfit({ coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null });
+            };
+
+            const handleClearSlot = (slot) => {
+                setOutfit(prev => ({ ...prev, [slot]: null }));
             };
 
             const renderItemCard = (item, onClick, isSelected, onDelete) => {
                 const color = ALL_COLORS.find(c => c.id === item.color) || ALL_COLORS[0];
-                const catLabel = item.category ? item.category.split('(')[0] : '未知';
+                const catLabel = item.category ? item.category : '未知';
                 return (
                     <div key={item.id} onClick={() => onClick(item)} className={`p-3 bg-white rounded-xl border relative cursor-pointer transition-all ${isSelected ? 'border-black shadow-md bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}>
                         <div className="flex justify-between items-start mb-2">
@@ -404,12 +505,17 @@
                 );
             };
 
+            const currentFilteredWardrobe = wardrobe.filter(item => {
+                const activeTab = INVENTORY_TABS.find(t => t.id === inventoryTab);
+                return activeTab ? activeTab.slots.includes(item.slot) : true;
+            });
+
             return (
-                <div className="max-w-md mx-auto h-full flex flex-col bg-gray-50 md:my-8 md:rounded-[2rem] md:shadow-2xl md:h-[90dvh] overflow-hidden relative border border-gray-200">
-                    <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10">
+                <div className="app-container">
+                    <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V12.2 Demo</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V13.5</span>
                         </h1>
                         <div className="flex gap-2">
                             <button onClick={() => setActiveTab('wardrobe')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='wardrobe' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>衣櫥</button>
@@ -423,11 +529,36 @@
                                 <GhostEngine outfit={outfit} onSlotClick={setPickingSlot} />
                                 <CritiquePanel outfit={outfit} />
                                 
-                                <div className="grid grid-cols-4 gap-2 mt-8 opacity-50 hover:opacity-100 transition-opacity">
+                                <div className="mt-6 flex gap-2">
+                                    <button 
+                                        onClick={handleClearAll}
+                                        className="flex-1 py-4 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                    >
+                                        <Icon name="trash" className="w-4 h-4" /> 全部脫下
+                                    </button>
+                                    <button 
+                                        onClick={handleRandomStyle}
+                                        className="flex-[2] py-4 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                    >
+                                        <Icon name="dice" className="w-5 h-5" /> 隨機補位 (AI)
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-2 mt-8 opacity-50 hover:opacity-100 transition-opacity pb-8">
                                     {['outer','inner','bottom','shoes'].map(slot => (
-                                        <div key={slot} onClick={() => setPickingSlot(slot)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-transparent'}`}>
-                                            <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
-                                            {outfit[slot] ? <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: ALL_COLORS.find(c=>c.id===outfit[slot].color)?.hex}}></div> : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
+                                        <div key={slot} className="relative group">
+                                            <div onClick={() => setPickingSlot(slot)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-transparent'}`}>
+                                                <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
+                                                {outfit[slot] ? <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: ALL_COLORS.find(c=>c.id===outfit[slot].color)?.hex}}></div> : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
+                                            </div>
+                                            {outfit[slot] && (
+                                                <button 
+                                                    onClick={() => handleClearSlot(slot)}
+                                                    className="absolute -top-2 -right-2 bg-gray-200 text-gray-600 rounded-full p-1 shadow hover:bg-red-100 hover:text-red-500 transition-colors z-20"
+                                                >
+                                                    <Icon name="x" className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -436,23 +567,44 @@
 
                         {activeTab === 'wardrobe' && (
                             <div className="pb-24 flex flex-col min-h-full">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">目前庫存 (點擊穿上)</h2>
-                                    <span className="text-xs font-bold text-black">{wardrobe.length} 件單品</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 mb-8">
-                                    {wardrobe.map(item => renderItemCard(
-                                        item, 
-                                        (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
-                                        outfit[item.slot]?.id === item.id,
-                                        (id) => setWardrobe(w => w.filter(x => x.id !== id))
+                                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                                    {INVENTORY_TABS.map(tab => (
+                                        <button 
+                                            key={tab.id} 
+                                            onClick={() => setInventoryTab(tab.id)}
+                                            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                        >
+                                            {tab.label}
+                                        </button>
                                     ))}
                                 </div>
+
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        {INVENTORY_TABS.find(t=>t.id===inventoryTab)?.label} ({currentFilteredWardrobe.length})
+                                    </h2>
+                                </div>
+
+                                {currentFilteredWardrobe.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-3 mb-8">
+                                        {currentFilteredWardrobe.map(item => renderItemCard(
+                                            item, 
+                                            (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
+                                            outfit[item.slot]?.id === item.id,
+                                            (id) => setWardrobe(w => w.filter(x => x.id !== id))
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-12 text-center text-gray-400 text-xs border-2 border-dashed border-gray-200 rounded-xl mb-8">
+                                        尚無單品
+                                    </div>
+                                )}
                                 
                                 <button onClick={() => setShowAddModal(true)} className="absolute bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-30 cursor-pointer border border-gray-800"><Icon name="plus" className="w-6 h-6" /></button>
 
-                                <div className="mt-auto border-t border-gray-200 pt-6 text-center">
-                                    <button onClick={handleReset} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">強制恢復預設值 (Reset)</button>
+                                <div className="mt-auto border-t border-gray-200 pt-6 flex justify-center gap-4">
+                                    <button onClick={() => { const data = JSON.stringify(wardrobe); navigator.clipboard.writeText(data).then(() => alert("✅ 資料已複製")); }} className="flex items-center gap-1 text-[10px] text-gray-500 font-bold hover:text-black"><Icon name="download" className="w-3 h-3"/> 匯出</button>
+                                    <button onClick={handleReset} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">重置</button>
                                 </div>
                             </div>
                         )}
