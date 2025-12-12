@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V13.5 - Mobile UX</title>
+    <title>Minimalist V13.5 - RAM Stability</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* [V13.5 核心樣式] */
@@ -13,16 +13,18 @@
             background-color: #f3f4f6; /* 桌機背景色 */
             color: #111; 
             margin: 0;
+            overflow-y: auto; /* 允許桌機滾動 */
         }
         
-        /* V13.5 FIX: 手機版面模擬容器 */
+        /* V13.5 FIX: 強制手機版型容器 */
         .app-container {
-            max-width: 480px; /* 鎖定手機寬度 */
+            width: 100% !important;
+            max-width: 480px !important;
+            min-height: 100vh;
             margin: 0 auto;   /* 置中 */
-            min-height: 100dvh;
-            background-color: #ffffff; /* App 本體背景 */
-            box-shadow: 0 0 40px rgba(0,0,0,0.1); /* 懸浮感陰影 */
+            background-color: #ffffff;
             position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.15); /* 加深陰影 */
             display: flex;
             flex-direction: column;
         }
@@ -36,15 +38,14 @@
         }
         .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* V13.5 FIX: 強制 9:16 黃金比例 */
+        /* V13.5 FIX: 9:16 黃金比例畫布 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 9/16; /* 關鍵: 鎖定長寬比 */
-            max-height: 75vh;   /* 避免過長 */
+            aspect-ratio: 9 / 16; /* 強制鎖定比例 */
             background-color: #ffffff;
             overflow: hidden;
-            /* 移除舊版強制 height: 60vh，改用 aspect-ratio 自適應 */
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .ghost-layer {
@@ -80,6 +81,7 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- 1. CONFIGURATION ---
+        // 預設圖片 (Fallback) - 請確保這些檔案存在於同一資料夾
         const DEFAULT_ASSETS = {
             inner: './inner.png',
             outer: './outer.png',
@@ -96,7 +98,10 @@
 
         const getAssetUrl = (item) => {
             if (!item) return null;
+            // V13.5 Core: 直接使用 item.image (Blob URL)
             if (item.image) return item.image; 
+            
+            // Fallback Logic
             if (item.slot === 'inner') return DEFAULT_ASSETS.inner;
             if (item.slot === 'outer' || item.slot === 'coat') return DEFAULT_ASSETS.outer;
             if (item.slot === 'bottom') return DEFAULT_ASSETS.bottom;
@@ -152,19 +157,15 @@
             { id: 'royalblue', hex: '#2563eb', name: '寶藍' }
         ];
 
-        // V13.5: Hardcoded Demo Data
-        const DEFAULT_WARDROBE = [
+        // V13.5: RAM Only Mode - This is the initial state, NOT read from localStorage
+        const INITIAL_WARDROBE = [
             { id: 1, slot: 'outer', category: '皮衣', color: 'black' },
             { id: 2, slot: 'inner', category: 'T恤', color: 'white' },
             { id: 3, slot: 'bottom', category: '西裝褲', color: 'black' },
             { id: 4, slot: 'shoes', category: '運動鞋', color: 'white' },
-            // V13.5 Demo Data
-            { id: 991, slot: 'outer', category: '皮衣', category_detail: '演示皮衣', color: 'black', image: './outer_demo.png' },
-            { id: 992, slot: 'bottom', category: '西裝褲', category_detail: '演示西褲', color: 'black', image: './bottom_demo.png' }
         ];
         
         const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null };
-        const WARDROBE_KEY = 'minimalist_v13_5_data'; 
 
         // --- 3. UI ICONS ---
         const Icon = ({ name, className }) => {
@@ -175,7 +176,6 @@
                 star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                 check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
                 dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>,
-                download: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
                 x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
@@ -197,6 +197,7 @@
                 setData(prev => ({ ...prev, slot: newSlot, category: defaultCat }));
             };
 
+            // V13.5: Blob URL Creation (RAM Storage)
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -207,7 +208,7 @@
 
             if(!isOpen) return null;
 
-            // V13.5: Handle Save accepts 'equip' boolean
+            // V13.5: Split Button Logic
             const handleSave = (shouldEquip) => {
                 const finalCategory = data.category || CATEGORIES[data.slot][0];
                 const finalColor = data.color || 'black'; 
@@ -220,6 +221,7 @@
                 
                 onAdd(newItem, shouldEquip); 
                 
+                // Feedback
                 const msg = shouldEquip ? `✅ 已入庫並穿上` : `✅ 已加入衣櫥`;
                 alert(msg);
                 onClose();
@@ -268,7 +270,7 @@
                                                 <Icon name="camera" className="w-6 h-6 text-gray-500" />
                                             </div>
                                             <span className="text-xs font-bold block text-gray-500">上傳去背 PNG</span>
-                                            <span className="text-[9px] block mt-1">支援相機或檔案選取</span>
+                                            <span className="text-[9px] block mt-1">記憶體暫存模式 (重整即消失)</span>
                                         </div>
                                     )}
                                     <input 
@@ -302,7 +304,7 @@
                         <div className="mt-8 flex gap-3">
                             <button 
                                 onClick={() => handleSave(false)} 
-                                className="flex-1 py-4 bg-white border border-gray-200 text-gray-600 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50"
+                                className="flex-1 py-4 bg-gray-100 text-gray-600 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-200"
                             >
                                 僅加入衣櫥
                             </button>
@@ -339,7 +341,7 @@
             return (
                 <div className="w-full mb-6 flex flex-col items-center animate-fade-in">
                     {/* V13.5: 9:16 Aspect Ratio Container */}
-                    <div className="ghost-canvas-container rounded-3xl border border-gray-100 relative bg-white">
+                    <div className="ghost-canvas-container rounded-3xl border-b border-gray-100 relative bg-white">
                         {shoes && <img src={getAssetUrl(shoes)} className="ghost-layer z-10" alt="Shoes" />}
                         {bottom && <img src={getAssetUrl(bottom)} className="ghost-layer z-20" alt="Bottom" />}
                         {inner && <img src={getAssetUrl(inner)} className="ghost-layer z-30" alt="Inner" />}
@@ -396,25 +398,8 @@
 
         // --- 5. MAIN APPLICATION ---
         const App = () => {
-            const [wardrobe, setWardrobe] = useState(() => {
-                try {
-                    const saved = localStorage.getItem(WARDROBE_KEY);
-                    if (saved) {
-                        let parsed = JSON.parse(saved);
-                        if (parsed && Array.isArray(parsed)) {
-                            // Patch legacy
-                            parsed = parsed.map(item => ({
-                                ...item,
-                                color: item.color || 'black', 
-                                category: item.category || '未分類單品',
-                                id: item.id || Date.now() + Math.random()
-                            }));
-                            return parsed.length > 0 ? parsed : DEFAULT_WARDROBE;
-                        }
-                    }
-                } catch (e) { console.error("Data Load Error"); }
-                return DEFAULT_WARDROBE;
-            });
+            // V13.5: RAM Only Mode - No localStorage logic for Wardrobe
+            const [wardrobe, setWardrobe] = useState(INITIAL_WARDROBE);
 
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [pickingSlot, setPickingSlot] = useState(null);
@@ -422,17 +407,7 @@
             const [inventoryTab, setInventoryTab] = useState('outer'); 
             const [showAddModal, setShowAddModal] = useState(false);
 
-            useEffect(() => { localStorage.setItem(WARDROBE_KEY, JSON.stringify(wardrobe)); }, [wardrobe]);
-
-            const handleReset = () => {
-                if(confirm("⚠️ 確定重置？這將清除您所有的自訂單品資料。")) {
-                    setWardrobe(DEFAULT_WARDROBE);
-                    setOutfit(DEFAULT_OUTFIT);
-                    window.location.reload();
-                }
-            };
-
-            // V13.5: Modified to accept equip boolean
+            // V13.5: Handle Add Item (Update RAM)
             const handleAddItem = (newItem, shouldEquip) => {
                 setWardrobe(prev => [...prev, newItem]);
                 if (shouldEquip) {
@@ -515,7 +490,7 @@
                     <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V13.5</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V13.5 Stable</span>
                         </h1>
                         <div className="flex gap-2">
                             <button onClick={() => setActiveTab('wardrobe')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='wardrobe' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>衣櫥</button>
@@ -601,11 +576,6 @@
                                 )}
                                 
                                 <button onClick={() => setShowAddModal(true)} className="absolute bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-30 cursor-pointer border border-gray-800"><Icon name="plus" className="w-6 h-6" /></button>
-
-                                <div className="mt-auto border-t border-gray-200 pt-6 flex justify-center gap-4">
-                                    <button onClick={() => { const data = JSON.stringify(wardrobe); navigator.clipboard.writeText(data).then(() => alert("✅ 資料已複製")); }} className="flex items-center gap-1 text-[10px] text-gray-500 font-bold hover:text-black"><Icon name="download" className="w-3 h-3"/> 匯出</button>
-                                    <button onClick={handleReset} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">重置</button>
-                                </div>
                             </div>
                         )}
                     </div>
