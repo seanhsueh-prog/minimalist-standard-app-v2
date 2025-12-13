@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V13.5 - RAM Stability</title>
+    <title>Minimalist V13.99 - Demo Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V13.5 核心樣式] */
+        /* [V13.99 Demo 穩定版型] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #f3f4f6; /* 桌機背景色 */
+            background-color: #e5e5e5; /* 桌機背景：深灰，對比出手機框 */
             color: #111; 
             margin: 0;
-            overflow-y: auto; /* 允許桌機滾動 */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
         }
         
-        /* V13.5 FIX: 強制手機版型容器 */
+        /* 核心容器：模擬手機 App，置中顯示 */
         .app-container {
-            width: 100% !important;
-            max-width: 480px !important;
+            width: 100%;
+            max-width: 480px; /* 鎖定手機寬度 */
             min-height: 100vh;
-            margin: 0 auto;   /* 置中 */
             background-color: #ffffff;
             position: relative;
-            box-shadow: 0 0 40px rgba(0,0,0,0.15); /* 加深陰影 */
+            box-shadow: 0 0 40px rgba(0,0,0,0.15); /* 懸浮陰影 */
             display: flex;
             flex-direction: column;
         }
@@ -38,12 +39,12 @@
         }
         .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* V13.5 FIX: 9:16 黃金比例畫布 */
+        /* 9:16 黃金比例畫布 (V13.4/13.5 Hybrid Fix) */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 9 / 16; /* 強制鎖定比例 */
-            background-color: #ffffff;
+            aspect-ratio: 9 / 16; /* 確保比例正確 */
+            background-color: #f9fafb;
             overflow: hidden;
             border-bottom: 1px solid #f0f0f0;
         }
@@ -55,127 +56,115 @@
             width: 100%;
             height: 100%;
             object-fit: contain; 
-            object-position: bottom center; /* 貼底對齊 */
+            object-position: bottom center; /* 確保鞋子貼底 */
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
         }
 
-        @keyframes pulse-white {
-            0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-            70% { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
-            100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        /* 風格標籤 */
+        .style-tag {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
-        .marker-pulse {
-            animation: pulse-white 2s infinite;
-        }
+        .tag-Classic { background: #e5e7eb; color: #374151; }
+        .tag-Gentleman { background: #1e3a8a; color: white; }
+        .tag-Casual { background: #fef3c7; color: #92400e; }
+        .tag-Sport { background: #d1fae5; color: #065f46; }
+
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root" class="w-full flex justify-center"></div>
 
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
-        // --- 1. CONFIGURATION ---
-        // 預設圖片 (Fallback) - 請確保這些檔案存在於同一資料夾
-        const DEFAULT_ASSETS = {
-            inner: './inner.png',
-            outer: './outer.png',
-            bottom: './bottom.png',
-            shoes: './shoes.png'
+        // --- 1. SEMANTIC STATIC INVENTORY (Hardcoded for Demo Stability) ---
+        const generateInventory = () => {
+            const items = [];
+            let idCounter = 1;
+
+            const addItem = (slot, filename, name, tag, category) => {
+                items.push({
+                    id: idCounter++,
+                    slot,
+                    image: `./${filename}.png`,
+                    name,
+                    tag, 
+                    category
+                });
+            };
+
+            // Outer (o1-o10)
+            addItem('outer', 'o1', '騎士皮衣', 'Classic', '皮衣');
+            addItem('outer', 'o2', '西裝外套 (黑)', 'Gentleman', '西裝外套');
+            addItem('outer', 'o3', '西裝外套 (藍)', 'Gentleman', '西裝外套');
+            addItem('outer', 'o4', '短版夾克', 'Casual', '夾克');
+            addItem('outer', 'o5', '羽絨外套', 'Casual', '羽絨');
+            addItem('outer', 'o6', '運動外套', 'Sport', '運動');
+            for(let i=7; i<=10; i++) addItem('outer', `o${i}`, '精選外套', 'Classic', '外套');
+
+            // Inner (i1-i10)
+            addItem('inner', 'i1', '質感 T-Shirt (白)', 'Classic', 'T恤');
+            addItem('inner', 'i2', '質感 T-Shirt (黑)', 'Classic', 'T恤');
+            addItem('inner', 'i3', '針織衫', 'Gentleman', '針織');
+            addItem('inner', 'i4', '休閒襯衫', 'Casual', '襯衫');
+            addItem('inner', 'i5', '衛衣/帽T', 'Casual', '衛衣');
+            for(let i=6; i<=10; i++) addItem('inner', `i${i}`, '精選內搭', 'Casual', '內搭');
+
+            // Bottom (b1-b10)
+            addItem('bottom', 'b1', '修身西褲 (黑)', 'Gentleman', '西裝褲');
+            addItem('bottom', 'b2', '修身西褲 (灰)', 'Gentleman', '西裝褲');
+            addItem('bottom', 'b3', '丹寧牛仔褲', 'Classic', '丹寧');
+            addItem('bottom', 'b4', '棉質休閒褲', 'Casual', '休閒褲');
+            addItem('bottom', 'b5', '運動褲', 'Sport', '運動褲');
+            addItem('bottom', 'b6', '短褲', 'Casual', '短褲');
+            for(let i=7; i<=10; i++) addItem('bottom', `b${i}`, '精選下身', 'Casual', '下身');
+
+            // Shoes (s1-s10)
+            addItem('shoes', 's1', '極簡小白鞋', 'Classic', '球鞋');
+            addItem('shoes', 's2', '運動鞋', 'Sport', '球鞋');
+            addItem('shoes', 's3', '經典皮鞋', 'Gentleman', '皮鞋');
+            addItem('shoes', 's4', '質感靴款', 'Classic', '靴子');
+            for(let i=5; i<=10; i++) addItem('shoes', `s${i}`, '精選鞋款', 'Classic', '鞋款');
+
+            return items;
         };
 
-        const MARKER_POS = {
-            inner: { x: 50, y: 35 },
-            outer: { x: 50, y: 45 },
-            bottom: { x: 50, y: 65 },
-            shoes: { x: 50, y: 92 }
-        };
+        const STATIC_INVENTORY = generateInventory();
 
-        const getAssetUrl = (item) => {
-            if (!item) return null;
-            // V13.5 Core: 直接使用 item.image (Blob URL)
-            if (item.image) return item.image; 
-            
-            // Fallback Logic
-            if (item.slot === 'inner') return DEFAULT_ASSETS.inner;
-            if (item.slot === 'outer' || item.slot === 'coat') return DEFAULT_ASSETS.outer;
-            if (item.slot === 'bottom') return DEFAULT_ASSETS.bottom;
-            if (item.slot === 'shoes') return DEFAULT_ASSETS.shoes;
-            return null;
-        };
+        // --- 2. CONFIG & HELPERS ---
+        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null };
 
-        const getSlotDefaultPos = (slotId) => {
-            if (slotId === 'inner') return MARKER_POS.inner;
-            if (slotId === 'outer' || slotId === 'coat') return MARKER_POS.outer;
-            if (slotId === 'bottom') return MARKER_POS.bottom;
-            if (slotId === 'shoes') return MARKER_POS.shoes;
-            return null;
-        };
-
-        // --- 2. DATA STRUCTURES ---
         const SLOTS = [
-            { id: 'coat', label: '大衣' },
             { id: 'outer', label: '外套' },
             { id: 'inner', label: '內搭' },
             { id: 'bottom', label: '下身' },
-            { id: 'shoes', label: '鞋款' },
-            { id: 'bag', label: '包款' },
-            { id: 'jewelry', label: '配飾' }
+            { id: 'shoes', label: '鞋款' }
         ];
 
         const INVENTORY_TABS = [
-            { id: 'outer', label: '外套', slots: ['outer', 'coat'] },
+            { id: 'outer', label: '外套', slots: ['outer'] },
             { id: 'inner', label: '內搭', slots: ['inner'] },
             { id: 'bottom', label: '下身', slots: ['bottom'] },
             { id: 'shoes', label: '鞋款', slots: ['shoes'] }
         ];
 
-        const CATEGORIES = {
-            coat: ['大衣', '風衣'],
-            outer: ['西裝外套', '皮衣', '短版外套', '羽絨外套', '運動外套'],
-            inner: ['T恤', '針織衫', '襯衫', '衛衣'],
-            bottom: ['西裝褲', '丹寧褲', '休閒褲', '運動褲', '短褲'],
-            shoes: ['運動鞋', '皮鞋', '靴子', '樂福鞋'],
-            bag: ['公事包', '托特包', '手拿包', '後背包'],
-            jewelry: ['手環', '手錶', '戒指', '眼鏡', '無配飾']
-        };
-
-        const ALL_COLORS = [
-            { id: 'black', hex: '#1A1A1A', name: '黑' },
-            { id: 'white', hex: '#FFFFFF', name: '白', border: true },
-            { id: 'gray', hex: '#808080', name: '灰' },
-            { id: 'navy', hex: '#1E3A8A', name: '深藍' },
-            { id: 'earth', hex: '#C3B091', name: '大地' },
-            { id: 'burgundy', hex: '#991b1b', name: '酒紅' },
-            { id: 'mustard', hex: '#d97706', name: '芥黃' },
-            { id: 'olive', hex: '#4d7c0f', name: '軍綠' },
-            { id: 'royalblue', hex: '#2563eb', name: '寶藍' }
-        ];
-
-        // V13.5: RAM Only Mode - This is the initial state, NOT read from localStorage
-        const INITIAL_WARDROBE = [
-            { id: 1, slot: 'outer', category: '皮衣', color: 'black' },
-            { id: 2, slot: 'inner', category: 'T恤', color: 'white' },
-            { id: 3, slot: 'bottom', category: '西裝褲', color: 'black' },
-            { id: 4, slot: 'shoes', category: '運動鞋', color: 'white' },
-        ];
-        
-        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null };
-
-        // --- 3. UI ICONS ---
+        // --- 3. ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
-                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
                 trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
-                camera: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-                star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                 check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
                 dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>,
+                star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                 x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
@@ -183,170 +172,23 @@
 
         // --- 4. COMPONENTS ---
 
-        const AddItemModal = ({ isOpen, onClose, onAdd }) => {
-            const [data, setData] = useState({ 
-                slot: 'outer', 
-                category: CATEGORIES['outer'][0], 
-                color: 'black', 
-                image: null 
-            });
-            const fileInputRef = useRef(null);
-            
-            const handleSlotChange = (newSlot) => {
-                const defaultCat = CATEGORIES[newSlot] ? CATEGORIES[newSlot][0] : '';
-                setData(prev => ({ ...prev, slot: newSlot, category: defaultCat }));
-            };
-
-            // V13.5: Blob URL Creation (RAM Storage)
-            const handleFileChange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const url = URL.createObjectURL(file);
-                    setData(prev => ({ ...prev, image: url }));
-                }
-            };
-
-            if(!isOpen) return null;
-
-            // V13.5: Split Button Logic
-            const handleSave = (shouldEquip) => {
-                const finalCategory = data.category || CATEGORIES[data.slot][0];
-                const finalColor = data.color || 'black'; 
-                const newItem = { 
-                    ...data, 
-                    category: finalCategory, 
-                    color: finalColor,
-                    id: Date.now() 
-                };
-                
-                onAdd(newItem, shouldEquip); 
-                
-                // Feedback
-                const msg = shouldEquip ? `✅ 已入庫並穿上` : `✅ 已加入衣櫥`;
-                alert(msg);
-                onClose();
-            };
-            
-            const currentCategories = CATEGORIES[data.slot] || [];
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-sm rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold tracking-tight">新增單品</h3>
-                            <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
-                        </div>
-                        <div className="space-y-6">
-                            {/* Slot & Category */}
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">部位與類別</label>
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2 pb-1">
-                                    {SLOTS.map(s => (
-                                        <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${data.slot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
-                                    ))}
-                                </div>
-                                <select className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-black mt-2" value={data.category} onChange={e => setData({...data, category: e.target.value})}>
-                                    {currentCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-
-                            {/* Image Upload */}
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">單品照片</label>
-                                <div 
-                                    onClick={() => fileInputRef.current.click()}
-                                    className={`w-full h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${data.image ? 'border-black bg-white' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
-                                >
-                                    {data.image ? (
-                                        <>
-                                            <img src={data.image} className="w-full h-full object-contain" alt="Preview" />
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <span className="text-white text-xs font-bold">點擊更換</span>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-center text-gray-400">
-                                            <div className="bg-gray-100 p-3 rounded-full mb-2 mx-auto w-fit">
-                                                <Icon name="camera" className="w-6 h-6 text-gray-500" />
-                                            </div>
-                                            <span className="text-xs font-bold block text-gray-500">上傳去背 PNG</span>
-                                            <span className="text-[9px] block mt-1">記憶體暫存模式 (重整即消失)</span>
-                                        </div>
-                                    )}
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        onChange={handleFileChange} 
-                                        accept="image/png, image/jpeg" 
-                                        style={{ display: 'none' }} 
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Colors */}
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">主要顏色</label>
-                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
-                                    {ALL_COLORS.map(c => (
-                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer group flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
-                                            <div 
-                                                className={`w-6 h-6 rounded-full transition-all shadow-sm ${data.color === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
-                                                style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
-                                            ></div>
-                                            <span className={`text-[8px] font-bold ${data.color === c.id ? 'text-black' : 'text-gray-400'}`}>{c.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* V13.5: Split Buttons */}
-                        <div className="mt-8 flex gap-3">
-                            <button 
-                                onClick={() => handleSave(false)} 
-                                className="flex-1 py-4 bg-gray-100 text-gray-600 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-200"
-                            >
-                                僅加入衣櫥
-                            </button>
-                            <button 
-                                onClick={() => handleSave(true)} 
-                                className="flex-[2] py-4 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg"
-                            >
-                                穿上並預覽
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const InteractiveMarker = ({ x, y, onClick }) => (
-            <div 
-                onClick={(e) => { e.stopPropagation(); onClick(); }}
-                className="absolute z-50 w-3 h-3 bg-white rounded-full cursor-pointer marker-pulse transform -translate-x-1/2 -translate-y-1/2 hover:scale-150 transition-transform duration-200 shadow-lg"
-                style={{ left: `${x}%`, top: `${y}%` }}
-            />
-        );
-
         const GhostEngine = ({ outfit, onSlotClick }) => {
-            const { coat, outer, inner, bottom, shoes } = outfit;
-            const renderMarkers = () => {
-                const targetSlots = ['outer', 'inner', 'bottom', 'shoes'];
-                return targetSlots.map(sid => {
-                    const pos = getSlotDefaultPos(sid);
-                    if(pos) return <InteractiveMarker key={sid} x={pos.x} y={pos.y} onClick={() => onSlotClick(sid)} />;
-                });
-            };
-
+            const { outer, inner, bottom, shoes } = outfit;
             return (
-                <div className="w-full mb-6 flex flex-col items-center animate-fade-in">
-                    {/* V13.5: 9:16 Aspect Ratio Container */}
-                    <div className="ghost-canvas-container rounded-3xl border-b border-gray-100 relative bg-white">
-                        {shoes && <img src={getAssetUrl(shoes)} className="ghost-layer z-10" alt="Shoes" />}
-                        {bottom && <img src={getAssetUrl(bottom)} className="ghost-layer z-20" alt="Bottom" />}
-                        {inner && <img src={getAssetUrl(inner)} className="ghost-layer z-30" alt="Inner" />}
-                        {(coat || outer) && <img src={getAssetUrl(coat || outer)} className="ghost-layer z-40" alt="Outer" />}
-                        {renderMarkers()}
+                <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
+                    <div className="ghost-canvas-container relative">
+                        {/* Z-Index: Shoes(10) < Bottom(20) < Inner(30) < Outer(40) */}
+                        {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
+                        {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
+                        {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
+                        {outer && <img src={outer.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
+                        
+                        {/* Empty State Hint */}
+                        {(!shoes && !bottom && !inner && !outer) && (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
+                                預覽區域 (V13.99)
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -357,39 +199,34 @@
             
             const analysis = useMemo(() => {
                 const items = [outer, inner, bottom, shoes].filter(Boolean);
-                if (items.length < 3) return { title: "準備就緒", msg: "系統待命中...", type: "neutral" };
+                if (items.length < 3) return { title: "準備就緒", msg: "請選擇單品，AI 將為您分析風格。", type: "neutral" };
 
-                const isLeather = outer?.category?.includes('皮衣');
-                const isFormalOuter = outer?.category?.includes('西裝外套');
-                const isFormalBottom = bottom?.category?.includes('西裝褲');
-                const isDenim = bottom?.category?.includes('丹寧');
+                const tags = items.map(i => i.tag);
+                const count = (t) => tags.filter(x => x === t).length;
 
-                if (isLeather && (isDenim || isFormalBottom)) {
-                    return { title: "✨ 經典極簡 (Classic Minimalist)", msg: "利用硬挺材質與俐落剪裁形成對比，展現成熟且洗鍊的黃金比例。", type: "success" };
+                // Rules
+                if (outer?.tag === 'Classic' && outer?.name?.includes('皮衣') && (bottom?.tag === 'Classic' || bottom?.tag === 'Gentleman')) {
+                    return { title: "✨ 經典極簡 (Golden Triangle)", msg: "皮衣的硬挺與下身的修身剪裁形成完美對比，展現干場流的極致美學。", type: "success" };
                 }
-                
-                if (isFormalOuter && isFormalBottom) {
-                     return { title: "🎩 經典紳士 (Modern Gentleman)", msg: "成套或半正式的搭配，展現專業與穩重感，適合商務或正式場合。", type: "success" };
+                if (count('Gentleman') >= 2) {
+                    return { title: "🎩 現代紳士 (Modern Gentleman)", msg: "沈穩的單品組合，散發出專業與成熟的氣質，適合商務或正式約會。", type: "success" };
                 }
-
-                const colors = items.map(i => i.color);
-                const isMono = colors.every(c => c === 'black') || colors.every(c => c === 'white') || colors.every(c => c === 'navy');
-                if (isMono) {
-                    return { title: "⚫ 極簡同色系 (Monochrome)", msg: "全身同色系能有效延伸視覺比例。建議混搭不同材質（如霧面與亮面）增加層次。", type: "info" };
+                if (count('Sport') >= 2) {
+                    return { title: "⚡ 都會運動 (Urban Sport)", msg: "機能與舒適兼具，展現充滿活力的都會休閒風格。", type: "info" };
                 }
+                return { title: "🌿 舒適休閒 (Relaxed Casual)", msg: "結構協調的日常搭配，自然隨性，適合週末或輕鬆場合。", type: "neutral" };
 
-                return { title: "🌿 舒適休閒 (Relaxed Casual)", msg: "結構穩定的日常搭配。可嘗試更換內搭顏色或鞋款風格，為造型增添亮點。", type: "neutral" };
             }, [outfit]);
 
             return (
-                <div className={`w-full rounded-xl p-5 border shadow-lg transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
+                <div className={`mx-6 mb-6 rounded-xl p-4 border shadow-sm transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
                     <div className="flex items-start gap-3">
                         <div className={`mt-0.5 p-1.5 rounded-full ${analysis.type === 'success' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}>
                             <Icon name="star" className="w-4 h-4" />
                         </div>
                         <div>
                             <h4 className="text-xs font-bold uppercase tracking-widest mb-1">{analysis.title}</h4>
-                            <p className="text-sm leading-relaxed opacity-90">{analysis.msg}</p>
+                            <p className="text-xs leading-relaxed opacity-90">{analysis.msg}</p>
                         </div>
                     </div>
                 </div>
@@ -398,22 +235,9 @@
 
         // --- 5. MAIN APPLICATION ---
         const App = () => {
-            // V13.5: RAM Only Mode - No localStorage logic for Wardrobe
-            const [wardrobe, setWardrobe] = useState(INITIAL_WARDROBE);
-
+            const [wardrobe] = useState(STATIC_INVENTORY);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
-            const [pickingSlot, setPickingSlot] = useState(null);
-            const [activeTab, setActiveTab] = useState('align');
             const [inventoryTab, setInventoryTab] = useState('outer'); 
-            const [showAddModal, setShowAddModal] = useState(false);
-
-            // V13.5: Handle Add Item (Update RAM)
-            const handleAddItem = (newItem, shouldEquip) => {
-                setWardrobe(prev => [...prev, newItem]);
-                if (shouldEquip) {
-                    setOutfit(prev => ({ ...prev, [newItem.slot]: newItem })); 
-                }
-            };
 
             const handleRandomStyle = () => {
                 const newOutfit = { ...outfit }; 
@@ -421,9 +245,8 @@
                 let filledCount = 0;
 
                 targets.forEach(slot => {
-                    if (outfit[slot] || (slot === 'outer' && outfit.coat)) return; 
-
-                    const candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
+                    if (outfit[slot]) return; 
+                    const candidates = wardrobe.filter(item => item.slot === slot);
                     if (candidates.length > 0) {
                         const randomItem = candidates[Math.floor(Math.random() * candidates.length)];
                         newOutfit[slot] = randomItem;
@@ -432,50 +255,46 @@
                 });
                 
                 if (filledCount === 0) {
-                    alert("⚠️ 提示：目前所有部位都已穿上。請先移除部分單品，AI 才能為您隨機填補。");
+                    alert("提示：全身已穿滿，請先脫下部分單品，AI 才能隨機填補。");
                 } else {
                     setOutfit(newOutfit);
                 }
             };
 
             const handleClearAll = () => {
-                setOutfit({ coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null });
+                setOutfit(DEFAULT_OUTFIT);
             };
 
             const handleClearSlot = (slot) => {
                 setOutfit(prev => ({ ...prev, [slot]: null }));
             };
 
-            const renderItemCard = (item, onClick, isSelected, onDelete) => {
-                const color = ALL_COLORS.find(c => c.id === item.color) || ALL_COLORS[0];
-                const catLabel = item.category ? item.category : '未知';
+            // V13.99 Logic: Hide card if image fails loading (Demo Safety)
+            const renderItemCard = (item, onClick, isSelected) => {
                 return (
-                    <div key={item.id} onClick={() => onClick(item)} className={`p-3 bg-white rounded-xl border relative cursor-pointer transition-all ${isSelected ? 'border-black shadow-md bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}>
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-[9px] font-bold uppercase text-gray-400">{item.slot}</span>
-                            <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: color.hex}}></div>
+                    <div 
+                        key={item.id} 
+                        onClick={() => onClick(item)} 
+                        className={`item-card p-3 bg-white rounded-xl border relative cursor-pointer transition-all ${isSelected ? 'border-black shadow-md ring-1 ring-black' : 'border-gray-100 hover:border-gray-300'}`}
+                    >
+                        <div className="w-full aspect-[3/4] mb-2 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                            <img 
+                                src={item.image} 
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                    // V13.99 Safety: Hide item if image missing
+                                    e.target.closest('.item-card').style.display = 'none';
+                                }} 
+                            />
                         </div>
-                        <div className="font-bold text-xs text-gray-900 truncate">{catLabel}</div>
-                        {item.image && <span className="absolute top-1 right-6 text-[8px] bg-gray-100 px-1 rounded text-gray-500">IMG</span>}
-                        {onDelete && <button onClick={(e)=>{e.stopPropagation(); onDelete(item.id)}} className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>}
-                        {isSelected && <div className="absolute bottom-1 right-1 text-black"><Icon name="check" className="w-3 h-3"/></div>}
-                    </div>
-                );
-            };
 
-            const renderPicker = () => {
-                if (!pickingSlot) return null;
-                const items = wardrobe.filter(i => i.slot === pickingSlot || (pickingSlot === 'outer' && i.slot === 'coat')); 
-                return (
-                    <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center pt-12 md:pt-6">
-                            <h3 className="font-bold text-lg uppercase">選擇 {pickingSlot}</h3>
-                            <button onClick={() => setPickingSlot(null)} className="text-sm font-bold text-gray-400">關閉</button>
+                        <div className="flex justify-between items-start mb-1">
+                            <span className="text-[9px] font-bold uppercase text-gray-400">{item.slot}</span>
+                            <span className={`style-tag tag-${item.tag}`}>{item.tag}</span>
                         </div>
-                        <div className="p-6 grid grid-cols-2 gap-3 overflow-y-auto pb-24">
-                            <div onClick={() => { setOutfit({...outfit, [pickingSlot]: null}); setPickingSlot(null); }} className="p-4 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 text-xs font-bold">卸下 (NONE)</div>
-                            {items.map(item => renderItemCard(item, (i) => { setOutfit({...outfit, [pickingSlot]: i}); setPickingSlot(null); }, outfit[pickingSlot]?.id === item.id))}
-                        </div>
+                        <div className="font-bold text-sm text-gray-900 truncate">{item.name}</div>
+                        
+                        {isSelected && <div className="absolute bottom-2 right-2 text-black"><Icon name="check" className="w-4 h-4"/></div>}
                     </div>
                 );
             };
@@ -487,101 +306,92 @@
 
             return (
                 <div className="app-container">
-                    <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
+                    {/* Header */}
+                    <div className="px-6 pt-6 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V13.5 Stable</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V13.99</span>
                         </h1>
-                        <div className="flex gap-2">
-                            <button onClick={() => setActiveTab('wardrobe')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='wardrobe' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>衣櫥</button>
-                            <button onClick={() => setActiveTab('align')} className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${activeTab==='align' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>校準</button>
-                        </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto no-scrollbar p-6 relative">
-                        {activeTab === 'align' && (
-                            <>
-                                <GhostEngine outfit={outfit} onSlotClick={setPickingSlot} />
-                                <CritiquePanel outfit={outfit} />
-                                
-                                <div className="mt-6 flex gap-2">
-                                    <button 
-                                        onClick={handleClearAll}
-                                        className="flex-1 py-4 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                                    >
-                                        <Icon name="trash" className="w-4 h-4" /> 全部脫下
-                                    </button>
-                                    <button 
-                                        onClick={handleRandomStyle}
-                                        className="flex-[2] py-4 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
-                                    >
-                                        <Icon name="dice" className="w-5 h-5" /> 隨機補位 (AI)
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-4 gap-2 mt-8 opacity-50 hover:opacity-100 transition-opacity pb-8">
-                                    {['outer','inner','bottom','shoes'].map(slot => (
-                                        <div key={slot} className="relative group">
-                                            <div onClick={() => setPickingSlot(slot)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-transparent'}`}>
-                                                <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
-                                                {outfit[slot] ? <div className="w-3 h-3 rounded-full border border-gray-200" style={{background: ALL_COLORS.find(c=>c.id===outfit[slot].color)?.hex}}></div> : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
-                                            </div>
-                                            {outfit[slot] && (
-                                                <button 
-                                                    onClick={() => handleClearSlot(slot)}
-                                                    className="absolute -top-2 -right-2 bg-gray-200 text-gray-600 rounded-full p-1 shadow hover:bg-red-100 hover:text-red-500 transition-colors z-20"
-                                                >
-                                                    <Icon name="x" className="w-3 h-3" />
-                                                </button>
+                    <div className="flex-1 overflow-y-auto no-scrollbar relative bg-gray-50">
+                        {/* Visualizer */}
+                        <GhostEngine outfit={outfit} />
+                        
+                        {/* Controls: Active Slots */}
+                        <div className="px-6 mb-6">
+                            <div className="grid grid-cols-4 gap-2 mb-6">
+                                {['outer','inner','bottom','shoes'].map(slot => (
+                                    <div key={slot} className="relative group">
+                                        <div 
+                                            onClick={() => setInventoryTab(slot)}
+                                            className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}
+                                        >
+                                            <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
+                                            {outfit[slot] ? (
+                                                <div className={`w-3 h-3 rounded-full bg-black`}></div>
+                                            ) : (
+                                                <span className="text-xs text-gray-300 font-bold">+</span>
                                             )}
                                         </div>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-
-                        {activeTab === 'wardrobe' && (
-                            <div className="pb-24 flex flex-col min-h-full">
-                                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                                    {INVENTORY_TABS.map(tab => (
-                                        <button 
-                                            key={tab.id} 
-                                            onClick={() => setInventoryTab(tab.id)}
-                                            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-white text-gray-400 border border-gray-100'}`}
-                                        >
-                                            {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        {INVENTORY_TABS.find(t=>t.id===inventoryTab)?.label} ({currentFilteredWardrobe.length})
-                                    </h2>
-                                </div>
-
-                                {currentFilteredWardrobe.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-3 mb-8">
-                                        {currentFilteredWardrobe.map(item => renderItemCard(
-                                            item, 
-                                            (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
-                                            outfit[item.slot]?.id === item.id,
-                                            (id) => setWardrobe(w => w.filter(x => x.id !== id))
-                                        ))}
+                                        {outfit[slot] && (
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleClearSlot(slot); }}
+                                                className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 rounded-full p-1 shadow hover:text-red-500 z-20"
+                                            >
+                                                <Icon name="x" className="w-3 h-3" />
+                                            </button>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="py-12 text-center text-gray-400 text-xs border-2 border-dashed border-gray-200 rounded-xl mb-8">
-                                        尚無單品
-                                    </div>
-                                )}
-                                
-                                <button onClick={() => setShowAddModal(true)} className="absolute bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-30 cursor-pointer border border-gray-800"><Icon name="plus" className="w-6 h-6" /></button>
+                                ))}
                             </div>
-                        )}
-                    </div>
 
-                    {renderPicker()}
-                    <AddItemModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />
+                            <div className="flex gap-3">
+                                <button 
+                                    type="button"
+                                    onClick={handleClearAll}
+                                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                >
+                                    <Icon name="trash" className="w-4 h-4" /> 全部脫下
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={handleRandomStyle}
+                                    className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                >
+                                    <Icon name="dice" className="w-4 h-4" /> 隨機補位 (AI)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Critique */}
+                        <CritiquePanel outfit={outfit} />
+
+                        {/* Inventory Section (Locked for Demo) */}
+                        <div className="bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] min-h-[400px] p-6">
+                            <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                                {INVENTORY_TABS.map(tab => (
+                                    <button 
+                                        type="button"
+                                        key={tab.id} 
+                                        onClick={() => setInventoryTab(tab.id)}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pb-24">
+                                {currentFilteredWardrobe.map(item => renderItemCard(
+                                    item, 
+                                    (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
+                                    outfit[item.slot]?.id === item.id
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         };
