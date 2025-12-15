@@ -3,30 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V14.1 - Final Demo</title>
+    <title>Minimalist V18.1 - Final Polish</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V14.1 嚴格還原 V13.99 版面] */
+        /* [V18.1 - Final Polish Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #222; /* 深色背景凸顯手機框 */
+            background-color: #222; 
             color: #111; 
             margin: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
-            justify-content: center; /* 水平置中 */
+            justify-content: center; 
             align-items: flex-start;
         }
         
-        /* 核心容器：模擬手機 App (V13.99 Standard) */
         .app-container {
             width: 100%;
-            max-width: 480px; /* 嚴格鎖定手機寬度 */
+            max-width: 480px; 
             min-height: 100vh;
+            min-height: 100dvh;
             background-color: #ffffff;
             position: relative;
-            box-shadow: 0 0 60px rgba(0,0,0,0.6); /* 懸浮感 */
+            box-shadow: 0 0 60px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
         }
@@ -38,9 +39,8 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* 9:16 黃金比例畫布 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
@@ -62,20 +62,74 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* 風格標籤 */
-        .style-tag {
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+        /* Segment Control */
+        .segment-control {
+            background-color: #f3f4f6;
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 1.5rem;
         }
-        .tag-Classic { background: #e5e7eb; color: #374151; }
-        .tag-Gentleman { background: #1e3a8a; color: white; }
-        .tag-Casual { background: #fef3c7; color: #92400e; }
-        .tag-Sport { background: #d1fae5; color: #065f46; }
+        .segment-btn {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            color: #9ca3af;
+        }
+        .segment-btn.active {
+            background-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
 
+        /* Dense Card (Maximized Image) */
+        .dense-card {
+            aspect-ratio: 1/1;
+            position: relative;
+            background: #fff;
+            border-radius: 0.75rem;
+            border: 1px solid #f3f4f6;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s;
+            padding: 0; /* No Padding */
+        }
+        .dense-card:active { transform: scale(0.98); }
+        .dense-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 2px;
+        }
+
+        /* Radio Button Group for Sleeve */
+        .radio-group-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #6b7280;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .radio-group-input:checked + .radio-group-label {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
     </style>
 </head>
 <body>
@@ -86,87 +140,327 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- 1. GENERIC STATIC INVENTORY (V14.0 Logic) ---
-        // 自動生成 o1-o10, i1-i10 等路徑，並賦予通用名稱
-        
-        const generateGenericInventory = () => {
-            const items = [];
-            let idCounter = 1;
-            const styles = ['Classic', 'Gentleman', 'Casual', 'Sport']; 
-
-            const createCategoryItems = (slot, prefix, label, count) => {
-                for (let i = 1; i <= count; i++) {
-                    items.push({
-                        id: idCounter++,
-                        slot: slot,
-                        // Generic Naming (V14.0)
-                        name: `${label} ${i.toString().padStart(2, '0')}`, 
-                        image: `./${prefix}${i}.png`, // e.g., ./o1.png
-                        tag: styles[(i - 1) % styles.length], 
-                        category: label 
-                    });
-                }
-            };
-
-            // Generate 10 items per category
-            createCategoryItems('outer', 'o', '外套', 10);
-            createCategoryItems('inner', 'i', '內搭', 10);
-            createCategoryItems('bottom', 'b', '下身', 10);
-            createCategoryItems('shoes', 's', '鞋款', 10);
-
-            return items;
+        // --- 1. CORE UTILS: IndexedDB ---
+        const DB_CONFIG = {
+            name: 'MinimalistVault_V1', 
+            version: 1,
+            store: 'inventory'
         };
 
-        const STATIC_INVENTORY = generateGenericInventory();
+        const dbHelper = {
+            open: () => {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(DB_CONFIG.store)) {
+                            db.createObjectStore(DB_CONFIG.store, { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            addItem: async (item) => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readwrite');
+                    const store = tx.objectStore(DB_CONFIG.store);
+                    const request = store.add(item);
+                    request.onsuccess = () => resolve({ ...item, id: request.result });
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            getAllItems: async () => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readonly');
+                    const store = tx.objectStore(DB_CONFIG.store);
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            deleteItem: async (id) => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readwrite');
+                    const store = tx.objectStore(DB_CONFIG.store);
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        };
 
-        // --- 2. CONFIG & HELPERS ---
-        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null, bag: null, jewelry: null };
+        // --- 2. LOGIC MAPPING & CONSTANTS ---
+
+        const ITEM_TYPES = {
+            coat: ['大衣', '風衣'], 
+            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨/背心'],
+            inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
+            bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲'],
+            shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
+        };
+
+        // Strict Winter Keywords (Blocked in Summer)
+        const WINTER_KEYWORDS = ['羽絨', '大衣', '靴', '毛衣', '針織', 'Down', 'Coat', 'Boots', 'Knit'];
+
+        const STYLE_MAP = {
+            '西裝外套': ['Formal', 'Smart Casual'],
+            '襯衫': ['Formal', 'Smart Casual'],
+            '西裝褲': ['Formal', 'Smart Casual'],
+            '皮鞋': ['Formal', 'Smart Casual'],
+            '樂福鞋': ['Formal', 'Smart Casual'],
+            '大衣': ['Formal', 'Smart Casual'],
+            '風衣': ['Formal', 'Smart Casual'],
+
+            'T-shirt': ['Smart Casual', 'Casual'],
+            'Polo衫': ['Smart Casual', 'Casual'],
+            '牛仔褲': ['Smart Casual', 'Casual'],
+            '卡其褲': ['Smart Casual', 'Casual'],
+            '球鞋': ['Smart Casual', 'Casual'],
+            '皮衣': ['Smart Casual', 'Casual'],
+            '夾克': ['Smart Casual', 'Casual'],
+            '靴子': ['Smart Casual', 'Casual'],
+            '毛衣/針織': ['Smart Casual', 'Casual'],
+
+            '帽T/衛衣': ['Casual'],
+            '短褲': ['Casual'],
+            '羽絨/背心': ['Casual']
+        };
 
         const SLOTS = [
+            { id: 'coat', label: '大衣' },
             { id: 'outer', label: '外套' },
             { id: 'inner', label: '內搭' },
             { id: 'bottom', label: '下身' },
             { id: 'shoes', label: '鞋款' }
         ];
 
+        const OCCASIONS = [
+            { id: 'Formal', label: '正式' },
+            { id: 'Smart Casual', label: '大人感' },
+            { id: 'Casual', label: '休閒' }
+        ];
+
+        const SEASONS = [
+            { id: 'Winter', label: '❄ 冬季' },
+            { id: 'Summer', label: '☀ 夏季' }
+        ];
+
+        const BASE_COLORS = [
+            { id: 'black', hex: '#1A1A1A', name: '黑' },
+            { id: 'white', hex: '#FFFFFF', name: '白', border: true },
+            { id: 'gray', hex: '#808080', name: '灰' },
+            { id: 'navy', hex: '#1E3A8A', name: '深藍' },
+            { id: 'beige', hex: '#C3B091', name: '大地' },
+            { id: 'burgundy', hex: '#991b1b', name: '酒紅' }
+        ];
+
+        const SPECIAL_COLORS = [
+            { id: 'red', hex: '#FF0000', name: '鮮紅' },
+            { id: 'yellow', hex: '#FFD700', name: '亮黃' },
+            { id: 'blue', hex: '#0000FF', name: '寶藍' },
+            { id: 'green', hex: '#008000', name: '鮮綠' },
+            { id: 'special', hex: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', name: '彩虹' }
+        ];
+
+        const ALL_COLORS = [...BASE_COLORS, ...SPECIAL_COLORS];
+
         const INVENTORY_TABS = [
-            { id: 'outer', label: '外套', slots: ['outer'] },
+            { id: 'outer', label: '外套', slots: ['outer', 'coat'] },
             { id: 'inner', label: '內搭', slots: ['inner'] },
             { id: 'bottom', label: '下身', slots: ['bottom'] },
             { id: 'shoes', label: '鞋款', slots: ['shoes'] }
         ];
 
+        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
+
         // --- 3. ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
+                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
                 trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
                 check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
-                dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>,
-                star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-                x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                camera: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+                x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
         // --- 4. COMPONENTS ---
 
+        const AddItemModal = ({ isOpen, onClose, onAdd }) => {
+            const [data, setData] = useState({ 
+                slot: 'outer', 
+                itemType: ITEM_TYPES['outer'][0], 
+                color: 'black', 
+                image: null,
+                rawFile: null,
+                sleeve: 'sleeved' 
+            });
+            const [isProcessing, setIsProcessing] = useState(false);
+            const fileInputRef = useRef(null);
+            
+            const handleSlotChange = (newSlot) => {
+                const defaultType = ITEM_TYPES[newSlot] ? ITEM_TYPES[newSlot][0] : '';
+                setData(prev => ({ ...prev, slot: newSlot, itemType: defaultType }));
+            };
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const preview = URL.createObjectURL(file);
+                    setData(prev => ({ ...prev, image: preview, rawFile: file }));
+                }
+            };
+
+            const handleSave = async (shouldEquip) => {
+                if (!data.rawFile) {
+                    alert("請先上傳圖片！");
+                    return;
+                }
+
+                setIsProcessing(true);
+                try {
+                    const determinedStyles = STYLE_MAP[data.itemType] || ['Casual'];
+
+                    const newItem = {
+                        slot: data.slot,
+                        category: data.itemType, 
+                        color: data.color,
+                        style: determinedStyles, 
+                        sleeve: data.sleeve, 
+                        image: data.rawFile, 
+                        createdAt: Date.now()
+                    };
+
+                    await onAdd(newItem, shouldEquip);
+                    onClose();
+                } catch (e) {
+                    alert("存檔失敗: " + e.message);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            if(!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white w-full max-w-sm rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[90vh] overflow-y-auto relative pb-20">
+                        {isProcessing && (
+                            <div className="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mb-2"></div>
+                                <span className="text-xs font-bold text-gray-500">入庫中...</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold tracking-tight">新增單品</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">部位</label>
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2 pb-1">
+                                    {SLOTS.map(s => (
+                                        <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${data.slot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">種類</label>
+                                <select id="item-type" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-black" value={data.itemType} onChange={e => setData({...data, itemType: e.target.value})}>
+                                    {ITEM_TYPES[data.slot]?.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+
+                            {data.slot === 'inner' && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">袖型</label>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1">
+                                            <input type="radio" id="sleeve-sleeveless" name="sleeve" value="sleeveless" className="hidden radio-group-input" checked={data.sleeve === 'sleeveless'} onChange={() => setData({...data, sleeve: 'sleeveless'})} />
+                                            <label htmlFor="sleeve-sleeveless" className="radio-group-label">無袖 (內搭)</label>
+                                        </div>
+                                        <div className="flex-1">
+                                            <input type="radio" id="sleeve-sleeved" name="sleeve" value="sleeved" className="hidden radio-group-input" checked={data.sleeve === 'sleeved'} onChange={() => setData({...data, sleeve: 'sleeved'})} />
+                                            <label htmlFor="sleeve-sleeved" className="radio-group-label">有袖 (單穿)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">基礎色</label>
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
+                                    {BASE_COLORS.map(c => (
+                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
+                                            <div className={`w-8 h-8 rounded-full transition-all shadow-sm ${data.color === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}></div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 mt-2">特殊色</label>
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
+                                    {SPECIAL_COLORS.map(c => (
+                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setData({...data, color: c.id})}>
+                                            <div className={`w-8 h-8 rounded-full transition-all shadow-sm ${data.color === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div 
+                                onClick={() => fileInputRef.current.click()}
+                                className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group ${data.image ? 'border-black bg-white' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
+                            >
+                                {data.image ? (
+                                    <>
+                                        <img src={data.image} className="w-full h-full object-contain" alt="Preview" />
+                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-white text-xs font-bold">更換圖片</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center text-gray-400">
+                                        <Icon name="camera" className="w-6 h-6 mx-auto mb-1 text-gray-400" />
+                                        <span className="text-xs font-bold block">點擊上傳</span>
+                                    </div>
+                                )}
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex gap-3">
+                            <button onClick={() => handleSave(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-200">加入衣櫥</button>
+                            <button onClick={() => handleSave(true)} className="flex-[2] py-4 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg">穿上並預覽</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // B. Ghost Engine
         const GhostEngine = ({ outfit }) => {
-            const { outer, inner, bottom, shoes } = outfit;
+            const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
-                        {/* Z-Index: Shoes(10) < Bottom(20) < Inner(30) < Outer(40) */}
-                        {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" />}
-                        {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" />}
-                        {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" />}
-                        {outer && <img src={outer.image} className="ghost-layer z-40" alt="Outer" />}
+                        {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" />}
+                        {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" />}
+                        {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" />}
+                        {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" />}
                         
-                        {/* Empty State */}
-                        {(!shoes && !bottom && !inner && !outer) && (
+                        {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
-                                V14.1 智慧展示區
+                                V18.1 Final Polish
                             </div>
                         )}
                     </div>
@@ -174,40 +468,31 @@
             );
         };
 
-        const CritiquePanel = ({ outfit }) => {
-            const { outer, inner, bottom, shoes } = outfit;
-            
-            const analysis = useMemo(() => {
-                const items = [outer, inner, bottom, shoes].filter(Boolean);
-                if (items.length < 3) return { title: "準備就緒", msg: "請選擇單品，AI 將為您分析風格。", type: "neutral" };
-
-                // Analysis based on Tags
-                const tags = items.map(i => i.tag);
-                const count = (t) => tags.filter(x => x === t).length;
-
-                if (count('Gentleman') >= 2) {
-                    return { title: "🎩 現代紳士 (Modern Gentleman)", msg: "沈穩的單品組合，散發出專業與成熟的氣質，適合商務或正式約會。", type: "success" };
-                }
-                if (count('Sport') >= 2) {
-                    return { title: "⚡ 都會運動 (Urban Sport)", msg: "機能與舒適兼具，展現充滿活力的都會休閒風格。", type: "info" };
-                }
-                if (count('Classic') >= 2) {
-                    return { title: "✨ 經典極簡 (Classic Minimalist)", msg: "利用基礎單品構建出永不過時的簡約美學。", type: "success" };
-                }
-                return { title: "🌿 舒適休閒 (Relaxed Casual)", msg: "結構協調的日常搭配，自然隨性，適合週末或輕鬆場合。", type: "neutral" };
-
-            }, [outfit]);
-
+        // C. Filter Controls
+        const FilterControls = ({ occasion, setOccasion, season, setSeason }) => {
             return (
-                <div className={`mx-6 mb-6 rounded-xl p-4 border shadow-sm transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
-                    <div className="flex items-start gap-3">
-                        <div className={`mt-0.5 p-1.5 rounded-full ${analysis.type === 'success' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}>
-                            <Icon name="star" className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <h4 className="text-xs font-bold uppercase tracking-widest mb-1">{analysis.title}</h4>
-                            <p className="text-xs leading-relaxed opacity-90">{analysis.msg}</p>
-                        </div>
+                <div className="flex flex-col gap-2 mb-2">
+                    <div className="segment-control">
+                        {OCCASIONS.map(occ => (
+                            <button
+                                key={occ.id}
+                                className={`segment-btn ${occasion === occ.id ? 'active' : ''}`}
+                                onClick={() => setOccasion(occ.id)}
+                            >
+                                {occ.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="segment-control mt-0">
+                        {SEASONS.map(s => (
+                            <button
+                                key={s.id}
+                                className={`segment-btn ${season === s.id ? 'active' : ''}`}
+                                onClick={() => setSeason(s.id)}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             );
@@ -215,100 +500,142 @@
 
         // --- 5. MAIN APPLICATION ---
         const App = () => {
-            const [wardrobe] = useState(STATIC_INVENTORY);
+            const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [inventoryTab, setInventoryTab] = useState('outer'); 
-            
-            // V14.1: Track Valid Items (Smart Random Core)
-            const [validItemIds, setValidItemIds] = useState(new Set());
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [occasion, setOccasion] = useState('Smart Casual'); 
+            const [season, setSeason] = useState('Winter'); 
 
-            // Image Load Handler
-            const handleImageLoad = useCallback((id) => {
-                setValidItemIds(prev => new Set(prev).add(id));
-            }, []);
+            const loadData = async () => {
+                try {
+                    const items = await dbHelper.getAllItems();
+                    const displayItems = items.map(item => {
+                        let url = null;
+                        if (item.image instanceof Blob || item.image instanceof File) {
+                            url = URL.createObjectURL(item.image);
+                        } else if (typeof item.image === 'string') {
+                            url = item.image; 
+                        }
+                        
+                        let styles = item.style;
+                        if (!styles || (Array.isArray(styles) && styles.length === 0)) {
+                            styles = STYLE_MAP[item.category] || ['Smart Casual'];
+                        }
 
-            // Image Error Handler
-            const handleImageError = useCallback((id) => {
-                setValidItemIds(prev => {
-                    const next = new Set(prev);
-                    next.delete(id);
-                    return next;
-                });
-            }, []);
-
-            // V14.1 Core: Smart Random (Filter by validItemIds)
-            const handleSmartRandom = () => {
-                const newOutfit = { ...outfit }; 
-                const targets = ['outer', 'inner', 'bottom', 'shoes'];
-                let filledCount = 0;
-
-                targets.forEach(slot => {
-                    if (outfit[slot]) return; 
-
-                    const candidates = wardrobe.filter(item => 
-                        item.slot === slot && validItemIds.has(item.id)
-                    );
-
-                    if (candidates.length > 0) {
-                        const randomItem = candidates[Math.floor(Math.random() * candidates.length)];
-                        newOutfit[slot] = randomItem;
-                        filledCount++;
-                    }
-                });
-                
-                if (filledCount === 0) {
-                    const anyValid = wardrobe.some(i => validItemIds.has(i.id));
-                    if (!anyValid) {
-                        alert("⚠️ 尚未偵測到有效圖片。請確認檔案路徑 (./o1.png 等) 是否正確。");
-                    } else {
-                        alert("目前全身已穿滿，請先脫下部分單品，AI 才能為您填補空缺。");
-                    }
-                } else {
-                    setOutfit(newOutfit);
+                        return { ...item, displayUrl: url, style: styles };
+                    });
+                    setWardrobe(displayItems);
+                } catch (e) {
+                    console.error("DB Load Failed:", e);
                 }
             };
 
-            const handleClearAll = () => {
-                setOutfit(DEFAULT_OUTFIT);
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const handleAddItem = async (newItem, shouldEquip) => {
+                try {
+                    await dbHelper.addItem(newItem);
+                    await loadData();
+                    if (shouldEquip) {
+                        const displayUrl = URL.createObjectURL(newItem.image);
+                        const displayItem = { ...newItem, displayUrl };
+                        setOutfit(prev => ({ ...prev, [newItem.slot]: displayItem }));
+                    }
+                } catch (e) {
+                    alert("儲存失敗");
+                }
             };
 
-            const handleClearSlot = (slot) => {
-                setOutfit(prev => ({ ...prev, [slot]: null }));
+            const handleDeleteItem = async (id) => {
+                if(!confirm("確定從資料庫永久刪除？")) return;
+                try {
+                    await dbHelper.deleteItem(id);
+                    await loadData();
+                    setOutfit(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(k => {
+                            if (next[k]?.id === id) next[k] = null;
+                        });
+                        return next;
+                    });
+                } catch (e) {
+                    alert("刪除失敗");
+                }
             };
 
-            const renderItemCard = (item, onClick, isSelected) => {
-                return (
-                    <div 
-                        key={item.id} 
-                        onClick={() => onClick(item)} 
-                        className={`item-card p-3 bg-white rounded-xl border relative cursor-pointer transition-all ${isSelected ? 'border-black shadow-md ring-1 ring-black' : 'border-gray-100 hover:border-gray-300'}`}
-                    >
-                        <div className="w-full aspect-[3/4] mb-2 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center relative">
-                            {/* Loading / Placeholder */}
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-200">...</div>
-                            
-                            <img 
-                                src={item.image} 
-                                className="w-full h-full object-contain relative z-10"
-                                onLoad={() => handleImageLoad(item.id)}
-                                onError={(e) => {
-                                    handleImageError(item.id); 
-                                    // V14.1: Hide visual card if image broken (Demo Safety)
-                                    e.target.closest('.item-card').style.display = 'none'; 
-                                }} 
-                            />
-                        </div>
+            // V18.1: Strict Formal & Summer No-Outer Logic
+            const handleRandom = () => {
+                const newOutfit = { ...outfit };
+                const slots = ['outer', 'inner', 'bottom', 'shoes'];
+                let filledCount = 0;
+                
+                // V18.1 Rule: Summer -> Force Clear Outer
+                if (season === 'Summer') {
+                    newOutfit.outer = null;
+                    newOutfit.coat = null;
+                }
 
-                        <div className="flex justify-between items-start mb-1">
-                            <span className="text-[9px] font-bold uppercase text-gray-400">{item.slot}</span>
-                            <span className={`style-tag tag-${item.tag}`}>{item.tag}</span>
-                        </div>
-                        <div className="font-bold text-sm text-gray-900 truncate">{item.name}</div>
+                slots.forEach(slot => {
+                    // Skip if worn
+                    if (newOutfit[slot]) return; 
+
+                    // V18.1 Rule: Skip Outer slot iteration entirely if Summer
+                    if (season === 'Summer' && (slot === 'outer')) return;
+
+                    let slotCandidates = wardrobe.filter(item => 
+                        item.slot === slot || (slot === 'outer' && item.slot === 'coat')
+                    );
+
+                    // 1. Strict Filter
+                    let candidates = slotCandidates.filter(item => {
+                        const styles = Array.isArray(item.style) ? item.style : [item.style];
                         
-                        {isSelected && <div className="absolute bottom-2 right-2 text-black"><Icon name="check" className="w-4 h-4"/></div>}
-                    </div>
-                );
+                        // Rule A: Style
+                        // V18.1 Rule: Strict Formal (No fallback)
+                        if (!styles.includes(occasion)) return false;
+
+                        // Rule B: Season
+                        if (season === 'Summer') {
+                            const isWinterItem = WINTER_KEYWORDS.some(k => item.category.includes(k));
+                            if (isWinterItem) return false;
+                        }
+
+                        // Rule C: Special Color
+                        if (occasion === 'Formal' && item.color === 'special') return false;
+
+                        return true;
+                    });
+
+                    // 2. Sleeve Logic Priority
+                    if (slot === 'inner' && candidates.length > 0) {
+                        const isLayering = newOutfit.outer || newOutfit.coat;
+                        if (isLayering && season !== 'Summer') {
+                            // Winter Layering -> Sleeveless preference
+                            const sleeveless = candidates.filter(i => i.sleeve === 'sleeveless');
+                            if (sleeveless.length > 0) candidates = sleeveless;
+                        } else if (season === 'Summer') {
+                            // Summer Solo -> Sleeved preference
+                            const sleeved = candidates.filter(i => i.sleeve === 'sleeved');
+                            if (sleeved.length > 0) candidates = sleeved;
+                        }
+                    }
+
+                    // V18.1: Removed Fallback Logic. If candidates is empty, it stays empty.
+
+                    if (candidates.length > 0) {
+                        newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
+                        filledCount++;
+                    }
+                });
+
+                setOutfit(newOutfit);
             };
+
+            const handleClearAll = () => setOutfit(DEFAULT_OUTFIT);
+            const handleClearSlot = (slot) => setOutfit(prev => ({ ...prev, [slot]: null }));
 
             const currentFilteredWardrobe = wardrobe.filter(item => {
                 const activeTab = INVENTORY_TABS.find(t => t.id === inventoryTab);
@@ -317,18 +644,21 @@
 
             return (
                 <div className="app-container">
-                    <div className="px-6 pt-6 pb-4 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
+                    <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V14.1 Final</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.1</span>
                         </h1>
                     </div>
 
+                    <FilterControls 
+                        occasion={occasion} setOccasion={setOccasion}
+                        season={season} setSeason={setSeason}
+                    />
+
                     <div className="flex-1 overflow-y-auto no-scrollbar relative bg-gray-50">
-                        {/* Visualizer */}
                         <GhostEngine outfit={outfit} />
                         
-                        {/* Controls */}
                         <div className="px-6 mb-6">
                             <div className="grid grid-cols-4 gap-2 mb-6">
                                 {['outer','inner','bottom','shoes'].map(slot => (
@@ -339,14 +669,16 @@
                                         >
                                             <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
                                             {outfit[slot] ? (
-                                                <div className={`w-3 h-3 rounded-full bg-black`}></div>
+                                                <div 
+                                                    className="w-3 h-3 rounded-full border border-gray-200" 
+                                                    style={{ backgroundColor: ALL_COLORS.find(c => c.id === outfit[slot].color)?.hex || '#000000' }}
+                                                ></div>
                                             ) : (
                                                 <span className="text-xs text-gray-300 font-bold">+</span>
                                             )}
                                         </div>
                                         {outfit[slot] && (
                                             <button 
-                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleClearSlot(slot); }}
                                                 className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 rounded-full p-1 shadow hover:text-red-500 z-20"
                                             >
@@ -358,50 +690,55 @@
                             </div>
 
                             <div className="flex gap-3">
-                                <button 
-                                    type="button"
-                                    onClick={handleClearAll}
-                                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                                >
+                                <button onClick={handleClearAll} className="flex-1 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform">
                                     <Icon name="trash" className="w-4 h-4" /> 全部脫下
                                 </button>
-                                <button 
-                                    type="button"
-                                    onClick={handleSmartRandom}
-                                    className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
-                                >
-                                    <Icon name="dice" className="w-4 h-4" /> 隨機補位 (Smart)
+                                <button onClick={handleRandom} className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
+                                    <Icon name="dice" className="w-4 h-4" /> 隨機補位
                                 </button>
                             </div>
                         </div>
 
-                        {/* Critique */}
-                        <CritiquePanel outfit={outfit} />
-
-                        {/* Inventory Section */}
-                        <div className="bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] min-h-[400px] p-6">
+                        <div className="bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] min-h-[400px] p-6 pb-24">
                             <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
                                 {INVENTORY_TABS.map(tab => (
                                     <button 
-                                        type="button"
                                         key={tab.id} 
                                         onClick={() => setInventoryTab(tab.id)}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-white text-gray-400 border border-gray-100'}`}
                                     >
                                         {tab.label}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 pb-24">
-                                {currentFilteredWardrobe.map(item => renderItemCard(
-                                    item, 
-                                    (clickedItem) => setOutfit(prev => ({...prev, [clickedItem.slot]: clickedItem})), 
-                                    outfit[item.slot]?.id === item.id
+                            <div className="grid grid-cols-3 gap-2">
+                                {currentFilteredWardrobe.map(item => (
+                                    <div key={item.id} onClick={() => setOutfit(prev => ({...prev, [item.slot]: item}))} className="dense-card cursor-pointer">
+                                        <img src={item.displayUrl} alt={item.category} />
+                                        
+                                        <div 
+                                            className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
+                                            style={{ background: ALL_COLORS.find(c => c.id === item.color)?.hex || '#000' }}
+                                        ></div>
+                                        {outfit[item.slot]?.id === item.id && <div className="absolute inset-0 border-2 border-black rounded-xl pointer-events-none"></div>}
+                                        
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                    </div>
                                 ))}
                             </div>
+                            
+                            {currentFilteredWardrobe.length === 0 && (
+                                <div className="text-center py-12 text-gray-300 text-xs">
+                                    尚無單品
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    <button onClick={() => setShowAddModal(true)} className="absolute bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-30 cursor-pointer border border-gray-800"><Icon name="plus" className="w-6 h-6" /></button>
+
+                    <AddItemModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />
                 </div>
             );
         };
