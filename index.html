@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.3 - Warehouse Picker</title>
+    <title>Minimalist V18.5 - Logic Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V18.1 視覺風格保留] */
+        /* [V18.1 UI 風格] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -110,26 +110,43 @@
             padding: 2px;
         }
 
-        /* Warehouse Picker Grid */
+        /* Warehouse Items (Large) */
         .warehouse-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
             padding-bottom: 2rem;
         }
         .warehouse-item {
-            aspect-ratio: 1/1;
+            aspect-ratio: 3/4;
             border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 4px;
+            border-radius: 12px;
+            padding: 0; 
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
             background: #fff;
+            overflow: hidden;
         }
-        .warehouse-item:hover { border-color: #000; }
-        .warehouse-item:active { transform: scale(0.95); }
+        .warehouse-item:active { transform: scale(0.98); border-color: #000; }
         .warehouse-item img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Style Tag Toggles (In Modal) */
+        .style-toggle {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 700;
+        }
+        .style-toggle.selected {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
     </style>
 </head>
 <body>
@@ -142,10 +159,9 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- 1. CORE UTILS: IndexedDB (User's Wardrobe) ---
-        // 使用者點選後的單品會存在這裡
+        // --- 1. CORE UTILS: IndexedDB ---
         const DB_CONFIG = {
-            name: 'MinimalistVault_V18_3', 
+            name: 'MinimalistVault_V18_5', 
             version: 1,
             store: 'inventory'
         };
@@ -196,17 +212,15 @@
             }
         };
 
-        // --- 2. STATIC ASSETS CONFIG (GitHub/Local) ---
-        // 這裡定義靜態檔案的數量與命名規則
+        // --- 2. STATIC ASSETS & CONFIG ---
         const ASSETS = {
-            outer: 29, // o1.png ~ o29.png
-            bottom: 17, // b1.png ~ b17.png
-            shoes: 10,  // s1.png ~ s10.png
-            inner_i: 12, // i1.png ~ i12.png (Sleeveless)
-            inner_t: 17  // t1.png ~ t17.png (Tops)
+            outer: 29, 
+            bottom: 17, 
+            shoes: 10,  
+            inner_i: 12, 
+            inner_t: 17  
         };
 
-        // --- 3. CONFIG DATA ---
         const SLOTS = [
             { id: 'coat', label: '大衣' },
             { id: 'outer', label: '外套' },
@@ -233,6 +247,12 @@
             { id: 'navy', hex: '#1E3A8A', name: '深藍' },
             { id: 'beige', hex: '#C3B091', name: '大地' }
         ];
+        
+        const SPECIAL_COLORS = [
+            { id: 'burgundy', hex: '#991b1b', name: '酒紅' },
+            { id: 'green', hex: '#008000', name: '鮮綠' },
+            { id: 'denim', hex: '#3B82F6', name: '丹寧' }
+        ];
 
         const INVENTORY_TABS = [
             { id: 'outer', label: '外套', slots: ['outer', 'coat'] },
@@ -243,7 +263,7 @@
 
         const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
 
-        // --- 4. ICONS ---
+        // --- 3. ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
@@ -256,11 +276,13 @@
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
-        // --- 5. COMPONENTS ---
+        // --- 4. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.3 Core)
+        // A. Warehouse Picker Modal (V18.5 with Style Selector)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
+            const [selectedColor, setSelectedColor] = useState('black');
+            const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']); // Default
             
             const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
@@ -269,7 +291,6 @@
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard', name: '西裝褲' }));
                 if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard', name: '皮鞋' }));
                 if (selectedSlot === 'inner') {
-                    // Combine 'i' (sleeveless) and 't' (tops)
                     const sleeveless = range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless', label: '背心', name: '背心/內搭' }));
                     const tops = range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved', label: '有袖', name: 'T恤/襯衫' }));
                     return [...sleeveless, ...tops];
@@ -277,14 +298,26 @@
                 return [];
             };
 
+            const toggleStyle = (styleId) => {
+                setSelectedStyles(prev => {
+                    if (prev.includes(styleId)) return prev.filter(s => s !== styleId);
+                    return [...prev, styleId];
+                });
+            };
+
             const handlePick = (item) => {
+                if (selectedStyles.length === 0) {
+                    alert("請至少選擇一種風格 (Style)");
+                    return;
+                }
+
                 const newItem = {
                     slot: selectedSlot,
-                    image: item.src, // Simple relative path: "o1.png"
+                    image: item.src, 
                     category: item.name,
-                    sleeve: item.type, // 'sleeved' | 'sleeveless' | 'standard'
-                    color: 'black', // Default
-                    style: ['Smart Casual'], // Default
+                    sleeve: item.type, 
+                    color: selectedColor, 
+                    style: selectedStyles, // V18.5: Saves selected styles
                     createdAt: Date.now()
                 };
                 
@@ -296,25 +329,57 @@
 
             return (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-sm rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold tracking-tight">倉庫採購 (點擊入庫)</h3>
+                            <h3 className="text-xl font-bold tracking-tight">倉庫採購</h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
                         </div>
 
-                        {/* Slot Selector */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+                        {/* 1. Slot Selector */}
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                             {SLOTS.filter(s => s.id !== 'coat').map(s => (
-                                <button key={s.id} onClick={() => setSelectedSlot(s.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                <button key={s.id} onClick={() => setSelectedSlot(s.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
                             ))}
                         </div>
 
-                        {/* Warehouse Grid */}
-                        <div className="warehouse-grid flex-1 overflow-y-auto" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem'}}>
+                        {/* 2. Color Picker */}
+                        <div className="mb-3 flex-shrink-0">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">指定顏色 (Color)</p>
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                                {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
+                                    <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
+                                        <div 
+                                            className={`w-8 h-8 rounded-full transition-all shadow-sm ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
+                                            style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
+                                        ></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 3. Style Picker (V18.5 NEW) */}
+                        <div className="mb-4 flex-shrink-0">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">指定風格 (Style) - 可多選</p>
+                            <div className="flex gap-2 flex-wrap">
+                                {OCCASIONS.map(occ => (
+                                    <button 
+                                        key={occ.id} 
+                                        onClick={() => toggleStyle(occ.id)}
+                                        className={`style-toggle ${selectedStyles.includes(occ.id) ? 'selected' : ''}`}
+                                    >
+                                        {occ.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 4. Warehouse Grid */}
+                        <div className="warehouse-grid flex-1 overflow-y-auto">
                             {getWarehouseItems().map((item, idx) => (
-                                <div key={idx} onClick={() => handlePick(item)} className="warehouse-item">
-                                    <img src={item.src} />
+                                <div key={idx} onClick={() => handlePick(item)} className="warehouse-item relative group">
+                                    <img src={`./${item.src}`} />
                                     {item.label && <span className="absolute bottom-1 right-1 text-[8px] bg-gray-100 px-1 rounded opacity-80">{item.label}</span>}
+                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
                                 </div>
                             ))}
                         </div>
@@ -323,26 +388,15 @@
             );
         };
 
-        // B. Ghost Engine (V18.3 Z-Index Fix)
+        // B. Ghost Engine
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
-                        {/* 
-                           V18.3 Z-Index Order:
-                           10: Shoes (Bottom most)
-                           20: Inner (Tucked)
-                           30: Bottom (Covers Shoes)
-                           40: Outer (Covers All)
-                        */}
-                        
                         {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
-                        
                         {inner && <img src={inner.image} className="ghost-layer z-20" alt="Inner" onError={(e) => e.target.style.display='none'} />}
-                        
                         {bottom && <img src={bottom.image} className="ghost-layer z-30" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
-                        
                         {(coat || outer) && <img src={coat?.image || outer?.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
@@ -404,7 +458,7 @@
 
         // --- 5. MAIN APPLICATION ---
         const App = () => {
-            const [wardrobe, setWardrobe] = useState([]); // User's DB Inventory
+            const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [inventoryTab, setInventoryTab] = useState('outer'); 
             const [showWarehouse, setShowWarehouse] = useState(false);
@@ -429,7 +483,6 @@
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
-                    // Auto equip
                     setOutfit(prev => ({ ...prev, [newItem.slot]: newItem }));
                 } catch (e) {
                     alert("儲存失敗");
@@ -453,12 +506,11 @@
                 }
             };
 
-            // V18.3: Season & Sleeve Logic
+            // V18.5: Logic Update (Filter by Style Tags)
             const handleRandom = () => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
-                // 1. Summer Outer Logic
                 if (season === 'Summer') {
                     newOutfit.outer = null;
                     newOutfit.coat = null;
@@ -466,20 +518,23 @@
 
                 slots.forEach(slot => {
                     if (newOutfit[slot]) return; 
-
                     if (season === 'Summer' && (slot === 'outer')) return;
 
                     let candidates = wardrobe.filter(item => 
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
                     );
 
+                    // 1. Style Filter (V18.5 Critical)
+                    candidates = candidates.filter(item => {
+                        if (!item.style) return false; // Safety
+                        return item.style.includes(occasion);
+                    });
+
                     // 2. Sleeve Logic
                     if (slot === 'inner') {
                         if (season === 'Summer') {
-                            // Summer: MUST be 'sleeved'
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
                         } 
-                        // Winter: Any inner allowed
                     }
 
                     if (candidates.length > 0) {
@@ -503,7 +558,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.3</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.5</span>
                         </h1>
                     </div>
 
@@ -525,7 +580,10 @@
                                         >
                                             <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
                                             {outfit[slot] ? (
-                                                <div className="w-3 h-3 rounded-full bg-black"></div>
+                                                <div 
+                                                    className="w-3 h-3 rounded-full border border-gray-200" 
+                                                    style={{ backgroundColor: [...BASE_COLORS, ...SPECIAL_COLORS].find(c => c.id === outfit[slot].color)?.hex || '#000000' }}
+                                                ></div>
                                             ) : (
                                                 <span className="text-xs text-gray-300 font-bold">+</span>
                                             )}
@@ -571,7 +629,20 @@
                                 {currentFilteredWardrobe.map(item => (
                                     <div key={item.id} onClick={() => setOutfit(prev => ({...prev, [item.slot]: item}))} className="dense-card cursor-pointer">
                                         <img src={item.image} alt={item.category} />
+                                        
+                                        <div 
+                                            className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
+                                            style={{ background: [...BASE_COLORS, ...SPECIAL_COLORS].find(c => c.id === item.color)?.hex || '#000' }}
+                                        ></div>
+                                        {/* V18.5 UI: Show Style Dot */}
+                                        <div className="absolute top-1 left-1 flex gap-0.5">
+                                            {item.style && item.style.map(s => (
+                                                <div key={s} className={`w-1 h-1 rounded-full ${s==='Formal'?'bg-blue-800':s==='Casual'?'bg-yellow-400':'bg-gray-400'}`}></div>
+                                            ))}
+                                        </div>
+
                                         {outfit[item.slot]?.id === item.id && <div className="absolute inset-0 border-2 border-black rounded-xl pointer-events-none"></div>}
+                                        
                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                     </div>
                                 ))}
