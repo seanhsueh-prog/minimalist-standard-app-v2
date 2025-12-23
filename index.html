@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.8 - Master Category</title>
+    <title>Minimalist V18.8 - Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V18.8 High-End UI] */
+        /* [V18.8 UI 風格] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -14,7 +14,6 @@
             color: #111; 
             margin: 0;
             min-height: 100vh;
-            min-height: 100dvh;
             display: flex;
             justify-content: center; 
             align-items: flex-start;
@@ -24,7 +23,6 @@
             width: 100%;
             max-width: 480px; 
             min-height: 100vh;
-            min-height: 100dvh;
             background-color: #ffffff;
             position: relative;
             box-shadow: 0 0 60px rgba(0,0,0,0.6);
@@ -62,7 +60,7 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* Segment Control (Main Screen) */
+        /* Segment Control */
         .segment-control {
             background-color: #f3f4f6;
             border-radius: 0.75rem;
@@ -88,7 +86,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Dense Card (Main Inventory) */
+        /* Dense Card */
         .dense-card {
             aspect-ratio: 1/1;
             position: relative;
@@ -110,10 +108,7 @@
             padding: 2px;
         }
 
-        /* Warehouse Items (Large Grid) */
-        .warehouse-grid {
-            /* Handled by Tailwind classes */
-        }
+        /* Warehouse Items */
         .warehouse-item {
             aspect-ratio: 3/4; 
             border: 1px solid #eee;
@@ -149,7 +144,7 @@
             border-color: #000;
         }
 
-        /* Category Pills (Horizontal Scroll) */
+        /* Category Pills */
         .cat-pill {
             padding: 6px 12px;
             border-radius: 999px;
@@ -158,6 +153,7 @@
             white-space: nowrap;
             transition: all 0.2s;
             border: 1px solid #eee;
+            cursor: pointer;
         }
         .cat-pill.active {
             background-color: #000;
@@ -178,7 +174,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
         // --- 1. CORE UTILS: IndexedDB ---
         const DB_CONFIG = {
@@ -233,12 +229,12 @@
             }
         };
 
-        // --- 2. MASTER CATEGORY LIST (V18.8 New) ---
+        // --- 2. MASTER CATEGORY LIST (Strict) ---
         const MASTER_CATEGORIES = {
-            outer: ['雙排扣西裝', '皮衣/飛行夾克', '商務單排西裝'],
-            inner: ['高級襯衫', '奢華內搭T', '針織毛衣', '機能衛衣'],
-            bottom: ['雙打褶西褲', '直筒西裝褲', '極簡牛仔褲', '翻折抽繩褲', '現代工裝褲'],
-            shoes: ['便樂福鞋', '極簡小白鞋', '復古慢跑鞋', '雀爾西靴', '麂皮查卡靴']
+            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
+            inner: ['無袖內搭 (i系列)', '有袖上衣 (t系列)'],
+            bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲'],
+            shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
         };
 
         // --- 3. STATIC ASSETS & CONFIG ---
@@ -307,14 +303,13 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.8 Master Category)
+        // A. Warehouse Picker Modal (V18.8 Logic)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
             const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
-            // V18.8: Track selected category from Master List
-            // Initialize with first item of 'outer'
+            // V18.8: Track selected category (The Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
 
             // Sync category selection when slot changes
@@ -331,10 +326,19 @@
                 if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
+                
+                // V18.8 Inner Logic: Show based on selected Category Pill
                 if (selectedSlot === 'inner') {
-                    const sleeveless = range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
-                    const tops = range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
-                    return [...sleeveless, ...tops];
+                    if (selectedCategory === '無袖內搭 (i系列)') {
+                        return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
+                    } else if (selectedCategory === '有袖上衣 (t系列)') {
+                        return range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
+                    } else {
+                        // Fallback or Initial: Show both? Or just default to sleeveless if pill logic fails
+                        // The UI forces a pill selection, so we rely on that.
+                        // Default to sleeveless if undefined
+                         return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
+                    }
                 }
                 return [];
             };
@@ -434,13 +438,12 @@
                                 {getWarehouseItems().map((item, idx) => (
                                     <div key={idx} onClick={() => handlePick(item)} className="warehouse-item relative group bg-white shadow-sm hover:shadow-md">
                                         <img src={`./${item.src}`} alt="item" />
-                                        {/* Show selected category on hover or always? V18.8: Keep clean */}
                                     </div>
                                 ))}
                             </div>
                             
                             <div className="text-center text-[10px] text-gray-400 mt-4 mb-2">
-                                已選定: {selectedCategory} / {BASE_COLORS.find(c=>c.id===selectedColor)?.name || '特殊'}
+                                已選定: {selectedCategory}
                             </div>
                         </div>
                     </div>
