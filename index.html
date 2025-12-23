@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.8 - Final</title>
+    <title>Minimalist V18.9 - Final Logic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V18.8 UI 風格] */
+        /* [V18.1 UI 風格] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -174,11 +174,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- 1. CORE UTILS: IndexedDB ---
         const DB_CONFIG = {
-            name: 'MinimalistVault_V18_8', 
+            name: 'MinimalistVault_V18_9', 
             version: 1,
             store: 'inventory'
         };
@@ -229,10 +229,10 @@
             }
         };
 
-        // --- 2. MASTER CATEGORY LIST (Strict) ---
+        // --- 2. COMPLETE CATEGORY LIST (V18.9) ---
         const MASTER_CATEGORIES = {
-            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
-            inner: ['無袖內搭 (i系列)', '有袖上衣 (t系列)'],
+            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨/背心'],
+            inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
             bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲'],
             shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
         };
@@ -242,8 +242,8 @@
             outer: 29, 
             bottom: 17, 
             shoes: 10,  
-            inner_i: 12, 
-            inner_t: 17  
+            inner_i: 12, // Sleeveless
+            inner_t: 17  // Sleeved
         };
 
         const SLOTS = [
@@ -303,13 +303,16 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.8 Logic)
+        // A. Warehouse Picker Modal (V18.9 Complete)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
             const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
-            // V18.8: Track selected category (The Pill)
+            // V18.9: Sleeve Sub-tab for Inner
+            const [innerType, setInnerType] = useState('sleeved'); // 'sleeveless' or 'sleeved'
+
+            // Track selected category (Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
 
             // Sync category selection when slot changes
@@ -327,17 +330,12 @@
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
                 
-                // V18.8 Inner Logic: Show based on selected Category Pill
+                // V18.9 Inner Logic: Split by Sleeve Type
                 if (selectedSlot === 'inner') {
-                    if (selectedCategory === '無袖內搭 (i系列)') {
+                    if (innerType === 'sleeveless') {
                         return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
-                    } else if (selectedCategory === '有袖上衣 (t系列)') {
-                        return range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
                     } else {
-                        // Fallback or Initial: Show both? Or just default to sleeveless if pill logic fails
-                        // The UI forces a pill selection, so we rely on that.
-                        // Default to sleeveless if undefined
-                         return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
+                        return range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
                     }
                 }
                 return [];
@@ -359,9 +357,9 @@
                 const newItem = {
                     slot: selectedSlot,
                     image: item.src, 
-                    // V18.8: Save the specific Master Category
+                    // V18.9: Save selected category
                     category: selectedCategory, 
-                    sleeve: item.type, 
+                    sleeve: item.type, // 'sleeved' | 'sleeveless' | 'standard'
                     color: selectedColor, 
                     style: selectedStyles, 
                     createdAt: Date.now()
@@ -377,7 +375,7 @@
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-md rounded-2xl animate-fade-in shadow-2xl h-[95vh] flex flex-col overflow-hidden">
                         
-                        {/* --- Sticky Header (4 Rows) --- */}
+                        {/* --- Sticky Header (5 Rows for Inner) --- */}
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold tracking-tight">倉庫採購</h3>
@@ -391,7 +389,25 @@
                                 ))}
                             </div>
 
-                            {/* Row 2: Category Pills (V18.8 NEW) */}
+                            {/* Row 1.5: Sleeve Filter (Only for Inner) */}
+                            {selectedSlot === 'inner' && (
+                                <div className="flex gap-2 mb-3 flex-shrink-0">
+                                    <button 
+                                        onClick={() => setInnerType('sleeved')}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500'}`}
+                                    >
+                                        有袖上衣 (t系列)
+                                    </button>
+                                    <button 
+                                        onClick={() => setInnerType('sleeveless')}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500'}`}
+                                    >
+                                        無袖內搭 (i系列)
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Row 2: Category Pills */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {MASTER_CATEGORIES[selectedSlot]?.map(cat => (
                                     <button
@@ -443,7 +459,7 @@
                             </div>
                             
                             <div className="text-center text-[10px] text-gray-400 mt-4 mb-2">
-                                已選定: {selectedCategory}
+                                已選定: {selectedCategory} / {BASE_COLORS.find(c=>c.id===selectedColor)?.name || '特殊'}
                             </div>
                         </div>
                     </div>
@@ -570,7 +586,7 @@
                 }
             };
 
-            // V18.5: Logic Update (Filter by Style Tags)
+            // V18.9 Logic Update
             const handleRandom = () => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
@@ -622,7 +638,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.8</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.9</span>
                         </h1>
                     </div>
 
