@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.6 - Layout Fix</title>
+    <title>Minimalist V18.8 - Master Category</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V18.1 UI 風格] */
+        /* [V18.8 High-End UI] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -62,7 +62,7 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* Segment Control */
+        /* Segment Control (Main Screen) */
         .segment-control {
             background-color: #f3f4f6;
             border-radius: 0.75rem;
@@ -88,7 +88,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Dense Card (Main View) */
+        /* Dense Card (Main Inventory) */
         .dense-card {
             aspect-ratio: 1/1;
             position: relative;
@@ -110,12 +110,12 @@
             padding: 2px;
         }
 
-        /* Warehouse Items (V18.6 Layout Fix) */
+        /* Warehouse Items (Large Grid) */
         .warehouse-grid {
-            /* Handled by Tailwind classes in JSX */
+            /* Handled by Tailwind classes */
         }
         .warehouse-item {
-            aspect-ratio: 3/4; /* V18.6: Portrait Ratio */
+            aspect-ratio: 3/4; 
             border: 1px solid #eee;
             border-radius: 12px;
             padding: 0; 
@@ -129,17 +129,12 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        .warehouse-item img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            padding: 8px; /* V18.6: Minimal padding */
-        }
+        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
 
-        /* Style Tag Toggles (In Modal) */
+        /* Style Tag Toggles */
         .style-toggle {
             font-size: 10px;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             border: 1px solid #eee;
             color: #666;
@@ -152,6 +147,26 @@
             background-color: #000;
             color: #fff;
             border-color: #000;
+        }
+
+        /* Category Pills (Horizontal Scroll) */
+        .cat-pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+        }
+        .cat-pill.active {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        .cat-pill.inactive {
+            background-color: #fff;
+            color: #666;
         }
     </style>
 </head>
@@ -167,7 +182,7 @@
 
         // --- 1. CORE UTILS: IndexedDB ---
         const DB_CONFIG = {
-            name: 'MinimalistVault_V18_5', 
+            name: 'MinimalistVault_V18_8', 
             version: 1,
             store: 'inventory'
         };
@@ -218,7 +233,15 @@
             }
         };
 
-        // --- 2. STATIC ASSETS & CONFIG ---
+        // --- 2. MASTER CATEGORY LIST (V18.8 New) ---
+        const MASTER_CATEGORIES = {
+            outer: ['雙排扣西裝', '皮衣/飛行夾克', '商務單排西裝'],
+            inner: ['高級襯衫', '奢華內搭T', '針織毛衣', '機能衛衣'],
+            bottom: ['雙打褶西褲', '直筒西裝褲', '極簡牛仔褲', '翻折抽繩褲', '現代工裝褲'],
+            shoes: ['便樂福鞋', '極簡小白鞋', '復古慢跑鞋', '雀爾西靴', '麂皮查卡靴']
+        };
+
+        // --- 3. STATIC ASSETS & CONFIG ---
         const ASSETS = {
             outer: 29, 
             bottom: 17, 
@@ -269,7 +292,7 @@
 
         const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
 
-        // --- 3. ICONS ---
+        // --- 4. ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
@@ -282,23 +305,35 @@
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
-        // --- 4. COMPONENTS ---
+        // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.6 Layout Fix)
+        // A. Warehouse Picker Modal (V18.8 Master Category)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
             const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
+            // V18.8: Track selected category from Master List
+            // Initialize with first item of 'outer'
+            const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
+
+            // Sync category selection when slot changes
+            const handleSlotChange = (newSlot) => {
+                setSelectedSlot(newSlot);
+                if (MASTER_CATEGORIES[newSlot]) {
+                    setSelectedCategory(MASTER_CATEGORIES[newSlot][0]);
+                }
+            };
+
             const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
             const getWarehouseItems = () => {
-                if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard', name: '西裝外套' }));
-                if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard', name: '西裝褲' }));
-                if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard', name: '皮鞋' }));
+                if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
+                if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
+                if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'inner') {
-                    const sleeveless = range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless', label: '背心', name: '背心/內搭' }));
-                    const tops = range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved', label: '有袖', name: 'T恤/襯衫' }));
+                    const sleeveless = range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
+                    const tops = range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
                     return [...sleeveless, ...tops];
                 }
                 return [];
@@ -320,7 +355,8 @@
                 const newItem = {
                     slot: selectedSlot,
                     image: item.src, 
-                    category: item.name,
+                    // V18.8: Save the specific Master Category
+                    category: selectedCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
                     style: selectedStyles, 
@@ -337,36 +373,47 @@
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-md rounded-2xl animate-fade-in shadow-2xl h-[95vh] flex flex-col overflow-hidden">
                         
-                        {/* --- Sticky Header (Controls) --- */}
-                        <div className="sticky top-0 bg-white z-20 p-6 pb-2 border-b border-gray-100">
+                        {/* --- Sticky Header (4 Rows) --- */}
+                        <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold tracking-tight">倉庫採購</h3>
-                                <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購</h3>
+                                <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
-                            {/* 1. Slot Selector */}
+                            {/* Row 1: Slot Tabs */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {SLOTS.filter(s => s.id !== 'coat').map(s => (
-                                    <button key={s.id} onClick={() => setSelectedSlot(s.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                    <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
                                 ))}
                             </div>
 
-                            {/* 2. Color Picker */}
-                            <div className="mb-3 flex-shrink-0">
-                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
-                                    {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
-                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
-                                            <div 
-                                                className={`w-8 h-8 rounded-full transition-all shadow-sm ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
-                                                style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
-                                            ></div>
-                                        </div>
-                                    ))}
-                                </div>
+                            {/* Row 2: Category Pills (V18.8 NEW) */}
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
+                                {MASTER_CATEGORIES[selectedSlot]?.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`cat-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
                             </div>
 
-                            {/* 3. Style Picker */}
-                            <div className="flex-shrink-0">
+                            {/* Row 3: Color Picker */}
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar mb-3 py-1 flex-shrink-0">
+                                {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
+                                    <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
+                                        <div 
+                                            className={`w-6 h-6 rounded-full transition-all shadow-sm ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
+                                            style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
+                                        ></div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Row 4: Style Picker */}
+                            <div className="flex-shrink-0 mb-1">
                                 <div className="flex gap-2 flex-wrap">
                                     {OCCASIONS.map(occ => (
                                         <button 
@@ -383,18 +430,17 @@
 
                         {/* --- Scrollable Grid --- */}
                         <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50 p-4">
-                            {/* V18.6 Fix: Forced 2 Columns, Gap-3 */}
                             <div className="grid grid-cols-2 gap-3">
                                 {getWarehouseItems().map((item, idx) => (
                                     <div key={idx} onClick={() => handlePick(item)} className="warehouse-item relative group bg-white shadow-sm hover:shadow-md">
                                         <img src={`./${item.src}`} alt="item" />
-                                        {item.label && <span className="absolute bottom-1 right-1 text-[8px] bg-gray-100 px-1.5 py-0.5 rounded opacity-90 font-bold">{item.label}</span>}
+                                        {/* Show selected category on hover or always? V18.8: Keep clean */}
                                     </div>
                                 ))}
                             </div>
                             
-                            <div className="text-center text-[10px] text-gray-300 mt-4 mb-2">
-                                點擊圖片即可入庫
+                            <div className="text-center text-[10px] text-gray-400 mt-4 mb-2">
+                                已選定: {selectedCategory} / {BASE_COLORS.find(c=>c.id===selectedColor)?.name || '特殊'}
                             </div>
                         </div>
                     </div>
@@ -408,6 +454,7 @@
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
+                        {/* Z-Index Logic: Shoes(10) < Inner(20) < Bottom(30) < Outer(40) */}
                         {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
                         {inner && <img src={inner.image} className="ghost-layer z-20" alt="Inner" onError={(e) => e.target.style.display='none'} />}
                         {bottom && <img src={bottom.image} className="ghost-layer z-30" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
@@ -538,13 +585,13 @@
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
                     );
 
-                    // 1. Style Filter
+                    // Style Filter
                     candidates = candidates.filter(item => {
                         if (!item.style) return false; 
                         return item.style.includes(occasion);
                     });
 
-                    // 2. Sleeve Logic
+                    // Sleeve Logic
                     if (slot === 'inner') {
                         if (season === 'Summer') {
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
@@ -572,7 +619,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.6</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.8</span>
                         </h1>
                     </div>
 
