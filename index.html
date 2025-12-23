@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.5 - Logic Fix</title>
+    <title>Minimalist V18.6 - Layout Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* [V18.1 UI 風格] */
@@ -88,7 +88,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Dense Card */
+        /* Dense Card (Main View) */
         .dense-card {
             aspect-ratio: 1/1;
             position: relative;
@@ -110,15 +110,12 @@
             padding: 2px;
         }
 
-        /* Warehouse Items (Large) */
+        /* Warehouse Items (V18.6 Layout Fix) */
         .warehouse-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            padding-bottom: 2rem;
+            /* Handled by Tailwind classes in JSX */
         }
         .warehouse-item {
-            aspect-ratio: 3/4;
+            aspect-ratio: 3/4; /* V18.6: Portrait Ratio */
             border: 1px solid #eee;
             border-radius: 12px;
             padding: 0; 
@@ -127,20 +124,29 @@
             position: relative;
             background: #fff;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; }
+        .warehouse-item img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            padding: 8px; /* V18.6: Minimal padding */
+        }
 
         /* Style Tag Toggles (In Modal) */
         .style-toggle {
             font-size: 10px;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 6px;
             border: 1px solid #eee;
-            color: #888;
+            color: #666;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 700;
+            background: #f9f9f9;
         }
         .style-toggle.selected {
             background-color: #000;
@@ -278,11 +284,11 @@
 
         // --- 4. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.5 with Style Selector)
+        // A. Warehouse Picker Modal (V18.6 Layout Fix)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
-            const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']); // Default
+            const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
             const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
@@ -317,7 +323,7 @@
                     category: item.name,
                     sleeve: item.type, 
                     color: selectedColor, 
-                    style: selectedStyles, // V18.5: Saves selected styles
+                    style: selectedStyles, 
                     createdAt: Date.now()
                 };
                 
@@ -329,59 +335,67 @@
 
             return (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-md rounded-2xl p-6 animate-fade-in shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold tracking-tight">倉庫採購</h3>
-                            <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
+                    <div className="bg-white w-full max-w-md rounded-2xl animate-fade-in shadow-2xl h-[95vh] flex flex-col overflow-hidden">
+                        
+                        {/* --- Sticky Header (Controls) --- */}
+                        <div className="sticky top-0 bg-white z-20 p-6 pb-2 border-b border-gray-100">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold tracking-tight">倉庫採購</h3>
+                                <button onClick={onClose} className="text-gray-400 hover:text-black">✕</button>
+                            </div>
+
+                            {/* 1. Slot Selector */}
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
+                                {SLOTS.filter(s => s.id !== 'coat').map(s => (
+                                    <button key={s.id} onClick={() => setSelectedSlot(s.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                ))}
+                            </div>
+
+                            {/* 2. Color Picker */}
+                            <div className="mb-3 flex-shrink-0">
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                                    {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
+                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
+                                            <div 
+                                                className={`w-8 h-8 rounded-full transition-all shadow-sm ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
+                                                style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
+                                            ></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 3. Style Picker */}
+                            <div className="flex-shrink-0">
+                                <div className="flex gap-2 flex-wrap">
+                                    {OCCASIONS.map(occ => (
+                                        <button 
+                                            key={occ.id} 
+                                            onClick={() => toggleStyle(occ.id)}
+                                            className={`style-toggle ${selectedStyles.includes(occ.id) ? 'selected' : ''}`}
+                                        >
+                                            {occ.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* 1. Slot Selector */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
-                            {SLOTS.filter(s => s.id !== 'coat').map(s => (
-                                <button key={s.id} onClick={() => setSelectedSlot(s.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
-                            ))}
-                        </div>
-
-                        {/* 2. Color Picker */}
-                        <div className="mb-3 flex-shrink-0">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">指定顏色 (Color)</p>
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
-                                {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
-                                    <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
-                                        <div 
-                                            className={`w-8 h-8 rounded-full transition-all shadow-sm ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} 
-                                            style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}
-                                        ></div>
+                        {/* --- Scrollable Grid --- */}
+                        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50 p-4">
+                            {/* V18.6 Fix: Forced 2 Columns, Gap-3 */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {getWarehouseItems().map((item, idx) => (
+                                    <div key={idx} onClick={() => handlePick(item)} className="warehouse-item relative group bg-white shadow-sm hover:shadow-md">
+                                        <img src={`./${item.src}`} alt="item" />
+                                        {item.label && <span className="absolute bottom-1 right-1 text-[8px] bg-gray-100 px-1.5 py-0.5 rounded opacity-90 font-bold">{item.label}</span>}
                                     </div>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* 3. Style Picker (V18.5 NEW) */}
-                        <div className="mb-4 flex-shrink-0">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">指定風格 (Style) - 可多選</p>
-                            <div className="flex gap-2 flex-wrap">
-                                {OCCASIONS.map(occ => (
-                                    <button 
-                                        key={occ.id} 
-                                        onClick={() => toggleStyle(occ.id)}
-                                        className={`style-toggle ${selectedStyles.includes(occ.id) ? 'selected' : ''}`}
-                                    >
-                                        {occ.label}
-                                    </button>
-                                ))}
+                            
+                            <div className="text-center text-[10px] text-gray-300 mt-4 mb-2">
+                                點擊圖片即可入庫
                             </div>
-                        </div>
-
-                        {/* 4. Warehouse Grid */}
-                        <div className="warehouse-grid flex-1 overflow-y-auto">
-                            {getWarehouseItems().map((item, idx) => (
-                                <div key={idx} onClick={() => handlePick(item)} className="warehouse-item relative group">
-                                    <img src={`./${item.src}`} />
-                                    {item.label && <span className="absolute bottom-1 right-1 text-[8px] bg-gray-100 px-1 rounded opacity-80">{item.label}</span>}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </div>
@@ -524,9 +538,9 @@
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
                     );
 
-                    // 1. Style Filter (V18.5 Critical)
+                    // 1. Style Filter
                     candidates = candidates.filter(item => {
-                        if (!item.style) return false; // Safety
+                        if (!item.style) return false; 
                         return item.style.includes(occasion);
                     });
 
@@ -558,7 +572,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.5</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.6</span>
                         </h1>
                     </div>
 
@@ -634,7 +648,7 @@
                                             className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
                                             style={{ background: [...BASE_COLORS, ...SPECIAL_COLORS].find(c => c.id === item.color)?.hex || '#000' }}
                                         ></div>
-                                        {/* V18.5 UI: Show Style Dot */}
+                                        {/* Style Dot */}
                                         <div className="absolute top-1 left-1 flex gap-0.5">
                                             {item.style && item.style.map(s => (
                                                 <div key={s} className={`w-1 h-1 rounded-full ${s==='Formal'?'bg-blue-800':s==='Casual'?'bg-yellow-400':'bg-gray-400'}`}></div>
