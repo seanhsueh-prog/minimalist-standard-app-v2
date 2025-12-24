@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V23.0 - Mother File</title>
+    <title>Minimalist V24.0 - Mother File</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V23.0 - Ultimate Logic Visuals] */
+        /* [V24.0 - Mother File Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -319,11 +319,14 @@
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
-            // Style selection removed from UI, handled by logic map
             
+            // Track selected category (The Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
+            
+            // Inner Sleeve Type (V20.0 Split)
             const [innerType, setInnerType] = useState('sleeved');
 
+            // Sync category selection when slot changes
             const handleSlotChange = (newSlot) => {
                 setSelectedSlot(newSlot);
                 if (MASTER_CATEGORIES[newSlot]) {
@@ -385,11 +388,11 @@
                                 ))}
                             </div>
 
-                            {/* Inner Type */}
+                            {/* Inner Type (V20.0: i/t Split) */}
                             {selectedSlot === 'inner' && (
                                 <div className="flex gap-2 mb-3 flex-shrink-0">
-                                    <button onClick={() => setInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
                                     <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
+                                    <button onClick={() => setInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
                                 </div>
                             )}
 
@@ -438,23 +441,23 @@
             );
         };
 
-        // B. Ghost Engine (V23.0: Z-Index Locked: Shoes < Bottom < Inner < Outer)
+        // B. Ghost Engine (V24.0: Strict Z-Index & Logic Fix)
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
                         {/* Z-10 Shoes */}
-                        {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
+                        {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
                         
                         {/* Z-20 Bottom (Covers Shoes) */}
-                        {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
+                        {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
                         
                         {/* Z-30 Inner (Untucked, covers waist) */}
-                        {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
+                        {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
                         
                         {/* Z-40 Outer (Covers All) */}
-                        {(coat || outer) && <img src={coat?.image || outer?.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
+                        {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
@@ -547,6 +550,7 @@
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
+                    // Auto equip for better UX
                     setOutfit(prev => ({ ...prev, [newItem.slot]: newItem }));
                 } catch (e) {
                     alert("儲存失敗");
@@ -570,19 +574,19 @@
                 }
             };
 
-            // V23.0: Ultimate Random Logic
+            // V24.0: Smart Refill + Fixes
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
-                // V23.0 Rule: Summer -> Hide Outer UNLESS Formal Suit
+                // V24.0 Summer Logic: Force Outer Null (unless Formal & Summer might allow suit... sticking to prompt: Strict Summer removal for general logic)
+                // Actually prompt says "Formal Summer: forbid hiding Suit Jacket".
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
                     if (targetOccasion === 'Formal') {
-                         // Formal Summer: Try to keep Suit Jacket
-                         // But for simplicity in this logic block, we clear it first then try to find one
-                         newOutfit.outer = null;
-                         newOutfit.coat = null;
+                         // Formal Summer: Allow Outer (Do not force null if already wearing or picking)
+                         // But if slot is empty, we might pick one? Or just keep it.
+                         // Let's allow picking.
                     } else {
                          newOutfit.outer = null;
                          newOutfit.coat = null;
@@ -591,6 +595,17 @@
                 }
 
                 slots.forEach(slot => {
+                    // V24.0 Smart Refill: If slot is already filled (and valid), skip
+                    // Unless it was forced off by summer logic above
+                    if (newOutfit[slot]) {
+                        // Check if we need to remove it? e.g. Summer non-formal outer
+                        if (slot === 'outer' && forceOuterOff) {
+                            // Already nulled above
+                        } else {
+                            return; // Keep existing item
+                        }
+                    }
+
                     if (forceOuterOff && slot === 'outer') return;
 
                     let candidates = wardrobe.filter(item => 
@@ -603,23 +618,25 @@
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. Sleeve Logic & Winter Layering (V23.0)
+                    // 2. V24.0 Inner Logic Corrections
                     if (slot === 'inner') {
-                        // V23.0: Summer Exclusion
+                        const hasOuter = newOutfit.outer || newOutfit.coat; // Check projected outer
+
                         if (targetSeason === 'Summer') {
-                            // Exclude heavy items
+                            // Summer: Exclude heavy
                             candidates = candidates.filter(i => 
                                 !['毛衣/針織', '帽T/衛衣'].includes(i.category)
                             );
-                            // Prefer sleeved
-                            candidates = candidates.filter(i => i.sleeve === 'sleeved');
+                            // Summer: Prefer Sleeved (t-series) generally, unless layering logic overrides?
+                            // Actually if Formal Summer (Suit), we might want sleeveless to avoid heat? 
+                            // Prompt says: Summer -> only extract T-shirt/Polo. 
+                            candidates = candidates.filter(i => ['T-shirt', 'Polo衫', '襯衫'].includes(i.category));
                         } else {
-                            // Winter: If there is an Outer, prefer Sleeveless
-                            // Note: We don't know if outer is selected yet in this loop order, 
-                            // but in winter we usually have outer. 
-                            // Strict rule: Winter Inner -> Sleeveless (i) preferred for layering
-                            const sleeveless = candidates.filter(i => i.sleeve === 'sleeveless');
-                            if (sleeveless.length > 0) candidates = sleeveless;
+                            // Winter/Layering: 
+                            // V24.0: If has Outer -> Force Sleeveless (i-series)
+                            if (hasOuter) {
+                                candidates = candidates.filter(i => i.sleeve === 'sleeveless');
+                            }
                         }
                     }
 
@@ -632,6 +649,7 @@
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
+                        // Keep empty if no match
                         newOutfit[slot] = null;
                     }
                 });
@@ -652,7 +670,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V23.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.0</span>
                         </h1>
                     </div>
 
@@ -723,7 +741,7 @@
                             <div className="grid grid-cols-3 gap-2">
                                 {currentFilteredWardrobe.map(item => (
                                     <div key={item.id} onClick={() => setOutfit(prev => ({...prev, [item.slot]: item}))} className="dense-card cursor-pointer">
-                                        <img src={item.image} alt={item.category} />
+                                        <img src={item.displayUrl} alt={item.category} />
                                         
                                         <div 
                                             className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
