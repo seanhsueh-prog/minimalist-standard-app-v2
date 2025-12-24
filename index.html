@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V18.9 - Final Logic</title>
+    <title>Minimalist V20.0 - Final Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V18.1 UI 風格] */
+        /* [V20.0 Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -86,31 +86,15 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Dense Card */
-        .dense-card {
-            aspect-ratio: 1/1;
-            position: relative;
-            background: #fff;
-            border-radius: 0.75rem;
-            border: 1px solid #f3f4f6;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.2s;
-            padding: 0; 
+        /* Warehouse Grid */
+        .warehouse-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            padding-bottom: 2rem;
         }
-        .dense-card:active { transform: scale(0.98); }
-        .dense-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            padding: 2px;
-        }
-
-        /* Warehouse Items */
         .warehouse-item {
-            aspect-ratio: 3/4; 
+            aspect-ratio: 3/4;
             border: 1px solid #eee;
             border-radius: 12px;
             padding: 0; 
@@ -119,9 +103,6 @@
             position: relative;
             background: #fff;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
         .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
@@ -178,7 +159,7 @@
 
         // --- 1. CORE UTILS: IndexedDB ---
         const DB_CONFIG = {
-            name: 'MinimalistVault_V18_9', 
+            name: 'MinimalistVault_V20', 
             version: 1,
             store: 'inventory'
         };
@@ -229,11 +210,11 @@
             }
         };
 
-        // --- 2. COMPLETE CATEGORY LIST (V18.9) ---
+        // --- 2. MASTER CATEGORY LIST (V20.0 Complete) ---
         const MASTER_CATEGORIES = {
-            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨/背心'],
+            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
-            bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲'],
+            bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
             shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
         };
 
@@ -303,17 +284,17 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V18.9 Complete)
+        // A. Warehouse Picker Modal (V20.0 Full)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
             const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
-            // V18.9: Sleeve Sub-tab for Inner
-            const [innerType, setInnerType] = useState('sleeved'); // 'sleeveless' or 'sleeved'
-
-            // Track selected category (Pill)
+            // V20.0: Track selected category (The Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
+            
+            // V20.0: Inner Sleeve Type
+            const [innerType, setInnerType] = useState('sleeved');
 
             // Sync category selection when slot changes
             const handleSlotChange = (newSlot) => {
@@ -330,7 +311,7 @@
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
                 
-                // V18.9 Inner Logic: Split by Sleeve Type
+                // V20.0 Inner Logic
                 if (selectedSlot === 'inner') {
                     if (innerType === 'sleeveless') {
                         return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
@@ -357,9 +338,8 @@
                 const newItem = {
                     slot: selectedSlot,
                     image: item.src, 
-                    // V18.9: Save selected category
                     category: selectedCategory, 
-                    sleeve: item.type, // 'sleeved' | 'sleeveless' | 'standard'
+                    sleeve: item.type, 
                     color: selectedColor, 
                     style: selectedStyles, 
                     createdAt: Date.now()
@@ -375,7 +355,7 @@
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-md rounded-2xl animate-fade-in shadow-2xl h-[95vh] flex flex-col overflow-hidden">
                         
-                        {/* --- Sticky Header (5 Rows for Inner) --- */}
+                        {/* --- Sticky Header (Multi-Rows) --- */}
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold tracking-tight">倉庫採購</h3>
@@ -389,21 +369,11 @@
                                 ))}
                             </div>
 
-                            {/* Row 1.5: Sleeve Filter (Only for Inner) */}
+                            {/* Row 1.5: Inner Type (Only for Inner) */}
                             {selectedSlot === 'inner' && (
                                 <div className="flex gap-2 mb-3 flex-shrink-0">
-                                    <button 
-                                        onClick={() => setInnerType('sleeved')}
-                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500'}`}
-                                    >
-                                        有袖上衣 (t系列)
-                                    </button>
-                                    <button 
-                                        onClick={() => setInnerType('sleeveless')}
-                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500'}`}
-                                    >
-                                        無袖內搭 (i系列)
-                                    </button>
+                                    <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
+                                    <button onClick={() => setInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
                                 </div>
                             )}
 
@@ -467,16 +437,21 @@
             );
         };
 
-        // B. Ghost Engine
+        // B. Ghost Engine (V20.0 Z-Index Fix)
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
-                        {/* Z-Index Logic: Shoes(10) < Inner(20) < Bottom(30) < Outer(40) */}
+                        {/* Z-Index: Shoes(10) < Bottom(20) < Inner(30) < Outer(40) */}
                         {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
-                        {inner && <img src={inner.image} className="ghost-layer z-20" alt="Inner" onError={(e) => e.target.style.display='none'} />}
-                        {bottom && <img src={bottom.image} className="ghost-layer z-30" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
+                        
+                        {/* V20.0 Fix: Bottom is Z-20 (Covers shoes) */}
+                        {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
+                        
+                        {/* V20.0 Fix: Inner is Z-30 (Covers pants - Untucked) */}
+                        {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
+                        
                         {(coat || outer) && <img src={coat?.image || outer?.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
@@ -586,7 +561,7 @@
                 }
             };
 
-            // V18.9 Logic Update
+            // V20.0: Strict Random Logic
             const handleRandom = () => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
@@ -604,15 +579,16 @@
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
                     );
 
-                    // Style Filter
+                    // 1. Style Filter
                     candidates = candidates.filter(item => {
                         if (!item.style) return false; 
                         return item.style.includes(occasion);
                     });
 
-                    // Sleeve Logic
+                    // 2. Sleeve Logic (V20.0 Strict)
                     if (slot === 'inner') {
                         if (season === 'Summer') {
+                            // Summer: MUST be 'sleeved'
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
                         } 
                     }
@@ -638,7 +614,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V18.9</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V20.0</span>
                         </h1>
                     </div>
 
