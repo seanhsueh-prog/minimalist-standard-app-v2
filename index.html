@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V22.0 - Professional</title>
+    <title>Minimalist V23.0 - Mother File</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V22.0 Professional UI] */
+        /* [V23.0 - Ultimate Logic Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -159,8 +159,13 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- 1. CORE UTILS: IndexedDB ---
-        const DB_CONFIG = { name: 'MinimalistVault_V22', version: 1, store: 'inventory' };
+        // --- 1. CORE UTILS: IndexedDB (LOCKED) ---
+        // DO NOT CHANGE DB NAME to preserve user data
+        const DB_CONFIG = {
+            name: 'MinimalistVault_V22', 
+            version: 1,
+            store: 'inventory'
+        };
 
         const dbHelper = {
             open: () => {
@@ -208,7 +213,7 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (V22.0: Auto Tagging) ---
+        // --- 2. LOGIC MAPPING (V23.0 Auto Tagging) ---
         const STYLE_MAP = {
             // Formal
             '西裝外套': ['Formal', 'Smart'],
@@ -228,7 +233,7 @@
 
             // Casual
             '羽絨外套': ['Casual'],
-            'T-shirt': ['Smart', 'Casual'], // Can be smart if layered
+            'T-shirt': ['Smart', 'Casual'], 
             '帽T/衛衣': ['Casual'],
             '牛仔褲': ['Smart', 'Casual'],
             '短褲': ['Casual'],
@@ -310,15 +315,13 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker (V22.0 Simplified)
+        // A. Warehouse Picker Modal (V23.0: Auto Style Tagging Only)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
+            // Style selection removed from UI, handled by logic map
             
-            // Track Category
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
-            
-            // Inner Sleeve Type
             const [innerType, setInnerType] = useState('sleeved');
 
             const handleSlotChange = (newSlot) => {
@@ -346,7 +349,7 @@
             };
 
             const handlePick = (item) => {
-                // V22.0: Auto Tag Styles
+                // V23.0: Auto Tag Styles based on Category
                 const styles = STYLE_MAP[selectedCategory] || ['Casual'];
 
                 const newItem = {
@@ -435,7 +438,7 @@
             );
         };
 
-        // B. Ghost Engine (V22.0 Z-Index Fix)
+        // B. Ghost Engine (V23.0: Z-Index Locked: Shoes < Bottom < Inner < Outer)
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
@@ -519,11 +522,18 @@
             const [occasion, setOccasion] = useState('Smart'); 
             const [season, setSeason] = useState('Winter'); 
 
-            // Load from DB
+            // Load from DB (Compatible with old data)
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    setWardrobe(items);
+                    // V23.0: Patch missing style tags on load
+                    const patchedItems = items.map(item => {
+                        if (!item.style) {
+                             return { ...item, style: STYLE_MAP[item.category] || ['Smart Casual'] };
+                        }
+                        return item;
+                    });
+                    setWardrobe(patchedItems);
                 } catch (e) {
                     console.error("DB Load Failed:", e);
                 }
@@ -560,24 +570,28 @@
                 }
             };
 
-            // V22.0: Core Randomizer with Button Linking
+            // V23.0: Ultimate Random Logic
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
-                // We use params to support instant update from buttons
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
+                // V23.0 Rule: Summer -> Hide Outer UNLESS Formal Suit
+                let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
-                    newOutfit.outer = null;
-                    newOutfit.coat = null;
+                    if (targetOccasion === 'Formal') {
+                         // Formal Summer: Try to keep Suit Jacket
+                         // But for simplicity in this logic block, we clear it first then try to find one
+                         newOutfit.outer = null;
+                         newOutfit.coat = null;
+                    } else {
+                         newOutfit.outer = null;
+                         newOutfit.coat = null;
+                         forceOuterOff = true;
+                    }
                 }
 
                 slots.forEach(slot => {
-                    // Always try to fill empty slots OR refresh if button clicked
-                    // For logic simplicity: we overwrite all slots if random button is clicked
-                    // But if triggered by filter, maybe we just refresh valid ones?
-                    // Let's do full refresh based on current wardrobe state.
-
-                    if (targetSeason === 'Summer' && (slot === 'outer')) return;
+                    if (forceOuterOff && slot === 'outer') return;
 
                     let candidates = wardrobe.filter(item => 
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
@@ -589,17 +603,35 @@
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. Sleeve Logic
+                    // 2. Sleeve Logic & Winter Layering (V23.0)
                     if (slot === 'inner') {
+                        // V23.0: Summer Exclusion
                         if (targetSeason === 'Summer') {
+                            // Exclude heavy items
+                            candidates = candidates.filter(i => 
+                                !['毛衣/針織', '帽T/衛衣'].includes(i.category)
+                            );
+                            // Prefer sleeved
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
-                        } 
+                        } else {
+                            // Winter: If there is an Outer, prefer Sleeveless
+                            // Note: We don't know if outer is selected yet in this loop order, 
+                            // but in winter we usually have outer. 
+                            // Strict rule: Winter Inner -> Sleeveless (i) preferred for layering
+                            const sleeveless = candidates.filter(i => i.sleeve === 'sleeveless');
+                            if (sleeveless.length > 0) candidates = sleeveless;
+                        }
+                    }
+
+                    // 3. Suit Matching Logic (Formal)
+                    if (targetOccasion === 'Formal' && slot === 'bottom' && newOutfit.outer) {
+                        const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color);
+                        if (suitMatch.length > 0) candidates = suitMatch;
                     }
 
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
-                        // If no valid item for this style, clear the slot
                         newOutfit[slot] = null;
                     }
                 });
@@ -620,7 +652,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V22.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V23.0</span>
                         </h1>
                     </div>
 
