@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V20.0 - Final Fix</title>
+    <title>Minimalist V22.0 - Professional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V20.0 Visuals] */
+        /* [V22.0 Professional UI] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -86,7 +86,24 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Warehouse Grid */
+        /* Dense Card */
+        .dense-card {
+            aspect-ratio: 1/1;
+            position: relative;
+            background: #fff;
+            border-radius: 0.75rem;
+            border: 1px solid #f3f4f6;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s;
+            padding: 0; 
+        }
+        .dense-card:active { transform: scale(0.98); }
+        .dense-card img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+
+        /* Warehouse Items */
         .warehouse-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -103,27 +120,12 @@
             position: relative;
             background: #fff;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
         .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
-
-        /* Style Tag Toggles */
-        .style-toggle {
-            font-size: 10px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 700;
-            background: #f9f9f9;
-        }
-        .style-toggle.selected {
-            background-color: #000;
-            color: #fff;
-            border-color: #000;
-        }
 
         /* Category Pills */
         .cat-pill {
@@ -158,11 +160,7 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- 1. CORE UTILS: IndexedDB ---
-        const DB_CONFIG = {
-            name: 'MinimalistVault_V20', 
-            version: 1,
-            store: 'inventory'
-        };
+        const DB_CONFIG = { name: 'MinimalistVault_V22', version: 1, store: 'inventory' };
 
         const dbHelper = {
             open: () => {
@@ -210,7 +208,35 @@
             }
         };
 
-        // --- 2. MASTER CATEGORY LIST (V20.0 Complete) ---
+        // --- 2. LOGIC MAPPING (V22.0: Auto Tagging) ---
+        const STYLE_MAP = {
+            // Formal
+            '西裝外套': ['Formal', 'Smart'],
+            '大衣': ['Formal', 'Smart'],
+            '襯衫': ['Formal', 'Smart'],
+            '西裝褲': ['Formal', 'Smart'],
+            '皮鞋': ['Formal', 'Smart'],
+            
+            // Smart Casual
+            '皮衣': ['Smart', 'Casual'],
+            '夾克': ['Smart', 'Casual'],
+            'Polo衫': ['Smart', 'Casual'],
+            '毛衣/針織': ['Smart', 'Casual'],
+            '卡其褲': ['Smart', 'Casual'],
+            '樂福鞋': ['Formal', 'Smart'],
+            '靴子': ['Smart', 'Casual'],
+
+            // Casual
+            '羽絨外套': ['Casual'],
+            'T-shirt': ['Smart', 'Casual'], // Can be smart if layered
+            '帽T/衛衣': ['Casual'],
+            '牛仔褲': ['Smart', 'Casual'],
+            '短褲': ['Casual'],
+            '運動褲': ['Casual'],
+            '工裝褲': ['Casual'],
+            '球鞋': ['Casual', 'Smart']
+        };
+
         const MASTER_CATEGORIES = {
             outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
@@ -218,13 +244,13 @@
             shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
         };
 
-        // --- 3. STATIC ASSETS & CONFIG ---
+        // --- 3. ASSETS & CONFIG ---
         const ASSETS = {
             outer: 29, 
             bottom: 17, 
             shoes: 10,  
-            inner_i: 12, // Sleeveless
-            inner_t: 17  // Sleeved
+            inner_i: 12, 
+            inner_t: 17  
         };
 
         const SLOTS = [
@@ -237,7 +263,7 @@
 
         const OCCASIONS = [
             { id: 'Formal', label: '正式' },
-            { id: 'Smart Casual', label: '大人感' },
+            { id: 'Smart', label: '大人感' },
             { id: 'Casual', label: '休閒' }
         ];
 
@@ -284,19 +310,17 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V20.0 Full)
+        // A. Warehouse Picker (V22.0 Simplified)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
-            const [selectedStyles, setSelectedStyles] = useState(['Smart Casual']);
             
-            // V20.0: Track selected category (The Pill)
+            // Track Category
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
             
-            // V20.0: Inner Sleeve Type
+            // Inner Sleeve Type
             const [innerType, setInnerType] = useState('sleeved');
 
-            // Sync category selection when slot changes
             const handleSlotChange = (newSlot) => {
                 setSelectedSlot(newSlot);
                 if (MASTER_CATEGORIES[newSlot]) {
@@ -311,7 +335,6 @@
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
                 
-                // V20.0 Inner Logic
                 if (selectedSlot === 'inner') {
                     if (innerType === 'sleeveless') {
                         return range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' }));
@@ -322,18 +345,9 @@
                 return [];
             };
 
-            const toggleStyle = (styleId) => {
-                setSelectedStyles(prev => {
-                    if (prev.includes(styleId)) return prev.filter(s => s !== styleId);
-                    return [...prev, styleId];
-                });
-            };
-
             const handlePick = (item) => {
-                if (selectedStyles.length === 0) {
-                    alert("請至少選擇一種風格 (Style)");
-                    return;
-                }
+                // V22.0: Auto Tag Styles
+                const styles = STYLE_MAP[selectedCategory] || ['Casual'];
 
                 const newItem = {
                     slot: selectedSlot,
@@ -341,7 +355,7 @@
                     category: selectedCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
-                    style: selectedStyles, 
+                    style: styles, // Auto-tagged
                     createdAt: Date.now()
                 };
                 
@@ -355,29 +369,28 @@
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-md rounded-2xl animate-fade-in shadow-2xl h-[95vh] flex flex-col overflow-hidden">
                         
-                        {/* --- Sticky Header (Multi-Rows) --- */}
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold tracking-tight">倉庫採購</h3>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (自動標記)</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
-                            {/* Row 1: Slot Tabs */}
+                            {/* Slot Tabs */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {SLOTS.filter(s => s.id !== 'coat').map(s => (
                                     <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
                                 ))}
                             </div>
 
-                            {/* Row 1.5: Inner Type (Only for Inner) */}
+                            {/* Inner Type */}
                             {selectedSlot === 'inner' && (
                                 <div className="flex gap-2 mb-3 flex-shrink-0">
-                                    <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
                                     <button onClick={() => setInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
+                                    <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
                                 </div>
                             )}
 
-                            {/* Row 2: Category Pills */}
+                            {/* Category Pills */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {MASTER_CATEGORIES[selectedSlot]?.map(cat => (
                                     <button
@@ -390,8 +403,8 @@
                                 ))}
                             </div>
 
-                            {/* Row 3: Color Picker */}
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar mb-3 py-1 flex-shrink-0">
+                            {/* Color Picker */}
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar mb-1 py-1 flex-shrink-0">
                                 {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
                                     <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
                                         <div 
@@ -401,24 +414,9 @@
                                     </div>
                                 ))}
                             </div>
-
-                            {/* Row 4: Style Picker */}
-                            <div className="flex-shrink-0 mb-1">
-                                <div className="flex gap-2 flex-wrap">
-                                    {OCCASIONS.map(occ => (
-                                        <button 
-                                            key={occ.id} 
-                                            onClick={() => toggleStyle(occ.id)}
-                                            className={`style-toggle ${selectedStyles.includes(occ.id) ? 'selected' : ''}`}
-                                        >
-                                            {occ.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
 
-                        {/* --- Scrollable Grid --- */}
+                        {/* Grid */}
                         <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50 p-4">
                             <div className="grid grid-cols-2 gap-3">
                                 {getWarehouseItems().map((item, idx) => (
@@ -429,7 +427,7 @@
                             </div>
                             
                             <div className="text-center text-[10px] text-gray-400 mt-4 mb-2">
-                                已選定: {selectedCategory} / {BASE_COLORS.find(c=>c.id===selectedColor)?.name || '特殊'}
+                                點擊圖片即可入庫: {selectedCategory}
                             </div>
                         </div>
                     </div>
@@ -437,21 +435,22 @@
             );
         };
 
-        // B. Ghost Engine (V20.0 Z-Index Fix)
+        // B. Ghost Engine (V22.0 Z-Index Fix)
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
-                        {/* Z-Index: Shoes(10) < Bottom(20) < Inner(30) < Outer(40) */}
+                        {/* Z-10 Shoes */}
                         {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* V20.0 Fix: Bottom is Z-20 (Covers shoes) */}
+                        {/* Z-20 Bottom (Covers Shoes) */}
                         {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* V20.0 Fix: Inner is Z-30 (Covers pants - Untucked) */}
+                        {/* Z-30 Inner (Untucked, covers waist) */}
                         {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
                         
+                        {/* Z-40 Outer (Covers All) */}
                         {(coat || outer) && <img src={coat?.image || outer?.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
@@ -465,7 +464,7 @@
         };
 
         // C. Filter Controls
-        const FilterControls = ({ occasion, setOccasion, season, setSeason }) => {
+        const FilterControls = ({ occasion, setOccasion, season, setSeason, triggerRandom }) => {
             return (
                 <div className="flex flex-col gap-2 mb-2">
                     <div className="segment-control">
@@ -473,7 +472,7 @@
                             <button
                                 key={occ.id}
                                 className={`segment-btn ${occasion === occ.id ? 'active' : ''}`}
-                                onClick={() => setOccasion(occ.id)}
+                                onClick={() => { setOccasion(occ.id); triggerRandom(occ.id, season); }}
                             >
                                 {occ.label}
                             </button>
@@ -484,7 +483,7 @@
                             <button
                                 key={s.id}
                                 className={`segment-btn ${season === s.id ? 'active' : ''}`}
-                                onClick={() => setSeason(s.id)}
+                                onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }}
                             >
                                 {s.label}
                             </button>
@@ -500,7 +499,7 @@
             const analysis = useMemo(() => {
                 const items = [outer, inner, bottom, shoes].filter(Boolean);
                 if (items.length < 2) return { title: "準備就緒", msg: "請點擊 + 號從倉庫採購單品。", type: "neutral" };
-                return { title: "風格分析", msg: "目前的組合展現了極簡風格的俐落感。", type: "success" };
+                return { title: "風格分析", msg: "系統根據您的單品屬性進行即時運算。", type: "success" };
             }, [outfit]);
 
             return (
@@ -517,7 +516,7 @@
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [inventoryTab, setInventoryTab] = useState('outer'); 
             const [showWarehouse, setShowWarehouse] = useState(false);
-            const [occasion, setOccasion] = useState('Smart Casual'); 
+            const [occasion, setOccasion] = useState('Smart'); 
             const [season, setSeason] = useState('Winter'); 
 
             // Load from DB
@@ -561,19 +560,24 @@
                 }
             };
 
-            // V20.0: Strict Random Logic
-            const handleRandom = () => {
+            // V22.0: Core Randomizer with Button Linking
+            const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
+                // We use params to support instant update from buttons
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
-                if (season === 'Summer') {
+                if (targetSeason === 'Summer') {
                     newOutfit.outer = null;
                     newOutfit.coat = null;
                 }
 
                 slots.forEach(slot => {
-                    if (newOutfit[slot]) return; 
-                    if (season === 'Summer' && (slot === 'outer')) return;
+                    // Always try to fill empty slots OR refresh if button clicked
+                    // For logic simplicity: we overwrite all slots if random button is clicked
+                    // But if triggered by filter, maybe we just refresh valid ones?
+                    // Let's do full refresh based on current wardrobe state.
+
+                    if (targetSeason === 'Summer' && (slot === 'outer')) return;
 
                     let candidates = wardrobe.filter(item => 
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
@@ -582,19 +586,21 @@
                     // 1. Style Filter
                     candidates = candidates.filter(item => {
                         if (!item.style) return false; 
-                        return item.style.includes(occasion);
+                        return item.style.includes(targetOccasion);
                     });
 
-                    // 2. Sleeve Logic (V20.0 Strict)
+                    // 2. Sleeve Logic
                     if (slot === 'inner') {
-                        if (season === 'Summer') {
-                            // Summer: MUST be 'sleeved'
+                        if (targetSeason === 'Summer') {
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
                         } 
                     }
 
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
+                    } else {
+                        // If no valid item for this style, clear the slot
+                        newOutfit[slot] = null;
                     }
                 });
 
@@ -614,13 +620,14 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V20.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V22.0</span>
                         </h1>
                     </div>
 
                     <FilterControls 
                         occasion={occasion} setOccasion={setOccasion}
                         season={season} setSeason={setSeason}
+                        triggerRandom={handleRandom}
                     />
 
                     <div className="flex-1 overflow-y-auto no-scrollbar relative bg-gray-50">
@@ -660,7 +667,7 @@
                                 <button onClick={handleClearAll} className="flex-1 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform">
                                     <Icon name="trash" className="w-4 h-4" /> 全部脫下
                                 </button>
-                                <button onClick={handleRandom} className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
+                                <button onClick={() => handleRandom(occasion, season)} className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
                                     <Icon name="dice" className="w-4 h-4" /> 隨機補位
                                 </button>
                             </div>
@@ -690,14 +697,6 @@
                                             className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
                                             style={{ background: [...BASE_COLORS, ...SPECIAL_COLORS].find(c => c.id === item.color)?.hex || '#000' }}
                                         ></div>
-                                        {/* Style Dot */}
-                                        <div className="absolute top-1 left-1 flex gap-0.5">
-                                            {item.style && item.style.map(s => (
-                                                <div key={s} className={`w-1 h-1 rounded-full ${s==='Formal'?'bg-blue-800':s==='Casual'?'bg-yellow-400':'bg-gray-400'}`}></div>
-                                            ))}
-                                        </div>
-
-                                        {outfit[item.slot]?.id === item.id && <div className="absolute inset-0 border-2 border-black rounded-xl pointer-events-none"></div>}
                                         
                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                     </div>
