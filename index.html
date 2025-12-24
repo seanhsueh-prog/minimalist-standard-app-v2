@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V24.0 - Mother File</title>
+    <title>Minimalist V24.1 - Image Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V24.0 - Mother File Visuals] */
+        /* [V24.1 - Mother File Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -215,14 +215,11 @@
 
         // --- 2. LOGIC MAPPING (V23.0 Auto Tagging) ---
         const STYLE_MAP = {
-            // Formal
             '西裝外套': ['Formal', 'Smart'],
             '大衣': ['Formal', 'Smart'],
             '襯衫': ['Formal', 'Smart'],
             '西裝褲': ['Formal', 'Smart'],
             '皮鞋': ['Formal', 'Smart'],
-            
-            // Smart Casual
             '皮衣': ['Smart', 'Casual'],
             '夾克': ['Smart', 'Casual'],
             'Polo衫': ['Smart', 'Casual'],
@@ -230,8 +227,6 @@
             '卡其褲': ['Smart', 'Casual'],
             '樂福鞋': ['Formal', 'Smart'],
             '靴子': ['Smart', 'Casual'],
-
-            // Casual
             '羽絨外套': ['Casual'],
             'T-shirt': ['Smart', 'Casual'], 
             '帽T/衛衣': ['Casual'],
@@ -250,13 +245,7 @@
         };
 
         // --- 3. ASSETS & CONFIG ---
-        const ASSETS = {
-            outer: 29, 
-            bottom: 17, 
-            shoes: 10,  
-            inner_i: 12, 
-            inner_t: 17  
-        };
+        const ASSETS = { outer: 29, bottom: 17, shoes: 10, inner_i: 12, inner_t: 17 };
 
         const SLOTS = [
             { id: 'coat', label: '大衣' },
@@ -315,18 +304,13 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V23.0: Auto Style Tagging Only)
+        // A. Warehouse Picker
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
-            
-            // Track selected category (The Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
-            
-            // Inner Sleeve Type (V20.0 Split)
             const [innerType, setInnerType] = useState('sleeved');
 
-            // Sync category selection when slot changes
             const handleSlotChange = (newSlot) => {
                 setSelectedSlot(newSlot);
                 if (MASTER_CATEGORIES[newSlot]) {
@@ -352,7 +336,6 @@
             };
 
             const handlePick = (item) => {
-                // V23.0: Auto Tag Styles based on Category
                 const styles = STYLE_MAP[selectedCategory] || ['Casual'];
 
                 const newItem = {
@@ -361,7 +344,7 @@
                     category: selectedCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
-                    style: styles, // Auto-tagged
+                    style: styles, 
                     createdAt: Date.now()
                 };
                 
@@ -377,26 +360,23 @@
                         
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (自動標記)</h3>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
-                            {/* Slot Tabs */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {SLOTS.filter(s => s.id !== 'coat').map(s => (
                                     <button key={s.id} onClick={() => handleSlotChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${selectedSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
                                 ))}
                             </div>
 
-                            {/* Inner Type (V20.0: i/t Split) */}
                             {selectedSlot === 'inner' && (
                                 <div className="flex gap-2 mb-3 flex-shrink-0">
-                                    <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
                                     <button onClick={() => setInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
+                                    <button onClick={() => setInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${innerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
                                 </div>
                             )}
 
-                            {/* Category Pills */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1 flex-shrink-0">
                                 {MASTER_CATEGORIES[selectedSlot]?.map(cat => (
                                     <button
@@ -409,7 +389,6 @@
                                 ))}
                             </div>
 
-                            {/* Color Picker */}
                             <div className="flex gap-3 overflow-x-auto no-scrollbar mb-1 py-1 flex-shrink-0">
                                 {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
                                     <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setSelectedColor(c.id)}>
@@ -422,7 +401,6 @@
                             </div>
                         </div>
 
-                        {/* Grid */}
                         <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50 p-4">
                             <div className="grid grid-cols-2 gap-3">
                                 {getWarehouseItems().map((item, idx) => (
@@ -441,23 +419,20 @@
             );
         };
 
-        // B. Ghost Engine (V24.0: Strict Z-Index & Logic Fix)
+        // B. Ghost Engine
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
-                        {/* Z-10 Shoes */}
-                        {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
+                        {/* Z-Index: Shoes(10) < Bottom(20) < Inner(30) < Outer(40) */}
+                        {shoes && <img src={shoes.image} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* Z-20 Bottom (Covers Shoes) */}
-                        {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
+                        {bottom && <img src={bottom.image} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* Z-30 Inner (Untucked, covers waist) */}
-                        {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
+                        {inner && <img src={inner.image} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* Z-40 Outer (Covers All) */}
-                        {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
+                        {(coat || outer) && <img src={coat?.image || outer?.image} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
@@ -525,16 +500,16 @@
             const [occasion, setOccasion] = useState('Smart'); 
             const [season, setSeason] = useState('Winter'); 
 
-            // Load from DB (Compatible with old data)
+            // Load from DB
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    // V23.0: Patch missing style tags on load
                     const patchedItems = items.map(item => {
-                        if (!item.style) {
-                             return { ...item, style: STYLE_MAP[item.category] || ['Smart Casual'] };
-                        }
-                        return item;
+                        // V24.1: Fix Path - Ensure it's a string path, not a blob
+                        // In V18.x warehouse logic, item.image IS A STRING (relative path).
+                        // If it was a file object (from older versions), this would need URL.createObjectURL
+                        // But since we are strict Warehouse Picker now, it's just a string.
+                        return item; 
                     });
                     setWardrobe(patchedItems);
                 } catch (e) {
@@ -550,7 +525,6 @@
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
-                    // Auto equip for better UX
                     setOutfit(prev => ({ ...prev, [newItem.slot]: newItem }));
                 } catch (e) {
                     alert("儲存失敗");
@@ -574,19 +548,15 @@
                 }
             };
 
-            // V24.0: Smart Refill + Fixes
+            // V24.0: Ultimate Random Logic
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
-                // V24.0 Summer Logic: Force Outer Null (unless Formal & Summer might allow suit... sticking to prompt: Strict Summer removal for general logic)
-                // Actually prompt says "Formal Summer: forbid hiding Suit Jacket".
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
                     if (targetOccasion === 'Formal') {
-                         // Formal Summer: Allow Outer (Do not force null if already wearing or picking)
-                         // But if slot is empty, we might pick one? Or just keep it.
-                         // Let's allow picking.
+                         // Formal Summer: Allow Outer
                     } else {
                          newOutfit.outer = null;
                          newOutfit.coat = null;
@@ -595,15 +565,13 @@
                 }
 
                 slots.forEach(slot => {
-                    // V24.0 Smart Refill: If slot is already filled (and valid), skip
-                    // Unless it was forced off by summer logic above
+                    // Smart Refill: If slot filled, keep it.
                     if (newOutfit[slot]) {
-                        // Check if we need to remove it? e.g. Summer non-formal outer
-                        if (slot === 'outer' && forceOuterOff) {
-                            // Already nulled above
-                        } else {
-                            return; // Keep existing item
-                        }
+                         if (slot === 'outer' && forceOuterOff) {
+                             // Force clear if needed
+                         } else {
+                             return; 
+                         }
                     }
 
                     if (forceOuterOff && slot === 'outer') return;
@@ -612,35 +580,26 @@
                         item.slot === slot || (slot === 'outer' && item.slot === 'coat')
                     );
 
-                    // 1. Style Filter
                     candidates = candidates.filter(item => {
                         if (!item.style) return false; 
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. V24.0 Inner Logic Corrections
                     if (slot === 'inner') {
-                        const hasOuter = newOutfit.outer || newOutfit.coat; // Check projected outer
-
+                        const hasOuter = newOutfit.outer || newOutfit.coat;
                         if (targetSeason === 'Summer') {
-                            // Summer: Exclude heavy
                             candidates = candidates.filter(i => 
                                 !['毛衣/針織', '帽T/衛衣'].includes(i.category)
                             );
-                            // Summer: Prefer Sleeved (t-series) generally, unless layering logic overrides?
-                            // Actually if Formal Summer (Suit), we might want sleeveless to avoid heat? 
-                            // Prompt says: Summer -> only extract T-shirt/Polo. 
                             candidates = candidates.filter(i => ['T-shirt', 'Polo衫', '襯衫'].includes(i.category));
                         } else {
-                            // Winter/Layering: 
-                            // V24.0: If has Outer -> Force Sleeveless (i-series)
+                            // V24.0: If Outer exists -> Force Sleeveless
                             if (hasOuter) {
                                 candidates = candidates.filter(i => i.sleeve === 'sleeveless');
                             }
                         }
                     }
 
-                    // 3. Suit Matching Logic (Formal)
                     if (targetOccasion === 'Formal' && slot === 'bottom' && newOutfit.outer) {
                         const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color);
                         if (suitMatch.length > 0) candidates = suitMatch;
@@ -649,7 +608,6 @@
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
-                        // Keep empty if no match
                         newOutfit[slot] = null;
                     }
                 });
@@ -670,7 +628,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.1</span>
                         </h1>
                     </div>
 
@@ -741,7 +699,7 @@
                             <div className="grid grid-cols-3 gap-2">
                                 {currentFilteredWardrobe.map(item => (
                                     <div key={item.id} onClick={() => setOutfit(prev => ({...prev, [item.slot]: item}))} className="dense-card cursor-pointer">
-                                        <img src={item.displayUrl} alt={item.category} />
+                                        <img src={item.image} alt={item.category} />
                                         
                                         <div 
                                             className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm"
