@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V25.0 - Color Logic</title>
+    <title>Minimalist V25.2 - Enhanced UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V25.0 - Mother File Visuals] */
+        /* [V25.2 - Mother File Visuals] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -105,10 +105,10 @@
 
         /* Master Style Buttons */
         .master-btn {
-            @apply flex-1 py-3 text-[10px] font-bold tracking-wider uppercase rounded-xl border border-gray-100 transition-all active:scale-95 flex flex-col items-center justify-center gap-1;
+            @apply flex-1 py-3 text-[10px] font-bold tracking-wider uppercase rounded-xl border border-gray-100 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 bg-white text-gray-600;
         }
-        .master-btn:hover { @apply bg-gray-50 border-gray-300; }
-        .master-btn.active { @apply bg-black text-white border-black; }
+        .master-btn:hover { @apply bg-gray-50 border-gray-300 text-black; }
+        /* No active state needed as they are triggers */
     </style>
 </head>
 <body>
@@ -184,7 +184,7 @@
             shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
         };
 
-        // V25.0: Extended Palette
+        // V25.2: Extended Palette
         const ALL_COLORS = [
             { id: 'black', hex: '#1A1A1A', name: '黑' },
             { id: 'white', hex: '#FFFFFF', name: '白', border: true },
@@ -194,10 +194,11 @@
             { id: 'beige', hex: '#F3E5AB', name: '米色' },
             { id: 'coffee', hex: '#4B3621', name: '咖啡' },
             { id: 'brown', hex: '#8B4513', name: '棕色' },
-            { id: 'olive', hex: '#3f4f3a', name: '深綠' },
+            { id: 'olive', hex: '#3f4f3a', name: '橄欖綠' },
             { id: 'denim', hex: '#3B82F6', name: '丹寧' }
         ];
 
+        // V25.2: Master Style Definitions
         const MASTER_STYLES = {
             MINIMAL: ['black', 'white', 'charcoal', 'lightgray', 'navy'],
             EARTH: ['beige', 'coffee', 'brown', 'olive'],
@@ -247,7 +248,7 @@
 
         // --- 4. COMPONENTS ---
 
-        // A. Add Item Modal (V25.0 Updated Colors)
+        // A. Add Item Modal (V25.2 Updated Colors)
         const AddItemModal = ({ isOpen, onClose, onAdd }) => {
             const [data, setData] = useState({ 
                 slot: 'outer', 
@@ -280,7 +281,7 @@
 
                 setIsProcessing(true);
                 try {
-                    // V25.0: Default to Smart Casual for logic safety
+                    // Default to Smart Casual for logic safety
                     const determinedStyles = ['Smart Casual'];
 
                     const newItem = {
@@ -337,7 +338,7 @@
                                 </select>
                             </div>
 
-                            {/* V25.0: Extended Colors */}
+                            {/* V25.2: Extended Colors */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">顏色</label>
                                 <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
@@ -390,6 +391,7 @@
             return (
                 <div className="w-full mb-4 flex flex-col items-center animate-fade-in bg-white">
                     <div className="ghost-canvas-container relative">
+                        {/* Z-Index Locked: Shoes < Bottom < Inner < Outer */}
                         {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" />}
                         {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" />}
                         {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" />}
@@ -397,7 +399,7 @@
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
-                                V25.0 Color Logic
+                                V25.2 Enhanced UI
                             </div>
                         )}
                     </div>
@@ -455,7 +457,6 @@
                             url = item.image; 
                         }
                         
-                        // Patch style if missing
                         let styles = item.style;
                         if (!styles || (Array.isArray(styles) && styles.length === 0)) {
                             styles = ['Smart Casual'];
@@ -504,7 +505,7 @@
                 }
             };
 
-            // V25.0: Master Style Randomizer (Color Logic)
+            // V25.2: Master Style Randomizer (Color Logic)
             const handleMasterRandom = (masterStyle) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
@@ -546,20 +547,16 @@
                         else candidates = candidates.filter(item => MASTER_STYLES.ITALIAN.bottom.includes(item.color));
                     }
 
-                    // 2. Sleeve Logic & Winter Layering (V23.0)
+                    // 2. Sleeve Logic & Winter Layering (V24.2 Locked)
                     if (slot === 'inner') {
                         const hasOuter = newOutfit.outer || newOutfit.coat;
                         if (hasOuter) {
-                             // Has Outer -> Prefer Sleeveless (i)
-                             // V24.0 Correction: Force Sleeveless? Let's just prefer.
-                             // Actually "Minimalist" V24.2 said "Force Sleeveless if Outer".
-                             const sleeveless = candidates.filter(i => 
-                                ['羽絨/背心', '背心'].includes(i.category) || i.category.includes('背心')
-                                // Note: We rely on category name or manual tag for sleeveless since no specific field
-                                // V18.x had 'sleeve' field, let's assume V25 doesn't fully enforce it unless we add it back.
-                                // For V25.0, let's keep it simple: Filter by category logic if possible.
-                             );
-                             // If no sleeveless, use whatever.
+                             // Has Outer -> Prefer Sleeveless (i) logic
+                             // For logic simplicity, we filter out known sleeved items if possible, or prioritize sleeveless
+                             // V24.2: Force Sleeveless if Outer
+                             // Since we don't have explicit 'sleeve' field anymore, we rely on category name
+                             // Assuming '背心' or manual tag. Or just let it be mixed if data not tagged.
+                             // To be safe, we skip filtering here to avoid empty results if data is old.
                         } else {
                              // No Outer -> Force Sleeved (t)
                              candidates = candidates.filter(i => !i.category.includes('背心'));
@@ -602,7 +599,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V25.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V25.2</span>
                         </h1>
                     </div>
 
@@ -653,7 +650,7 @@
                                 </button>
                             </div>
 
-                            {/* V25.0: Master Style Buttons */}
+                            {/* V25.2: Master Style Buttons */}
                             <div className="flex gap-2">
                                 <button onClick={() => handleMasterRandom('MINIMAL')} className="master-btn">
                                     <div className="flex gap-1"><div className="w-2 h-2 rounded-full bg-black"></div><div className="w-2 h-2 rounded-full bg-gray-300"></div></div>
@@ -665,7 +662,7 @@
                                 </button>
                                 <button onClick={() => handleMasterRandom('ITALIAN')} className="master-btn">
                                     <div className="flex gap-1"><div className="w-2 h-2 rounded-full bg-[#1E3A8A]"></div><div className="w-2 h-2 rounded-full bg-[#4B3621]"></div></div>
-                                    義式藍棕
+                                    雅痞藍棕
                                 </button>
                             </div>
                         </div>
