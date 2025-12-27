@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V24.2 - Mother File</title>
+    <title>Minimalist V24.3 - Leather Sneakers Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V24.2 - Mother File Visuals] */
+        /* [V24.3 - Visuals based on V24.2 Mother File] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -160,7 +160,6 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- 1. CORE UTILS: IndexedDB (LOCKED) ---
-        // DO NOT CHANGE DB NAME to preserve user data
         const DB_CONFIG = {
             name: 'MinimalistVault_V22', 
             version: 1,
@@ -213,7 +212,7 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (V23.0 Auto Tagging) ---
+        // --- 2. LOGIC MAPPING (V24.3 Update) ---
         const STYLE_MAP = {
             // Formal
             '西裝外套': ['Formal', 'Smart'],
@@ -230,6 +229,7 @@
             '卡其褲': ['Smart', 'Casual'],
             '樂福鞋': ['Formal', 'Smart'],
             '靴子': ['Smart', 'Casual'],
+            '皮革休閒鞋': ['Smart', 'Casual'], // [V24.3 New]
 
             // Casual
             '羽絨外套': ['Casual'],
@@ -239,21 +239,22 @@
             '短褲': ['Casual'],
             '運動褲': ['Casual'],
             '工裝褲': ['Casual'],
-            '球鞋': ['Casual', 'Smart']
+            '球鞋': ['Casual'] // [V24.3 Changed: Removed Smart]
         };
 
         const MASTER_CATEGORIES = {
             outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
             bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
-            shoes: ['皮鞋', '樂福鞋', '球鞋', '靴子']
+            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] // [V24.3 Changed: Added Leather Sneakers]
         };
 
         // --- 3. ASSETS & CONFIG ---
         const ASSETS = {
             outer: 29, 
             bottom: 17, 
-            shoes: 10,  
+            shoes: 10,
+            leather_sneakers: 5, // [V24.3 New Asset]
             inner_i: 12, 
             inner_t: 17  
         };
@@ -315,15 +316,11 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V23.0: Auto Style Tagging Only)
+        // A. Warehouse Picker Modal (V24.3: Added Leather Sneakers Logic)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
-            
-            // Track selected category (The Pill)
             const [selectedCategory, setSelectedCategory] = useState(MASTER_CATEGORIES['outer'][0]);
-            
-            // Inner Sleeve Type
             const [innerType, setInnerType] = useState('sleeved');
 
             const handleSlotChange = (newSlot) => {
@@ -338,7 +335,14 @@
             const getWarehouseItems = () => {
                 if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
-                if (selectedSlot === 'shoes') return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
+                
+                // [V24.3] Shoes Logic
+                if (selectedSlot === 'shoes') {
+                    if (selectedCategory === '皮革休閒鞋') {
+                        return range('w', ASSETS.leather_sneakers).map(src => ({ src, type: 'standard' }));
+                    }
+                    return range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' }));
+                }
                 
                 if (selectedSlot === 'inner') {
                     if (innerType === 'sleeveless') {
@@ -351,7 +355,6 @@
             };
 
             const handlePick = (item) => {
-                // V23.0: Auto Tag Styles based on Category
                 const styles = STYLE_MAP[selectedCategory] || ['Casual'];
 
                 const newItem = {
@@ -360,7 +363,7 @@
                     category: selectedCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
-                    style: styles, // Auto-tagged
+                    style: styles,
                     createdAt: Date.now()
                 };
                 
@@ -376,7 +379,7 @@
                         
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (自動標記)</h3>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (V24.3)</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
@@ -440,7 +443,7 @@
             );
         };
 
-        // B. Ghost Engine (V24.0: Strict Z-Index & Logic Fix)
+        // B. Ghost Engine
         const GhostEngine = ({ outfit }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
@@ -528,15 +531,11 @@
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    // V24.2: Fix Image Path - Ensure it's a simple relative string
                     const patchedItems = items.map(item => {
                         let styleList = item.style;
                         if (!styleList || (Array.isArray(styleList) && styleList.length === 0)) {
                              styleList = STYLE_MAP[item.category] || ['Smart Casual'];
                         }
-                        
-                        // Ensure image is just a string filename if possible, or keep as is.
-                        // Assuming new V18.3+ warehouse items are strings.
                         
                         return { ...item, displayUrl: item.image, style: styleList };
                     });
@@ -578,14 +577,11 @@
                 }
             };
 
-            // V24.2: Integrated Logic (Sleeve + Season + Suit)
+            // V24.3: Integrated Logic (Sleeve + Season + Suit + Smart Shoes)
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
-                // V24.2 Logic: Determine if we should force Outer OFF
-                // Summer + Formal = Allow Outer (Suit)
-                // Summer + Not Formal = Force No Outer
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
                     if (targetOccasion === 'Formal') {
@@ -598,7 +594,7 @@
                 }
 
                 slots.forEach(slot => {
-                    // Smart Refill: If slot filled, keep it.
+                    // Smart Refill
                     if (newOutfit[slot]) {
                          if (slot === 'outer' && forceOuterOff) {
                              // Force clear if needed
@@ -619,21 +615,16 @@
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. V24.2 Logic: Sleeve Logic Integrated
+                    // 2. Sleeve Logic
                     if (slot === 'inner') {
-                        // Determine if we have an outer layer (either existing or just selected)
                         const hasOuter = newOutfit.outer || newOutfit.coat; 
                         
                         if (hasOuter) {
-                            // HAS OUTER -> Force Sleeveless (i)
                             candidates = candidates.filter(i => i.sleeve === 'sleeveless');
                         } else {
-                            // NO OUTER -> Force Sleeved (t)
-                            // This covers Summer/Casual/Smart without jacket
                             candidates = candidates.filter(i => i.sleeve === 'sleeved');
                         }
                         
-                        // Extra V24.2 Summer Filter: No heavy items
                         if (targetSeason === 'Summer') {
                             candidates = candidates.filter(i => 
                                 !['毛衣/針織', '帽T/衛衣'].includes(i.category)
@@ -647,10 +638,16 @@
                         if (suitMatch.length > 0) candidates = suitMatch;
                     }
 
+                    // 4. [V24.3] Smart Logic: Suit Pants != Sport Sneakers
+                    // Ensure 'bottom' is set before this logic runs (order matters: outer->inner->bottom->shoes)
+                    if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.category === '西裝褲') {
+                        // Filter OUT '球鞋'
+                        candidates = candidates.filter(s => s.category !== '球鞋');
+                    }
+
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
-                        // Keep empty if no match
                         newOutfit[slot] = null;
                     }
                 });
@@ -671,7 +668,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.2</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.3</span>
                         </h1>
                     </div>
 
