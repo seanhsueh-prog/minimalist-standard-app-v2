@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V24.4 - Smart Lock & Padded Assets</title>
+    <title>Minimalist V24.5 - Stable Leather Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V24.4 - Visuals based on Mother File] */
+        /* [V24.5 - Visuals based on V24.2 Mother File] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -212,7 +212,7 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (V24.4 Update) ---
+        // --- 2. LOGIC MAPPING (V24.5 Update) ---
         const STYLE_MAP = {
             // Formal
             '西裝外套': ['Formal', 'Smart'],
@@ -229,7 +229,7 @@
             '卡其褲': ['Smart', 'Casual'],
             '樂福鞋': ['Formal', 'Smart'],
             '靴子': ['Smart', 'Casual'],
-            '皮革休閒鞋': ['Smart', 'Casual'], 
+            '皮革休閒鞋': ['Smart', 'Casual'], // [V24.5 New]
 
             // Casual
             '羽絨外套': ['Casual'],
@@ -239,23 +239,22 @@
             '短褲': ['Casual'],
             '運動褲': ['Casual'],
             '工裝褲': ['Casual'],
-            '球鞋': ['Casual'] 
+            '球鞋': ['Casual'] // [V24.5 Changed: Removed Smart]
         };
 
         const MASTER_CATEGORIES = {
             outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
             bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
-            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] 
+            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] // [V24.5 Changed]
         };
 
-        // --- 3. ASSETS & CONFIG (V24.4 Update) ---
+        // --- 3. ASSETS & CONFIG (V24.5 Update) ---
         const ASSETS = {
             outer: 29, 
             bottom: 17, 
-            shoes: 5,           // s01-s05
-            leather_sneakers: 2,// w01-w02 (Physical split)
-            sport_sneakers: 3,  // x01-x03 (Physical split)
+            shoes: 10,  
+            leather_sneakers: 5, // [V24.5 New Asset w1-w5]
             inner_i: 12, 
             inner_t: 17  
         };
@@ -317,7 +316,7 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V24.4: Zero Padding & Merged Shoes)
+        // A. Warehouse Picker Modal (V24.5: Unified Pool & Stable Paths)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
@@ -331,22 +330,18 @@
                 }
             };
 
-            // V24.4: Updated range with zero-padding (s01.png, s02.png...)
-            const range = (prefix, count) => Array.from({length: count}, (_, i) => 
-                `${prefix}${(i+1).toString().padStart(2, '0')}.png`
-            );
+            // V24.5: Strictly keep V24.2 range logic (NO padding, s1.png, w1.png)
+            const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
             const getWarehouseItems = () => {
                 if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 
-                // [V24.4] Unified Shoe Pool (Merge s, w, x)
-                // "Regardless of sub-category, must merge return"
+                // [V24.5] Unified Shoe Pool: Merge s and w series
                 if (selectedSlot === 'shoes') {
-                    const sItems = range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' })); // s = Standard/Formal
-                    const wItems = range('w', ASSETS.leather_sneakers).map(src => ({ src, type: 'standard' })); // w = Leather Sneaker
-                    const xItems = range('x', ASSETS.sport_sneakers).map(src => ({ src, type: 'standard' })); // x = Sport Sneaker
-                    return [...sItems, ...wItems, ...xItems];
+                    const sItems = range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' })); 
+                    const wItems = range('w', ASSETS.leather_sneakers).map(src => ({ src, type: 'standard' })); 
+                    return [...sItems, ...wItems];
                 }
                 
                 if (selectedSlot === 'inner') {
@@ -362,21 +357,19 @@
             const handlePick = (item) => {
                 let finalCategory = selectedCategory;
 
-                // [V24.4] Logic: If selectedSlot is shoes, verify category by filename prefix
+                // [V24.5] Auto-correct Category for Shoes
                 if (selectedSlot === 'shoes') {
                     if (item.src.startsWith('w')) {
                         finalCategory = '皮革休閒鞋';
-                    } else if (item.src.startsWith('x')) {
-                        finalCategory = '球鞋';
                     } else if (item.src.startsWith('s')) {
-                        // If user has selected a sneaker category but clicked a formal shoe, default back to '皮鞋' 
-                        // or keep selected if it's '樂福鞋'/'靴子' etc.
-                        if (['皮革休閒鞋', '球鞋'].includes(selectedCategory)) {
+                        // If user picked '皮革休閒鞋' pill but clicked 's' image, revert to '皮鞋' to keep data sane
+                        if (selectedCategory === '皮革休閒鞋') {
                             finalCategory = '皮鞋';
                         }
                     }
                 }
 
+                // V24.5: Auto Tag Styles based on Category
                 const styles = STYLE_MAP[finalCategory] || ['Casual'];
 
                 const newItem = {
@@ -385,7 +378,7 @@
                     category: finalCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
-                    style: styles,
+                    style: styles, 
                     createdAt: Date.now()
                 };
                 
@@ -401,7 +394,7 @@
                         
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (V24.4)</h3>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (V24.5)</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
@@ -553,12 +546,12 @@
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
+                    // V24.2: Fix Image Path - Ensure it's a simple relative string
                     const patchedItems = items.map(item => {
                         let styleList = item.style;
                         if (!styleList || (Array.isArray(styleList) && styleList.length === 0)) {
                              styleList = STYLE_MAP[item.category] || ['Smart Casual'];
                         }
-                        
                         return { ...item, displayUrl: item.image, style: styleList };
                     });
                     setWardrobe(patchedItems);
@@ -599,11 +592,12 @@
                 }
             };
 
-            // V24.4: Integrated Logic (Sleeve + Season + Suit + Smart Lock)
+            // V24.5: Integrated Logic (Sleeve + Season + Suit + Smart Shoes)
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
+                // V24.2 Logic: Determine if we should force Outer OFF
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
                     if (targetOccasion === 'Formal') {
@@ -616,7 +610,7 @@
                 }
 
                 slots.forEach(slot => {
-                    // Smart Refill
+                    // Smart Refill: If slot filled, keep it.
                     if (newOutfit[slot]) {
                          if (slot === 'outer' && forceOuterOff) {
                              // Force clear if needed
@@ -637,7 +631,7 @@
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. Sleeve Logic
+                    // 2. V24.2 Logic: Sleeve Logic Integrated
                     if (slot === 'inner') {
                         const hasOuter = newOutfit.outer || newOutfit.coat; 
                         
@@ -660,15 +654,16 @@
                         if (suitMatch.length > 0) candidates = suitMatch;
                     }
 
-                    // 4. [V24.4] Smart Lock: Exclude '球鞋' globally for Smart
-                    if (targetOccasion === 'Smart' && slot === 'shoes') {
-                        // Strict rule: No sport sneakers (category='球鞋') allowed in Smart mode
+                    // 4. [V24.5] Smart Logic: Suit Pants != Sport Sneakers
+                    if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.category === '西裝褲') {
+                        // Exclude pure '球鞋', allow '皮革休閒鞋', '皮鞋', '樂福鞋'
                         candidates = candidates.filter(s => s.category !== '球鞋');
                     }
 
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
+                        // Keep empty if no match
                         newOutfit[slot] = null;
                     }
                 });
@@ -689,7 +684,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.4</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.5</span>
                         </h1>
                     </div>
 
