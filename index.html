@@ -1,17 +1,17 @@
-<!-- minimalist-wardrobe-core_v25_3.html -->
+<!-- minimalist-wardrobe-core_v25_4.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V25.3 - Bottom Tab Navigation</title>
+    <title>Minimalist V25.4 - Pure Warehouse Logic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V25.3 - Visuals based on V24.5 & V25.2] */
+        /* [V25.4 - Visuals based on V25.3] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #111; /* Dark background for the sides */
+            background-color: #111; 
             color: #111; 
             margin: 0;
             min-height: 100vh;
@@ -365,23 +365,6 @@
             );
         };
 
-        // C. Critique Panel
-        const CritiquePanel = ({ outfit }) => {
-            const { outer, inner, bottom, shoes } = outfit;
-            const analysis = useMemo(() => {
-                const items = [outer, inner, bottom, shoes].filter(Boolean);
-                if (items.length < 2) return { title: "準備就緒", msg: "請點擊 + 號從倉庫採購單品。", type: "neutral" };
-                return { title: "風格分析", msg: "系統根據您的單品屬性進行即時運算。", type: "success" };
-            }, [outfit]);
-
-            return (
-                <div className={`mx-6 mb-6 rounded-xl p-4 border shadow-sm transition-all duration-500 animate-fade-in ${analysis.type === 'success' ? 'bg-gray-900 text-white border-gray-800' : 'bg-white text-gray-800 border-gray-200'}`}>
-                    <h4 className="text-xs font-bold uppercase tracking-widest mb-1">{analysis.title}</h4>
-                    <p className="text-sm leading-relaxed opacity-90">{analysis.msg}</p>
-                </div>
-            );
-        };
-
         // --- 6. MAIN APPLICATION ---
         const App = () => {
             // Main State
@@ -394,7 +377,7 @@
             const [season, setSeason] = useState('Winter');
             const [inventoryTab, setInventoryTab] = useState('outer');
             
-            // Warehouse State (Moved from Modal)
+            // Warehouse State
             const [whSlot, setWhSlot] = useState('outer');
             const [whColor, setWhColor] = useState('black');
             const [whCategory, setWhCategory] = useState(MASTER_CATEGORIES['outer'][0]);
@@ -507,7 +490,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V25.3</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V25.4</span>
                         </h1>
                     </div>
 
@@ -555,7 +538,6 @@
                                         <button onClick={() => handleRandom(occasion, season)} className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"><Icon name="dice" className="w-4 h-4" /> 隨機補位</button>
                                     </div>
                                 </div>
-                                <CritiquePanel outfit={outfit} />
                             </div>
                         )}
 
@@ -590,7 +572,7 @@
                         {/* TAB 3: WAREHOUSE */}
                         {activeTab === 'warehouse' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
-                                <h2 className="text-xl font-bold mb-4">採購中心</h2>
+                                <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
                                     {SLOTS.filter(s => s.id !== 'coat').map(s => (
                                         <button key={s.id} onClick={() => handleWhSlotChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${whSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
@@ -647,7 +629,7 @@
                         </div>
                         <div onClick={() => setActiveTab('warehouse')} className={`nav-item ${activeTab === 'warehouse' ? 'active' : ''}`}>
                             <Icon name="bag" className="w-6 h-6" />
-                            <span>採購</span>
+                            <span>倉庫</span>
                         </div>
                     </div>
                 </div>
