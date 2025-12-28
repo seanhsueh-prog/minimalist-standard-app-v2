@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v26_0.html -->
+<!-- minimalist-wardrobe-core_v26_1.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V26.0 - Gentleman Standard</title>
+    <title>Minimalist V26.1 - Vertical Side Controls</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V26.0 - Visuals based on V25.5] */
+        /* [V26.1 - Visuals based on V26.0] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -53,7 +53,7 @@
         .ghost-canvas-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 9 / 16;
+            aspect-ratio: 3 / 4; /* Slightly taller aspect ratio for better fit */
             background-color: #f9fafb;
             overflow: hidden;
             border-bottom: 1px solid #f0f0f0;
@@ -71,30 +71,37 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* Segment Control */
-        .segment-control {
-            background-color: #f3f4f6;
-            border-radius: 0.75rem;
-            padding: 0.25rem;
+        /* Vertical Control Pills */
+        .v-control-group {
             display: flex;
-            justify-content: space-between;
-            margin: 0.5rem 1.5rem;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 20;
         }
-        .segment-btn {
-            flex: 1;
-            text-align: center;
-            padding: 0.5rem 0;
-            font-size: 0.8rem;
+        .v-control-btn {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            padding: 0.75rem 0.25rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            letter-spacing: 0.05em;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
+            letter-spacing: 0.1em;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid #eee;
+            border-radius: 99px;
             color: #9ca3af;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .segment-btn.active {
-            background-color: #ffffff;
-            color: #000000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        .v-control-btn.active {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
         /* Dense Card */
@@ -104,7 +111,7 @@
             background: #fff;
             border-radius: 0.75rem;
             border: 1px solid #f3f4f6;
-            overflow: hidden; /* Critical for scaling overflow */
+            overflow: hidden; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -130,7 +137,7 @@
             transition: all 0.2s;
             position: relative;
             background: #fff;
-            overflow: hidden; /* Critical for scaling overflow */
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -170,7 +177,7 @@
             border-top: 1px solid #eee;
             display: flex;
             justify-content: space-around;
-            padding: 12px 0 24px 0; /* Extra padding for iPhone home bar */
+            padding: 12px 0 24px 0; 
             z-index: 50;
         }
         .nav-item {
@@ -285,8 +292,8 @@
             { id: 'bottom', label: '下身' }, { id: 'shoes', label: '鞋款' }
         ];
 
-        const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人感' }, { id: 'Casual', label: '休閒' } ];
-        const SEASONS = [ { id: 'Winter', label: '❄ 冬季' }, { id: 'Summer', label: '☀ 夏季' } ];
+        const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
+        const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
 
         const BASE_COLORS = [
             { id: 'black', hex: '#1A1A1A', name: '黑' }, { id: 'white', hex: '#FFFFFF', name: '白', border: true },
@@ -319,12 +326,26 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Ghost Engine
-        const GhostEngine = ({ outfit }) => {
+        // A. Ghost Engine (With Side Controls)
+        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
-                <div className="w-full mb-2 flex flex-col items-center animate-fade-in bg-white">
-                    <div className="ghost-canvas-container relative">
+                <div className="w-full mb-2 flex justify-center items-center animate-fade-in bg-white relative">
+                    {/* Left Controls: Occasion */}
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 v-control-group">
+                        {OCCASIONS.map(occ => (
+                            <button
+                                key={occ.id}
+                                className={`v-control-btn ${occasion === occ.id ? 'active' : ''}`}
+                                onClick={() => { setOccasion(occ.id); triggerRandom(occ.id, season); }}
+                            >
+                                {occ.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* The Canvas */}
+                    <div className="ghost-canvas-container mx-auto">
                         {/* Z-10 Shoes */}
                         {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" onError={(e) => e.target.style.display='none'} />}
                         
@@ -343,22 +364,17 @@
                             </div>
                         )}
                     </div>
-                </div>
-            );
-        };
 
-        // B. Filter Controls
-        const FilterControls = ({ occasion, setOccasion, season, setSeason, triggerRandom }) => {
-            return (
-                <div className="flex flex-col gap-2 mb-2">
-                    <div className="segment-control">
-                        {OCCASIONS.map(occ => (
-                            <button key={occ.id} className={`segment-btn ${occasion === occ.id ? 'active' : ''}`} onClick={() => { setOccasion(occ.id); triggerRandom(occ.id, season); }}>{occ.label}</button>
-                        ))}
-                    </div>
-                    <div className="segment-control mt-0">
+                    {/* Right Controls: Season */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 v-control-group">
                         {SEASONS.map(s => (
-                            <button key={s.id} className={`segment-btn ${season === s.id ? 'active' : ''}`} onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }}>{s.label}</button>
+                            <button
+                                key={s.id}
+                                className={`v-control-btn ${season === s.id ? 'active' : ''}`}
+                                onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }}
+                            >
+                                {s.label}
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -490,7 +506,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V26.0</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V26.1</span>
                         </h1>
                     </div>
 
@@ -500,8 +516,12 @@
                         {/* TAB 1: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
-                                <FilterControls occasion={occasion} setOccasion={setOccasion} season={season} setSeason={setSeason} triggerRandom={handleRandom} />
-                                <GhostEngine outfit={outfit} />
+                                <GhostEngine 
+                                    outfit={outfit} 
+                                    occasion={occasion} setOccasion={setOccasion}
+                                    season={season} setSeason={setSeason}
+                                    triggerRandom={handleRandom}
+                                />
                                 
                                 <div className="px-6 mb-4">
                                     <div className="grid grid-cols-4 gap-2 mb-4">
