@@ -237,7 +237,7 @@
             '卡其褲': ['Smart', 'Casual'],
             '樂福鞋': ['Formal', 'Smart'],
             '靴子': ['Smart', 'Casual'],
-            '皮革休閒鞋': ['Smart', 'Casual'], 
+            '皮革休閒鞋': ['Smart', 'Casual'], // [V24.5 New]
 
             // Casual
             '羽絨外套': ['Casual'],
@@ -247,14 +247,14 @@
             '短褲': ['Casual'],
             '運動褲': ['Casual'],
             '工裝褲': ['Casual'],
-            '球鞋': ['Casual'] 
+            '球鞋': ['Casual'] // [V24.5 Changed: Removed Smart]
         };
 
         const MASTER_CATEGORIES = {
             outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
             bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
-            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子']
+            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] // [V24.5 Changed]
         };
 
         // --- 3. ASSETS & CONFIG (V24.5 Update) ---
@@ -262,7 +262,7 @@
             outer: 29, 
             bottom: 17, 
             shoes: 10,  
-            leather_sneakers: 5, 
+            leather_sneakers: 5, // [V24.5 New Asset w1-w5]
             inner_i: 12, 
             inner_t: 17  
         };
@@ -338,12 +338,14 @@
                 }
             };
 
+            // V24.5: Strictly keep V24.2 range logic (NO padding, s1.png, w1.png)
             const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
             const getWarehouseItems = () => {
                 if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 
+                // [V24.5] Unified Shoe Pool: Merge s and w series
                 if (selectedSlot === 'shoes') {
                     const sItems = range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' })); 
                     const wItems = range('w', ASSETS.leather_sneakers).map(src => ({ src, type: 'standard' })); 
@@ -363,16 +365,19 @@
             const handlePick = (item) => {
                 let finalCategory = selectedCategory;
 
+                // [V24.5] Auto-correct Category for Shoes
                 if (selectedSlot === 'shoes') {
                     if (item.src.startsWith('w')) {
                         finalCategory = '皮革休閒鞋';
                     } else if (item.src.startsWith('s')) {
+                        // If user picked '皮革休閒鞋' pill but clicked 's' image, revert to '皮鞋' to keep data sane
                         if (selectedCategory === '皮革休閒鞋') {
                             finalCategory = '皮鞋';
                         }
                     }
                 }
 
+                // V24.5: Auto Tag Styles based on Category
                 const styles = STYLE_MAP[finalCategory] || ['Casual'];
 
                 const newItem = {
@@ -549,6 +554,7 @@
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
+                    // V24.2: Fix Image Path - Ensure it's a simple relative string
                     const patchedItems = items.map(item => {
                         let styleList = item.style;
                         if (!styleList || (Array.isArray(styleList) && styleList.length === 0)) {
@@ -599,6 +605,7 @@
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 
+                // V24.2 Logic: Determine if we should force Outer OFF
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
                     if (targetOccasion === 'Formal') {
@@ -611,7 +618,7 @@
                 }
 
                 slots.forEach(slot => {
-                    // Smart Refill
+                    // Smart Refill: If slot filled, keep it.
                     if (newOutfit[slot]) {
                          if (slot === 'outer' && forceOuterOff) {
                              // Force clear if needed
@@ -632,7 +639,7 @@
                         return item.style.includes(targetOccasion);
                     });
 
-                    // 2. Sleeve Logic
+                    // 2. V24.2 Logic: Sleeve Logic Integrated
                     if (slot === 'inner') {
                         const hasOuter = newOutfit.outer || newOutfit.coat; 
                         
@@ -657,12 +664,14 @@
 
                     // 4. [V24.5] Smart Logic: Suit Pants != Sport Sneakers
                     if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.category === '西裝褲') {
+                        // Exclude pure '球鞋', allow '皮革休閒鞋', '皮鞋', '樂福鞋'
                         candidates = candidates.filter(s => s.category !== '球鞋');
                     }
 
                     if (candidates.length > 0) {
                         newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
+                        // Keep empty if no match
                         newOutfit[slot] = null;
                     }
                 });
