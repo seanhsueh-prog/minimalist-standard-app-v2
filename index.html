@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V24.8 - Path Fixer & Shoe Zoom</title>
+    <title>Minimalist V24.9 - Final Fixes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V24.8 - Visuals based on V24.2 Mother File] */
+        /* [V24.9 - Visuals based on V24.2 Mother File] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -60,7 +60,7 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* [V24.8 New Feature] Shoe Zoom Logic */
+        /* [V24.9 FIX] Shoe Zoom Logic - Fixed Padding Issue */
         .shoe-zoom { 
             overflow: hidden; 
             position: relative; 
@@ -69,6 +69,7 @@
             transform: scale(3.5); 
             transform-origin: bottom center; 
             object-position: bottom center !important; 
+            padding: 0 !important; /* Critical Fix */
             transition: transform 0.2s;
         }
 
@@ -224,7 +225,7 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (V24.8 Update) ---
+        // --- 2. LOGIC MAPPING (V24.9 Update) ---
         const STYLE_MAP = {
             // Formal
             '西裝外套': ['Formal', 'Smart'],
@@ -241,7 +242,7 @@
             '卡其褲': ['Smart', 'Casual'],
             '樂福鞋': ['Formal', 'Smart'],
             '靴子': ['Smart', 'Casual'],
-            '皮革休閒鞋': ['Smart', 'Casual'], // [V24.8 New]
+            '皮革休閒鞋': ['Smart', 'Casual'], // [V24.9 New]
 
             // Casual
             '羽絨外套': ['Casual'],
@@ -251,17 +252,17 @@
             '短褲': ['Casual'],
             '運動褲': ['Casual'],
             '工裝褲': ['Casual'],
-            '球鞋': ['Casual'] // [V24.8 Changed: Removed Smart]
+            '球鞋': ['Casual'] 
         };
 
         const MASTER_CATEGORIES = {
             outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
             inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
             bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
-            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] // [V24.8 Updated]
+            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '球鞋', '靴子'] // [V24.9 Updated]
         };
 
-        // --- 3. ASSETS & CONFIG (V24.8 LOCKED) ---
+        // --- 3. ASSETS & CONFIG (V24.9 LOCKED) ---
         const ASSETS = {
             outer: 29, 
             bottom: 17, 
@@ -328,7 +329,7 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Warehouse Picker Modal (V24.8: Unified Pool & Shoe Zoom)
+        // A. Warehouse Picker Modal (V24.9: Unified Pool & Shoe Zoom & No Prefix)
         const WarehousePickerModal = ({ isOpen, onClose, onAdd }) => {
             const [selectedSlot, setSelectedSlot] = useState('outer');
             const [selectedColor, setSelectedColor] = useState('black');
@@ -342,14 +343,14 @@
                 }
             };
 
-            // V24.8 LOCKED: No zero padding, strict V24.2 behavior
+            // V24.9: Strict V24.2 behavior
             const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
 
             const getWarehouseItems = () => {
                 if (selectedSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
                 if (selectedSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
                 
-                // [V24.8] Unified Shoe Pool: Merge s and w series
+                // [V24.9] Unified Shoe Pool: Merge s and w series
                 if (selectedSlot === 'shoes') {
                     const sItems = range('s', ASSETS.shoes).map(src => ({ src, type: 'standard' })); 
                     const wItems = range('w', ASSETS.leather_sneakers).map(src => ({ src, type: 'standard' })); 
@@ -369,7 +370,7 @@
             const handlePick = (item) => {
                 let finalCategory = selectedCategory;
 
-                // [V24.8] Auto-correct Category for Shoes
+                // [V24.9] Auto-correct Category for Shoes
                 if (selectedSlot === 'shoes') {
                     if (item.src.startsWith('w')) {
                         finalCategory = '皮革休閒鞋';
@@ -384,7 +385,7 @@
 
                 const newItem = {
                     slot: selectedSlot,
-                    image: item.src, 
+                    image: item.src, // Clean filename
                     category: finalCategory, 
                     sleeve: item.type, 
                     color: selectedColor, 
@@ -404,7 +405,7 @@
                         
                         <div className="sticky top-0 bg-white z-20 p-5 pb-2 border-b border-gray-100 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (V24.8)</h3>
+                                <h3 className="text-lg font-bold tracking-tight">倉庫採購 (V24.9)</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-black p-1">✕</button>
                             </div>
 
@@ -456,10 +457,10 @@
                                     <div 
                                         key={idx} 
                                         onClick={() => handlePick(item)} 
-                                        /* [V24.8] Apply Zoom Class if Shoes */
+                                        /* [V24.9] Apply Zoom Class if Shoes */
                                         className={`warehouse-item relative group bg-white shadow-sm hover:shadow-md ${selectedSlot === 'shoes' ? 'shoe-zoom' : ''}`}
                                     >
-                                        <img src={`./${item.src}`} alt="item" />
+                                        <img src={item.src} alt="item" />
                                     </div>
                                 ))}
                             </div>
@@ -561,7 +562,7 @@
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    // [V24.8] Path Fixer: Ensure image path is clean filename only
+                    // [V24.9] Path Fixer: Ensure image path is clean filename only
                     const patchedItems = items.map(item => {
                         let styleList = item.style;
                         if (!styleList || (Array.isArray(styleList) && styleList.length === 0)) {
@@ -611,7 +612,7 @@
                 }
             };
 
-            // V24.8: Integrated Logic (Sleeve + Season + Suit + Smart Shoes)
+            // V24.9: Integrated Logic (Sleeve + Season + Suit + Smart Shoes)
             const handleRandom = (targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
@@ -673,7 +674,7 @@
                         if (suitMatch.length > 0) candidates = suitMatch;
                     }
 
-                    // 4. [V24.8] Smart Logic: Suit Pants != Sport Sneakers
+                    // 4. [V24.9] Smart Logic: Suit Pants != Sport Sneakers
                     if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.category === '西裝褲') {
                         // Exclude pure '球鞋', allow '皮革休閒鞋', '皮鞋', '樂福鞋'
                         candidates = candidates.filter(s => s.category !== '球鞋');
@@ -703,7 +704,7 @@
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.8</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V24.9</span>
                         </h1>
                     </div>
 
@@ -776,7 +777,7 @@
                                     <div 
                                         key={item.id} 
                                         onClick={() => setOutfit(prev => ({...prev, [item.slot]: item}))} 
-                                        /* [V24.8] Apply Zoom Class if Shoes in Wardrobe */
+                                        /* [V24.9] Apply Zoom Class if Shoes in Wardrobe */
                                         className={`dense-card cursor-pointer ${item.slot === 'shoes' ? 'shoe-zoom' : ''}`}
                                     >
                                         <img src={item.displayUrl} alt={item.category} />
