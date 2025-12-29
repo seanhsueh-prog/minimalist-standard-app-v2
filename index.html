@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v26_4.html -->
+<!-- minimalist-wardrobe-core_v26_5.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V26.4 - Mandatory Guidance</title>
+    <title>Minimalist V26.5 - Stable Release</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V26.4 - Visuals based on V26.2/V26.3] */
+        /* [V26.5 - Visuals based on V26.4] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -341,13 +341,13 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Ghost Engine (Optimized & Floating Controls)
-        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom }) => {
+        // A. Ghost Engine (Optimized & Floating Controls & Empty State Guidance)
+        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom, onGoToWarehouse }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
                     {/* The Canvas */}
-                    <div className="ghost-canvas-container mx-auto">
+                    <div className="ghost-canvas-container mx-auto relative">
                         {/* Z-10 Shoes - GPU Accelerated */}
                         {shoes && (
                             <img 
@@ -368,9 +368,16 @@
                         {/* Z-40 Outer */}
                         {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
+                        {/* Empty State Guidance [V26.5] */}
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">
-                                您的衣櫥是空的
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-auto">
+                                <p className="text-gray-300 text-xs tracking-widest mb-4">您的衣櫥目前是空的</p>
+                                <button 
+                                    onClick={onGoToWarehouse}
+                                    className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full shadow-lg hover:scale-105 transition-transform"
+                                >
+                                    💡 前往單品倉庫新增單品
+                                </button>
                             </div>
                         )}
                     </div>
@@ -415,6 +422,7 @@
             const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [activeTab, setActiveTab] = useState('styling');
+            const [dbError, setDbError] = useState(false); // [V26.5] Safari Private Mode Check
             
             // Sub-States
             const [occasion, setOccasion] = useState('Smart'); 
@@ -427,7 +435,7 @@
             const [whCategory, setWhCategory] = useState(MASTER_CATEGORIES['outer'][0]);
             const [whInnerType, setWhInnerType] = useState('sleeved');
 
-            // Load Data
+            // Load Data & Environment Check
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
@@ -441,6 +449,7 @@
                     setWardrobe(patchedItems);
                 } catch (e) {
                     console.error("DB Load Failed:", e);
+                    setDbError(true); // Trigger Safari Shield
                 }
             };
 
@@ -530,11 +539,31 @@
 
             return (
                 <div className="app-container">
+                    {/* [V26.5] Safari Environment Shield */}
+                    {dbError && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-6 backdrop-blur-sm animate-fade-in">
+                            <div className="bg-white rounded-2xl p-6 text-center max-w-xs shadow-2xl">
+                                <div className="text-4xl mb-4">⚠️</div>
+                                <h3 className="text-lg font-bold mb-2 text-red-600">偵測到瀏覽器限制</h3>
+                                <p className="text-sm text-gray-600 mb-6 leading-relaxed text-left">
+                                    請確保您【沒有】開啟 Safari 私密瀏覽模式。<br/><br/>
+                                    私密模式會鎖定衣櫥資料庫導致無法運行。請切換回一般模式後重新整理。
+                                </p>
+                                <button 
+                                    onClick={() => window.location.reload()} 
+                                    className="w-full py-3 bg-black text-white text-sm font-bold rounded-xl"
+                                >
+                                    我已了解，重新整理
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
                             Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V26.4</span>
+                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V26.5</span>
                         </h1>
                     </div>
 
@@ -549,6 +578,7 @@
                                     occasion={occasion} setOccasion={setOccasion}
                                     season={season} setSeason={setSeason}
                                     triggerRandom={handleRandom}
+                                    onGoToWarehouse={() => setActiveTab('add')} // Pass handler
                                 />
                                 
                                 <div className="px-6 mt-4 mb-4">
@@ -618,7 +648,7 @@
                         )}
 
                         {/* TAB 3: WAREHOUSE */}
-                        {activeTab === 'warehouse' && (
+                        {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
@@ -685,7 +715,7 @@
                             <Icon name="grid" className="w-6 h-6" />
                             <span>衣櫥</span>
                         </div>
-                        <div onClick={() => setActiveTab('warehouse')} className={`nav-item ${activeTab === 'warehouse' ? 'active' : ''}`}>
+                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}>
                             <Icon name="plus" className="w-6 h-6" />
                             <span>單品倉庫</span>
                         </div>
