@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_0.html -->
+<!-- minimalist-wardrobe-core_v27_1.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.0 - Smart Parsing Engine</title>
+    <title>Minimalist V27.1 - Hotfix for Safari</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.0 - Visuals based on V26.5] */
+        /* [V27.1 - Visuals based on V26.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -228,36 +228,41 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // --- 1. CORE UTILS: IndexedDB & Migration ---
-        const APP_VERSION = 'v27.0';
-        const DB_CONFIG = { name: 'MinimalistVault_V27', version: 1, store: 'inventory' };
+        const APP_VERSION = 'v27.1';
+        const DB_CONFIG = {
+            name: 'MinimalistVault_V27', 
+            version: 1,
+            store: 'inventory'
+        };
 
-        // Helper to clear old data
-        const checkMigration = async () => {
+        // [V27.1 FIX] Safer migration check for Safari
+        const checkMigration = () => {
             const current = localStorage.getItem('app_version');
             if (current !== APP_VERSION) {
-                console.log('Migrating to', APP_VERSION);
-                try {
-                    // Simple logic: If version changed, we might want to clear old incompatible DBs
-                    // For V27, we enforce a clean slate due to new naming convention
-                    const dbs = await window.indexedDB.databases();
-                    dbs.forEach(db => { if (db.name !== DB_CONFIG.name) window.indexedDB.deleteDatabase(db.name); });
-                    localStorage.setItem('app_version', APP_VERSION);
-                } catch (e) { console.error("Migration warning", e); }
+                console.log('New version detected:', APP_VERSION);
+                // In a real app we might migrate data. Here we just set the flag.
+                // We rely on simple key conflicts being handled by new DB name.
+                localStorage.setItem('app_version', APP_VERSION);
             }
         };
 
         const dbHelper = {
             open: () => {
                 return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains(DB_CONFIG.store)) {
-                            db.createObjectStore(DB_CONFIG.store, { keyPath: 'id', autoIncrement: true });
-                        }
-                    };
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
+                    // [V27.1 FIX] Safari Private Mode Check
+                    try {
+                        const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+                        request.onupgradeneeded = (e) => {
+                            const db = e.target.result;
+                            if (!db.objectStoreNames.contains(DB_CONFIG.store)) {
+                                db.createObjectStore(DB_CONFIG.store, { keyPath: 'id', autoIncrement: true });
+                            }
+                        };
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(request.error);
+                    } catch (e) {
+                        reject(new Error("IndexedDB Access Denied"));
+                    }
                 });
             },
             addItem: async (item) => {
@@ -292,7 +297,7 @@
             }
         };
 
-        // --- 2. NEW CATEGORY & ASSET MAP (V27.0) ---
+        // --- 2. ASSET MAPS (V27.0 Spec) ---
         const PART_MAP = {
             'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's'
         };
@@ -301,7 +306,7 @@
             // Outer
             'suits': '單排西裝', 'suitd': '雙排西裝', 'coat': '大衣', 
             'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
-            // Inner (s=sleeved, n=no sleeve)
+            // Inner
             'shirts': '有袖襯衫', 'shirtn': '無袖襯衫',
             'tshirts': '有袖T恤', 'tshirtn': '無袖T恤',
             'polos': '有袖Polo', 'polon': '無袖Polo',
@@ -329,7 +334,7 @@
         };
 
         const STYLE_RULES = {
-            // Mapping categories to occasions for smart styling
+            // Mapping categories to occasions
             'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'coat': ['Formal', 'Smart'], 
             'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
             'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
@@ -347,20 +352,11 @@
 
         const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
         const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
-
-        // --- 3. HELPER FUNCTIONS ---
-        // V27.0: Filename Parser
-        const parseFilename = (filename) => {
-            // Expected format: part_category_color_id.png (e.g., o_suits_bk_01.png)
-            const parts = filename.replace('.png', '').split('_');
-            if (parts.length < 4) return null;
-            return {
-                partCode: parts[0],
-                catCode: parts[1],
-                colorCode: parts[2],
-                id: parts[3],
-                full: filename
-            };
+        const MASTER_CATEGORIES = {
+            outer: ['suits','suitd','coat','leather','jacket','down'],
+            inner: ['shirt','tshirt','polo','knit','hoodie','sweat'], // Base names for logic
+            bottom: ['suit','jeans','chino','shorts','sport','cargo'],
+            shoes: ['dress','loafer','leasnk','sport','boots']
         };
 
         // --- 4. ICONS ---
@@ -383,6 +379,7 @@
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
+                    {/* The Canvas */}
                     <div className="ghost-canvas-container mx-auto relative">
                         {shoes && (
                             <img 
@@ -407,6 +404,7 @@
                         )}
                     </div>
 
+                    {/* Right Floating Controls */}
                     <div className="floating-controls">
                         <div className="control-group mb-3">
                             {SEASONS.map(s => (
@@ -434,13 +432,12 @@
             const [season, setSeason] = useState('Winter');
             const [inventoryTab, setInventoryTab] = useState('outer');
             
-            // New V27 Warehouse State
+            // Warehouse State
             const [whSlot, setWhSlot] = useState('outer');
-            const [whCatCode, setWhCatCode] = useState('suits'); // Use real code (e.g. 'suits')
-            const [whColorCode, setWhColorCode] = useState('bk'); // Use real code (e.g. 'bk')
-            const [whInnerSleeve, setWhInnerSleeve] = useState('s'); // s or n
+            const [whCatCode, setWhCatCode] = useState('suits'); 
+            const [whColorCode, setWhColorCode] = useState('bk'); 
+            const [whInnerSleeve, setWhInnerSleeve] = useState('s'); 
 
-            // Init
             useEffect(() => { 
                 checkMigration();
                 loadData(); 
@@ -456,27 +453,19 @@
                 }
             };
 
-            // V27.0: Virtual Stock Generator
-            // This generates potential file paths based on the selection to show in the grid
             const getVirtualStock = () => {
-                // Construct category code based on logic
-                let targetCat = whCatCode;
-                
-                // Special handling for inner logic (append 's' or 'n' to base cat if needed)
-                // Actually, the new map has distinct codes: 'shirts', 'shirtn'.
-                // So we need to switch whCatCode based on sleeve toggle if we are in inner slot.
-                
                 const prefix = PART_MAP[whSlot];
-                const count = 3; // Assume 3 variants per color/cat
+                let targetCat = whCatCode; 
+                // Note: whCatCode for inner is already adjusted by handleInnerCatChange
                 
-                // Generate
+                const count = 3; 
                 const stock = [];
                 for(let i=1; i<=count; i++) {
                     const num = i.toString().padStart(2, '0');
                     const fname = `${prefix}_${targetCat}_${whColorCode}_${num}.png`;
                     stock.push({
                         src: fname,
-                        displayUrl: `./${fname}`, // Relative path assumption
+                        displayUrl: `./${fname}`,
                         slot: whSlot,
                         category: CATEGORY_MAP[targetCat] || targetCat,
                         color: whColorCode,
@@ -487,23 +476,19 @@
             };
 
             const handleAddItem = async (stockItem) => {
-                // Build the item record
-                // Parse style from map
                 let styles = STYLE_RULES[stockItem.catCode] || ['Casual'];
-                // Clean up sleeve logic for storage
                 let sleeveType = 'standard';
                 if (whSlot === 'inner') {
                     sleeveType = whCatCode.endsWith('n') ? 'sleeveless' : 'sleeved';
                 }
 
                 const newItem = {
-                    id: Date.now(), // Temp ID, DB will overwrite
                     slot: whSlot,
-                    image: stockItem.src, // Store filename
+                    image: stockItem.src, 
                     displayUrl: stockItem.displayUrl,
                     category: stockItem.category,
                     catCode: stockItem.catCode,
-                    color: whColorCode, // Store code 'bk'
+                    color: whColorCode,
                     sleeve: sleeveType,
                     style: styles,
                     createdAt: Date.now()
@@ -512,7 +497,6 @@
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
-                    // Optional: simple toast or feedback could go here
                 } catch (e) { alert("儲存失敗"); }
             };
 
@@ -546,26 +530,18 @@
                     }
                     if (forceOuterOff && slot === 'outer') return;
                     
-                    // Filter Wardrobe
                     let candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
-                    
-                    // Style Filter
                     candidates = candidates.filter(item => item.style && item.style.includes(targetOccasion));
                     
-                    // Inner Sleeve Logic
                     if (slot === 'inner') {
                         const hasOuter = newOutfit.outer || newOutfit.coat; 
                         candidates = candidates.filter(i => hasOuter ? i.sleeve === 'sleeveless' : i.sleeve === 'sleeved');
-                        if (targetSeason === 'Summer') candidates = candidates.filter(i => !['毛衣/針織', '帽T/衛衣'].includes(i.category)); // Rough check by name
+                        if (targetSeason === 'Summer') candidates = candidates.filter(i => !['毛衣/針織', '帽T/衛衣'].includes(i.category));
                     }
-                    
-                    // Suit Logic
                     if (targetOccasion === 'Formal' && slot === 'bottom' && newOutfit.outer) {
-                        const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color); // Color code matching
+                        const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color); 
                         if (suitMatch.length > 0) candidates = suitMatch;
                     }
-                    
-                    // Shoes Logic
                     if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.catCode === 'suit') {
                         candidates = candidates.filter(s => s.catCode !== 'sport');
                     }
@@ -576,33 +552,23 @@
                 setOutfit(newOutfit);
             }, [outfit, wardrobe, occasion, season]);
 
-            // Handling Inner Category Switch (Base + Sleeve suffix)
             const handleInnerCatChange = (base) => {
-                // Base is like 'shirt', 'tshirt'. We add 's' or 'n' based on whInnerSleeve
                 setWhCatCode(base + whInnerSleeve);
             };
             
-            // Update cat code when sleeve toggles
             useEffect(() => {
                 if (whSlot === 'inner') {
-                    const currentBase = whCatCode.slice(0, -1); // remove last char
-                    // Need to ensure currentBase is valid
+                    const currentBase = whCatCode.slice(0, -1); 
                     if (['shirt','tshirt','polo','knit','hoodie','sweat'].includes(currentBase)) {
                         setWhCatCode(currentBase + whInnerSleeve);
                     }
                 }
             }, [whInnerSleeve]);
 
-            // Categories available for current slot
             const getCurrentCategories = () => {
-                if (whSlot === 'outer') return ['suits','suitd','coat','leather','jacket','down'];
-                if (whSlot === 'bottom') return ['suit','jeans','chino','shorts','sport','cargo'];
-                if (whSlot === 'shoes') return ['dress','loafer','leasnk','sport','boots'];
-                if (whSlot === 'inner') return ['shirt','tshirt','polo','knit','hoodie','sweat']; // Base names
-                return [];
+                return MASTER_CATEGORIES[whSlot] || [];
             };
 
-            // Custom handler to reset categories when slot changes
             const handleSlotTabChange = (s) => {
                 setWhSlot(s);
                 if (s === 'outer') setWhCatCode('suits');
@@ -627,7 +593,7 @@
                     )}
 
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.0</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.1</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
@@ -702,7 +668,7 @@
 
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
-                                <h2 className="text-xl font-bold mb-4">新增單品庫</h2>
+                                <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
                                     {SLOTS.filter(s => s.id !== 'coat').map(s => (
                                         <button key={s.id} onClick={() => handleSlotTabChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${whSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
@@ -751,7 +717,7 @@
                                                 style={whSlot === 'shoes' 
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
-                                                onError={(e) => { e.target.parentElement.style.display = 'none'; }} /* Hide missing files */
+                                                onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                             />
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
