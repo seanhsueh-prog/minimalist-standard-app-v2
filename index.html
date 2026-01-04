@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_1.html -->
+<!-- minimalist-wardrobe-core_v27_2.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.1 - Hotfix for Safari</title>
+    <title>Minimalist V27.2 - Stability Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.1 - Visuals based on V26.5] */
+        /* [V27.2 - Visuals based on V26.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -227,29 +227,17 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- 1. CORE UTILS: IndexedDB & Migration ---
-        const APP_VERSION = 'v27.1';
+        // --- 1. CORE UTILS: IndexedDB (LOCKED) ---
+        // [V27.2 FIX] New DB name to force fresh start and avoid conflicts
         const DB_CONFIG = {
-            name: 'MinimalistVault_V27', 
+            name: 'MinimalistVault_V27_2_Stable', 
             version: 1,
             store: 'inventory'
-        };
-
-        // [V27.1 FIX] Safer migration check for Safari
-        const checkMigration = () => {
-            const current = localStorage.getItem('app_version');
-            if (current !== APP_VERSION) {
-                console.log('New version detected:', APP_VERSION);
-                // In a real app we might migrate data. Here we just set the flag.
-                // We rely on simple key conflicts being handled by new DB name.
-                localStorage.setItem('app_version', APP_VERSION);
-            }
         };
 
         const dbHelper = {
             open: () => {
                 return new Promise((resolve, reject) => {
-                    // [V27.1 FIX] Safari Private Mode Check
                     try {
                         const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
                         request.onupgradeneeded = (e) => {
@@ -261,7 +249,7 @@
                         request.onsuccess = () => resolve(request.result);
                         request.onerror = () => reject(request.error);
                     } catch (e) {
-                        reject(new Error("IndexedDB Access Denied"));
+                        reject(new Error("IndexedDB Access Denied (Private Mode?)"));
                     }
                 });
             },
@@ -297,10 +285,8 @@
             }
         };
 
-        // --- 2. ASSET MAPS (V27.0 Spec) ---
-        const PART_MAP = {
-            'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's'
-        };
+        // --- 2. LOGIC MAPPING ---
+        const PART_MAP = { 'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's' };
 
         const CATEGORY_MAP = {
             // Outer
@@ -334,7 +320,6 @@
         };
 
         const STYLE_RULES = {
-            // Mapping categories to occasions
             'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'coat': ['Formal', 'Smart'], 
             'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
             'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
@@ -352,14 +337,22 @@
 
         const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
         const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
+        
         const MASTER_CATEGORIES = {
             outer: ['suits','suitd','coat','leather','jacket','down'],
-            inner: ['shirt','tshirt','polo','knit','hoodie','sweat'], // Base names for logic
+            inner: ['shirt','tshirt','polo','knit','hoodie','sweat'], 
             bottom: ['suit','jeans','chino','shorts','sport','cargo'],
             shoes: ['dress','loafer','leasnk','sport','boots']
         };
 
-        // --- 4. ICONS ---
+        const INVENTORY_TABS = [
+            { id: 'outer', label: '外套', slots: ['outer', 'coat'] }, { id: 'inner', label: '內搭', slots: ['inner'] },
+            { id: 'bottom', label: '下身', slots: ['bottom'] }, { id: 'shoes', label: '鞋款', slots: ['shoes'] }
+        ];
+
+        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
+
+        // --- 4. ICONS (Safety Fix) ---
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -370,7 +363,9 @@
                 x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
             };
-            return icons[name] ? React.cloneElement(icons[name], { className }) : null;
+            // [V27.2 FIX] Defensive check: if icon name not found, return null to prevent crash
+            if (!icons[name]) return null;
+            return React.cloneElement(icons[name], { className });
         };
 
         // --- 5. COMPONENTS ---
@@ -432,21 +427,20 @@
             const [season, setSeason] = useState('Winter');
             const [inventoryTab, setInventoryTab] = useState('outer');
             
-            // Warehouse State
             const [whSlot, setWhSlot] = useState('outer');
             const [whCatCode, setWhCatCode] = useState('suits'); 
             const [whColorCode, setWhColorCode] = useState('bk'); 
             const [whInnerSleeve, setWhInnerSleeve] = useState('s'); 
 
-            useEffect(() => { 
-                checkMigration();
-                loadData(); 
-            }, []);
+            useEffect(() => { loadData(); }, []);
 
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    setWardrobe(items);
+                    // [V27.2 FIX] Defensive mapping to prevent map errors
+                    if(Array.isArray(items)) {
+                        setWardrobe(items);
+                    }
                 } catch (e) {
                     console.error("DB Load Failed:", e);
                     setDbError(true);
@@ -456,8 +450,6 @@
             const getVirtualStock = () => {
                 const prefix = PART_MAP[whSlot];
                 let targetCat = whCatCode; 
-                // Note: whCatCode for inner is already adjusted by handleInnerCatChange
-                
                 const count = 3; 
                 const stock = [];
                 for(let i=1; i<=count; i++) {
@@ -521,7 +513,7 @@
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
                 let forceOuterOff = false;
                 if (targetSeason === 'Summer') {
-                    if (targetOccasion === 'Formal') { /* Allow */ } 
+                    if (targetOccasion === 'Formal') { } 
                     else { newOutfit.outer = null; newOutfit.coat = null; forceOuterOff = true; }
                 }
                 slots.forEach(slot => {
@@ -593,7 +585,7 @@
                     )}
 
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.1</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.2</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
@@ -613,7 +605,8 @@
                                                             <img 
                                                                 src={outfit[slot].displayUrl} 
                                                                 className="w-full h-full"
-                                                                style={slot === 'shoes' || (outfit[slot].image && outfit[slot].image.startsWith('s_')) 
+                                                                // [V27.2 FIX] Defensive Safe Check
+                                                                style={(slot === 'shoes' || (outfit[slot]?.image || '').startsWith('s_'))
                                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center', willChange: 'transform' } 
                                                                     : { objectFit: 'contain' }
                                                                 }
@@ -653,11 +646,13 @@
                                             <img 
                                                 src={item.displayUrl} 
                                                 alt={item.category}
-                                                style={item.slot === 'shoes' || item.image.startsWith('s_')
+                                                // [V27.2 FIX] Defensive Check
+                                                style={item.slot === 'shoes' || (item.image || '').startsWith('s_')
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
                                             />
-                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm" style={{ background: COLOR_MAP[item.color]?.hex || '#000' }}></div>
+                                            {/* [V27.2 FIX] Safe Color Map Lookup */}
+                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm" style={{ background: (COLOR_MAP[item.color] || {hex:'#000'}).hex }}></div>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
                                     ))}
@@ -714,6 +709,7 @@
                                             <img 
                                                 src={`./${item.src}`} 
                                                 alt="item" 
+                                                // [V27.2 FIX] Defensive Check
                                                 style={whSlot === 'shoes' 
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
