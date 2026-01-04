@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v26_5.html -->
+<!-- minimalist-wardrobe-core_v27_0.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V26.5 - Stable Release</title>
+    <title>Minimalist V27.0 - Smart Parsing Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V26.5 - Visuals based on V26.4] */
+        /* [V27.0 - Visuals based on V26.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -227,11 +227,23 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- 1. CORE UTILS: IndexedDB (LOCKED) ---
-        const DB_CONFIG = {
-            name: 'MinimalistVault_V22', 
-            version: 1,
-            store: 'inventory'
+        // --- 1. CORE UTILS: IndexedDB & Migration ---
+        const APP_VERSION = 'v27.0';
+        const DB_CONFIG = { name: 'MinimalistVault_V27', version: 1, store: 'inventory' };
+
+        // Helper to clear old data
+        const checkMigration = async () => {
+            const current = localStorage.getItem('app_version');
+            if (current !== APP_VERSION) {
+                console.log('Migrating to', APP_VERSION);
+                try {
+                    // Simple logic: If version changed, we might want to clear old incompatible DBs
+                    // For V27, we enforce a clean slate due to new naming convention
+                    const dbs = await window.indexedDB.databases();
+                    dbs.forEach(db => { if (db.name !== DB_CONFIG.name) window.indexedDB.deleteDatabase(db.name); });
+                    localStorage.setItem('app_version', APP_VERSION);
+                } catch (e) { console.error("Migration warning", e); }
+            }
         };
 
         const dbHelper = {
@@ -280,25 +292,52 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (V24.5 Compatible) ---
-        const STYLE_MAP = {
-            '西裝外套': ['Formal', 'Smart'], '大衣': ['Formal', 'Smart'], '襯衫': ['Formal', 'Smart'], '西裝褲': ['Formal', 'Smart'],
-            '皮衣': ['Smart', 'Casual'], '夾克': ['Smart', 'Casual'], 'Polo衫': ['Smart', 'Casual'], '毛衣/針織': ['Smart', 'Casual'], '卡其褲': ['Smart', 'Casual'],
-            '皮鞋': ['Formal', 'Smart'], '樂福鞋': ['Formal', 'Smart'], '皮革休閒鞋': ['Smart', 'Casual'], '運動鞋': ['Casual'], '靴子': ['Smart', 'Casual'],
-            '羽絨外套': ['Casual'], 'T-shirt': ['Smart', 'Casual'], '帽T/衛衣': ['Casual'], '牛仔褲': ['Smart', 'Casual'], '短褲': ['Casual'], '運動褲': ['Casual'], '工裝褲': ['Casual']
+        // --- 2. NEW CATEGORY & ASSET MAP (V27.0) ---
+        const PART_MAP = {
+            'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's'
         };
 
-        const MASTER_CATEGORIES = {
-            outer: ['西裝外套', '皮衣', '大衣', '夾克', '羽絨外套'],
-            inner: ['襯衫', 'T-shirt', 'Polo衫', '毛衣/針織', '帽T/衛衣'],
-            bottom: ['西裝褲', '牛仔褲', '卡其褲', '短褲', '運動褲', '工裝褲'],
-            shoes: ['皮鞋', '樂福鞋', '皮革休閒鞋', '運動鞋', '靴子']
+        const CATEGORY_MAP = {
+            // Outer
+            'suits': '單排西裝', 'suitd': '雙排西裝', 'coat': '大衣', 
+            'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
+            // Inner (s=sleeved, n=no sleeve)
+            'shirts': '有袖襯衫', 'shirtn': '無袖襯衫',
+            'tshirts': '有袖T恤', 'tshirtn': '無袖T恤',
+            'polos': '有袖Polo', 'polon': '無袖Polo',
+            'knits': '有袖針織', 'knitn': '無袖針織',
+            'hoodies': '有袖帽T', 'hoodien': '無袖帽T',
+            'sweats': '有袖衛衣', 'sweatn': '無袖衛衣',
+            // Bottom
+            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 
+            'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
+            // Shoes
+            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 
+            'sport': '運動鞋', 'boots': '靴子'
         };
 
-        const ASSETS = {
-            outer: 29, bottom: 17,
-            dress_shoes: 5, leather_sneakers: 2, athletic_shoes: 3,
-            inner_i: 12, inner_t: 17  
+        const COLOR_MAP = {
+            'bk': { hex: '#1A1A1A', label: '黑' },
+            'wh': { hex: '#FFFFFF', label: '白', border: true },
+            'gy': { hex: '#808080', label: '灰' },
+            'nv': { hex: '#1E3A8A', label: '深藍' },
+            'be': { hex: '#C3B091', label: '米/大地' },
+            'br': { hex: '#5D4037', label: '棕' },
+            'dn': { hex: '#3B82F6', label: '丹寧' },
+            'gn': { hex: '#355E3B', label: '軍綠' },
+            'rd': { hex: '#7F1D1D', label: '酒紅' }
+        };
+
+        const STYLE_RULES = {
+            // Mapping categories to occasions for smart styling
+            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'coat': ['Formal', 'Smart'], 
+            'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
+            'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
+            'tshirts': ['Smart', 'Casual'], 'tshirtn': ['Smart', 'Casual'],
+            'suit': ['Formal', 'Smart'], 'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
+            'shorts': ['Casual'], 'sport': ['Casual'], 'cargo': ['Casual'],
+            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual'],
+            'sport': ['Casual'], 'boots': ['Smart', 'Casual']
         };
 
         const SLOTS = [
@@ -309,21 +348,20 @@
         const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
         const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
 
-        const BASE_COLORS = [
-            { id: 'black', hex: '#1A1A1A', name: '黑' }, { id: 'white', hex: '#FFFFFF', name: '白', border: true },
-            { id: 'gray', hex: '#808080', name: '灰' }, { id: 'navy', hex: '#1E3A8A', name: '深藍' }, { id: 'beige', hex: '#C3B091', name: '大地' }
-        ];
-        
-        const SPECIAL_COLORS = [
-            { id: 'burgundy', hex: '#991b1b', name: '酒紅' }, { id: 'green', hex: '#008000', name: '鮮綠' }, { id: 'denim', hex: '#3B82F6', name: '丹寧' }
-        ];
-
-        const INVENTORY_TABS = [
-            { id: 'outer', label: '外套', slots: ['outer', 'coat'] }, { id: 'inner', label: '內搭', slots: ['inner'] },
-            { id: 'bottom', label: '下身', slots: ['bottom'] }, { id: 'shoes', label: '鞋款', slots: ['shoes'] }
-        ];
-
-        const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
+        // --- 3. HELPER FUNCTIONS ---
+        // V27.0: Filename Parser
+        const parseFilename = (filename) => {
+            // Expected format: part_category_color_id.png (e.g., o_suits_bk_01.png)
+            const parts = filename.replace('.png', '').split('_');
+            if (parts.length < 4) return null;
+            return {
+                partCode: parts[0],
+                catCode: parts[1],
+                colorCode: parts[2],
+                id: parts[3],
+                full: filename
+            };
+        };
 
         // --- 4. ICONS ---
         const Icon = ({ name, className }) => {
@@ -341,14 +379,11 @@
 
         // --- 5. COMPONENTS ---
 
-        // A. Ghost Engine (Optimized & Floating Controls & Empty State Guidance)
         const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom, onGoToWarehouse }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
-                    {/* The Canvas */}
                     <div className="ghost-canvas-container mx-auto relative">
-                        {/* Z-10 Shoes - GPU Accelerated */}
                         {shoes && (
                             <img 
                                 src={shoes.displayUrl} 
@@ -358,57 +393,29 @@
                                 onError={(e) => e.target.style.display='none'} 
                             />
                         )}
-                        
-                        {/* Z-20 Bottom */}
                         {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
-                        
-                        {/* Z-30 Inner */}
                         {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
-                        
-                        {/* Z-40 Outer */}
                         {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
                         
-                        {/* Empty State Guidance [V26.5] */}
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-auto">
                                 <p className="text-gray-300 text-xs tracking-widest mb-4">您的衣櫥目前是空的</p>
-                                <button 
-                                    onClick={onGoToWarehouse}
-                                    className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full shadow-lg hover:scale-105 transition-transform"
-                                >
+                                <button onClick={onGoToWarehouse} className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full shadow-lg hover:scale-105 transition-transform">
                                     💡 前往單品倉庫新增單品
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Right Floating Controls (Grouped) */}
                     <div className="floating-controls">
-                        {/* Seasons Group */}
                         <div className="control-group mb-3">
                             {SEASONS.map(s => (
-                                <button
-                                    key={s.id}
-                                    className={`mini-btn ${season === s.id ? 'active' : ''}`}
-                                    onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }}
-                                    title={s.label}
-                                >
-                                    {s.label.slice(0, 1)}
-                                </button>
+                                <button key={s.id} className={`mini-btn ${season === s.id ? 'active' : ''}`} onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }} title={s.label}>{s.label.slice(0, 1)}</button>
                             ))}
                         </div>
-
-                        {/* Occasions Group */}
                         <div className="control-group">
                             {OCCASIONS.map(occ => (
-                                <button
-                                    key={occ.id}
-                                    className={`mini-btn ${occasion === occ.id ? 'active' : ''}`}
-                                    onClick={() => { setOccasion(occ.id); triggerRandom(occ.id, season); }}
-                                    title={occ.label}
-                                >
-                                    {occ.label.slice(0, 2)}
-                                </button>
+                                <button key={occ.id} className={`mini-btn ${occasion === occ.id ? 'active' : ''}`} onClick={() => { setOccasion(occ.id); triggerRandom(occ.id, season); }} title={occ.label}>{occ.label.slice(0, 2)}</button>
                             ))}
                         </div>
                     </div>
@@ -418,53 +425,94 @@
 
         // --- 6. MAIN APPLICATION ---
         const App = () => {
-            // Main State
             const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
             const [activeTab, setActiveTab] = useState('styling');
-            const [dbError, setDbError] = useState(false); // [V26.5] Safari Private Mode Check
+            const [dbError, setDbError] = useState(false);
             
-            // Sub-States
             const [occasion, setOccasion] = useState('Smart'); 
             const [season, setSeason] = useState('Winter');
             const [inventoryTab, setInventoryTab] = useState('outer');
             
-            // Warehouse State
+            // New V27 Warehouse State
             const [whSlot, setWhSlot] = useState('outer');
-            const [whColor, setWhColor] = useState('black');
-            const [whCategory, setWhCategory] = useState(MASTER_CATEGORIES['outer'][0]);
-            const [whInnerType, setWhInnerType] = useState('sleeved');
+            const [whCatCode, setWhCatCode] = useState('suits'); // Use real code (e.g. 'suits')
+            const [whColorCode, setWhColorCode] = useState('bk'); // Use real code (e.g. 'bk')
+            const [whInnerSleeve, setWhInnerSleeve] = useState('s'); // s or n
 
-            // Load Data & Environment Check
+            // Init
+            useEffect(() => { 
+                checkMigration();
+                loadData(); 
+            }, []);
+
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    const patchedItems = items.map(item => {
-                        let styleList = item.style;
-                        if (!styleList || (Array.isArray(styleList) && styleList.length === 0)) {
-                             styleList = STYLE_MAP[item.category] || ['Smart Casual'];
-                        }
-                        return { ...item, displayUrl: item.image, style: styleList };
-                    });
-                    setWardrobe(patchedItems);
+                    setWardrobe(items);
                 } catch (e) {
                     console.error("DB Load Failed:", e);
-                    setDbError(true); // Trigger Safari Shield
+                    setDbError(true);
                 }
             };
 
-            useEffect(() => { loadData(); }, []);
+            // V27.0: Virtual Stock Generator
+            // This generates potential file paths based on the selection to show in the grid
+            const getVirtualStock = () => {
+                // Construct category code based on logic
+                let targetCat = whCatCode;
+                
+                // Special handling for inner logic (append 's' or 'n' to base cat if needed)
+                // Actually, the new map has distinct codes: 'shirts', 'shirtn'.
+                // So we need to switch whCatCode based on sleeve toggle if we are in inner slot.
+                
+                const prefix = PART_MAP[whSlot];
+                const count = 3; // Assume 3 variants per color/cat
+                
+                // Generate
+                const stock = [];
+                for(let i=1; i<=count; i++) {
+                    const num = i.toString().padStart(2, '0');
+                    const fname = `${prefix}_${targetCat}_${whColorCode}_${num}.png`;
+                    stock.push({
+                        src: fname,
+                        displayUrl: `./${fname}`, // Relative path assumption
+                        slot: whSlot,
+                        category: CATEGORY_MAP[targetCat] || targetCat,
+                        color: whColorCode,
+                        catCode: targetCat
+                    });
+                }
+                return stock;
+            };
 
-            const handleAddItem = async (item) => {
-                const styles = STYLE_MAP[whCategory] || ['Casual'];
+            const handleAddItem = async (stockItem) => {
+                // Build the item record
+                // Parse style from map
+                let styles = STYLE_RULES[stockItem.catCode] || ['Casual'];
+                // Clean up sleeve logic for storage
+                let sleeveType = 'standard';
+                if (whSlot === 'inner') {
+                    sleeveType = whCatCode.endsWith('n') ? 'sleeveless' : 'sleeved';
+                }
+
                 const newItem = {
-                    slot: whSlot, image: item.src, category: whCategory, 
-                    sleeve: item.type, color: whColor, style: styles, createdAt: Date.now()
+                    id: Date.now(), // Temp ID, DB will overwrite
+                    slot: whSlot,
+                    image: stockItem.src, // Store filename
+                    displayUrl: stockItem.displayUrl,
+                    category: stockItem.category,
+                    catCode: stockItem.catCode,
+                    color: whColorCode, // Store code 'bk'
+                    sleeve: sleeveType,
+                    style: styles,
+                    createdAt: Date.now()
                 };
+
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
-                    alert("已入庫！");
+                    // Optional: simple toast or feedback could go here
                 } catch (e) { alert("儲存失敗"); }
             };
 
@@ -484,7 +532,6 @@
             const handleClearSlot = (slot) => setOutfit(prev => ({ ...prev, [slot]: null }));
             const handleClearAll = () => setOutfit(DEFAULT_OUTFIT);
 
-            // Random Logic
             const handleRandom = useCallback((targetOccasion = occasion, targetSeason = season) => {
                 const newOutfit = { ...outfit };
                 const slots = ['outer', 'inner', 'bottom', 'shoes'];
@@ -498,89 +545,98 @@
                          if (slot === 'outer' && forceOuterOff) {} else { return; }
                     }
                     if (forceOuterOff && slot === 'outer') return;
+                    
+                    // Filter Wardrobe
                     let candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
+                    
+                    // Style Filter
                     candidates = candidates.filter(item => item.style && item.style.includes(targetOccasion));
+                    
+                    // Inner Sleeve Logic
                     if (slot === 'inner') {
                         const hasOuter = newOutfit.outer || newOutfit.coat; 
                         candidates = candidates.filter(i => hasOuter ? i.sleeve === 'sleeveless' : i.sleeve === 'sleeved');
-                        if (targetSeason === 'Summer') candidates = candidates.filter(i => !['毛衣/針織', '帽T/衛衣'].includes(i.category));
+                        if (targetSeason === 'Summer') candidates = candidates.filter(i => !['毛衣/針織', '帽T/衛衣'].includes(i.category)); // Rough check by name
                     }
+                    
+                    // Suit Logic
                     if (targetOccasion === 'Formal' && slot === 'bottom' && newOutfit.outer) {
-                        const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color);
+                        const suitMatch = candidates.filter(b => b.color === newOutfit.outer.color); // Color code matching
                         if (suitMatch.length > 0) candidates = suitMatch;
                     }
-                    if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.category === '西裝褲') {
-                        candidates = candidates.filter(s => s.category !== '運動鞋');
+                    
+                    // Shoes Logic
+                    if (targetOccasion === 'Smart' && slot === 'shoes' && newOutfit.bottom && newOutfit.bottom.catCode === 'suit') {
+                        candidates = candidates.filter(s => s.catCode !== 'sport');
                     }
+
                     if (candidates.length > 0) newOutfit[slot] = candidates[Math.floor(Math.random() * candidates.length)];
                     else newOutfit[slot] = null;
                 });
                 setOutfit(newOutfit);
             }, [outfit, wardrobe, occasion, season]);
 
-            // Warehouse Logic
-            const range = (prefix, count) => Array.from({length: count}, (_, i) => `${prefix}${i+1}.png`);
-            const getWarehouseItems = () => {
-                if (whSlot === 'outer') return range('o', ASSETS.outer).map(src => ({ src, type: 'standard' }));
-                if (whSlot === 'bottom') return range('b', ASSETS.bottom).map(src => ({ src, type: 'standard' }));
-                if (whSlot === 'shoes') {
-                    return [...range('s0', ASSETS.dress_shoes), ...range('w', ASSETS.leather_sneakers), ...range('x0', ASSETS.athletic_shoes)].map(src => ({ src, type: 'standard' }));
-                }
+            // Handling Inner Category Switch (Base + Sleeve suffix)
+            const handleInnerCatChange = (base) => {
+                // Base is like 'shirt', 'tshirt'. We add 's' or 'n' based on whInnerSleeve
+                setWhCatCode(base + whInnerSleeve);
+            };
+            
+            // Update cat code when sleeve toggles
+            useEffect(() => {
                 if (whSlot === 'inner') {
-                    return whInnerType === 'sleeveless' ? range('i', ASSETS.inner_i).map(src => ({ src, type: 'sleeveless' })) : range('t', ASSETS.inner_t).map(src => ({ src, type: 'sleeved' }));
+                    const currentBase = whCatCode.slice(0, -1); // remove last char
+                    // Need to ensure currentBase is valid
+                    if (['shirt','tshirt','polo','knit','hoodie','sweat'].includes(currentBase)) {
+                        setWhCatCode(currentBase + whInnerSleeve);
+                    }
                 }
+            }, [whInnerSleeve]);
+
+            // Categories available for current slot
+            const getCurrentCategories = () => {
+                if (whSlot === 'outer') return ['suits','suitd','coat','leather','jacket','down'];
+                if (whSlot === 'bottom') return ['suit','jeans','chino','shorts','sport','cargo'];
+                if (whSlot === 'shoes') return ['dress','loafer','leasnk','sport','boots'];
+                if (whSlot === 'inner') return ['shirt','tshirt','polo','knit','hoodie','sweat']; // Base names
                 return [];
             };
 
-            const handleWhSlotChange = (s) => {
+            // Custom handler to reset categories when slot changes
+            const handleSlotTabChange = (s) => {
                 setWhSlot(s);
-                if (MASTER_CATEGORIES[s]) setWhCategory(MASTER_CATEGORIES[s][0]);
+                if (s === 'outer') setWhCatCode('suits');
+                if (s === 'bottom') setWhCatCode('suit');
+                if (s === 'shoes') setWhCatCode('dress');
+                if (s === 'inner') {
+                    setWhInnerSleeve('s');
+                    setWhCatCode('shirts');
+                }
             };
 
             return (
                 <div className="app-container">
-                    {/* [V26.5] Safari Environment Shield */}
                     {dbError && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-6 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl p-6 text-center max-w-xs shadow-2xl">
-                                <div className="text-4xl mb-4">⚠️</div>
-                                <h3 className="text-lg font-bold mb-2 text-red-600">偵測到瀏覽器限制</h3>
-                                <p className="text-sm text-gray-600 mb-6 leading-relaxed text-left">
-                                    請確保您【沒有】開啟 Safari 私密瀏覽模式。<br/><br/>
-                                    私密模式會鎖定衣櫥資料庫導致無法運行。請切換回一般模式後重新整理。
-                                </p>
-                                <button 
-                                    onClick={() => window.location.reload()} 
-                                    className="w-full py-3 bg-black text-white text-sm font-bold rounded-xl"
-                                >
-                                    我已了解，重新整理
-                                </button>
+                                <h3 className="text-lg font-bold mb-2 text-red-600">⚠️ 瀏覽器限制</h3>
+                                <p className="text-sm text-gray-600 mb-6 text-left">請關閉 Safari 私密瀏覽模式以確保資料庫正常運作。</p>
+                                <button onClick={() => window.location.reload()} className="w-full py-3 bg-black text-white text-sm font-bold rounded-xl">重試</button>
                             </div>
                         </div>
                     )}
 
-                    {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist 
-                            <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V26.5</span>
-                        </h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.0</span></h1>
                     </div>
 
-                    {/* Content Area */}
                     <div className="content-area bg-gray-50">
-                        
-                        {/* TAB 1: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
                                 <GhostEngine 
-                                    outfit={outfit} 
-                                    occasion={occasion} setOccasion={setOccasion}
-                                    season={season} setSeason={setSeason}
-                                    triggerRandom={handleRandom}
-                                    onGoToWarehouse={() => setActiveTab('add')} // Pass handler
+                                    outfit={outfit} occasion={occasion} setOccasion={setOccasion} season={season} setSeason={setSeason} 
+                                    triggerRandom={handleRandom} onGoToWarehouse={() => setActiveTab('add')} 
                                 />
-                                
                                 <div className="px-6 mt-4 mb-4">
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {['outer','inner','bottom','shoes'].map(slot => (
@@ -591,7 +647,7 @@
                                                             <img 
                                                                 src={outfit[slot].displayUrl} 
                                                                 className="w-full h-full"
-                                                                style={slot === 'shoes' 
+                                                                style={slot === 'shoes' || (outfit[slot].image && outfit[slot].image.startsWith('s_')) 
                                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center', willChange: 'transform' } 
                                                                     : { objectFit: 'contain' }
                                                                 }
@@ -605,9 +661,7 @@
                                                         </>
                                                     )}
                                                 </div>
-                                                {outfit[slot] && (
-                                                    <button onClick={() => handleClearSlot(slot)} className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 rounded-full p-1 shadow hover:text-red-500 z-20"><Icon name="x" className="w-3 h-3" /></button>
-                                                )}
+                                                {outfit[slot] && <button onClick={() => handleClearSlot(slot)} className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 rounded-full p-1 shadow hover:text-red-500 z-20"><Icon name="x" className="w-3 h-3" /></button>}
                                             </div>
                                         ))}
                                     </div>
@@ -619,7 +673,6 @@
                             </div>
                         )}
 
-                        {/* TAB 2: CLOSET */}
                         {activeTab === 'closet' && (
                             <div className="p-6 animate-fade-in min-h-full bg-white">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥</h2>
@@ -634,11 +687,11 @@
                                             <img 
                                                 src={item.displayUrl} 
                                                 alt={item.category}
-                                                style={item.slot === 'shoes' 
+                                                style={item.slot === 'shoes' || item.image.startsWith('s_')
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
                                             />
-                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm" style={{ background: [...BASE_COLORS, ...SPECIAL_COLORS].find(c => c.id === item.color)?.hex || '#000' }}></div>
+                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm" style={{ background: COLOR_MAP[item.color]?.hex || '#000' }}></div>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
                                     ))}
@@ -647,23 +700,21 @@
                             </div>
                         )}
 
-                        {/* TAB 3: WAREHOUSE */}
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
-                                <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
+                                <h2 className="text-xl font-bold mb-4">新增單品庫</h2>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
                                     {SLOTS.filter(s => s.id !== 'coat').map(s => (
-                                        <button key={s.id} onClick={() => handleWhSlotChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${whSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                        <button key={s.id} onClick={() => handleSlotTabChange(s.id)} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${whSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
                                     ))}
                                 </div>
 
                                 {whSlot === 'inner' && (
                                     <div className="flex flex-col gap-2 mb-4">
                                         <div className="flex gap-2">
-                                            <button onClick={() => setWhInnerType('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${whInnerType === 'sleeved' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (t系列)</button>
-                                            <button onClick={() => setWhInnerType('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${whInnerType === 'sleeveless' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (i系列)</button>
+                                            <button onClick={() => setWhInnerSleeve('s')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${whInnerSleeve === 's' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>有袖 (Standard)</button>
+                                            <button onClick={() => setWhInnerSleeve('n')} className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-colors ${whInnerSleeve === 'n' ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400'}`}>無袖 (Layering)</button>
                                         </div>
-                                        {/* V26.4: Mandatory Inner Hint */}
                                         <p className="text-[11px] text-[#4b5563] leading-relaxed">
                                             <span className="font-bold block mb-1">必須同時準備有袖與無袖單品</span>
                                             無袖用於外套層次，有袖用於單穿展現，以確保智慧搭配能呈現最佳效果。
@@ -672,21 +723,27 @@
                                 )}
 
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-                                    {MASTER_CATEGORIES[whSlot]?.map(cat => (
-                                        <button key={cat} onClick={() => setWhCategory(cat)} className={`cat-pill ${whCategory === cat ? 'active' : 'inactive'}`}>{cat}</button>
+                                    {getCurrentCategories().map(catKey => (
+                                        <button 
+                                            key={catKey} 
+                                            onClick={() => whSlot === 'inner' ? handleInnerCatChange(catKey) : setWhCatCode(catKey)} 
+                                            className={`cat-pill ${whCatCode.startsWith(catKey) || whCatCode === catKey ? 'active' : 'inactive'}`}
+                                        >
+                                            {CATEGORY_MAP[catKey] || CATEGORY_MAP[catKey+'s'] || catKey}
+                                        </button>
                                     ))}
                                 </div>
 
                                 <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 py-1">
-                                    {[...BASE_COLORS, ...SPECIAL_COLORS].map(c => (
-                                        <div key={c.id} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setWhColor(c.id)}>
-                                            <div className={`w-6 h-6 rounded-full transition-all shadow-sm ${whColor === c.id ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} style={{ background: c.hex, border: c.border ? '1px solid #e5e7eb' : 'none' }}></div>
+                                    {Object.entries(COLOR_MAP).map(([code, def]) => (
+                                        <div key={code} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setWhColorCode(code)}>
+                                            <div className={`w-6 h-6 rounded-full transition-all shadow-sm ${whColorCode === code ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} style={{ background: def.hex, border: def.border ? '1px solid #e5e7eb' : 'none' }}></div>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 pb-20">
-                                    {getWarehouseItems().map((item, idx) => (
+                                    {getVirtualStock().map((item, idx) => (
                                         <div key={idx} onClick={() => handleAddItem(item)} className="warehouse-item relative group bg-white shadow-sm hover:shadow-md overflow-hidden">
                                             <img 
                                                 src={`./${item.src}`} 
@@ -694,31 +751,23 @@
                                                 style={whSlot === 'shoes' 
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
+                                                onError={(e) => { e.target.parentElement.style.display = 'none'; }} /* Hide missing files */
                                             />
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
                                             </div>
                                         </div>
                                     ))}
+                                    {getVirtualStock().length === 0 && <div className="col-span-2 text-center text-xs text-gray-400 py-8">暫無此規格圖片</div>}
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Bottom Navigation */}
                     <div className="bottom-nav">
-                        <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}>
-                            <Icon name="hanger" className="w-6 h-6" />
-                            <span>搭配</span>
-                        </div>
-                        <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}>
-                            <Icon name="grid" className="w-6 h-6" />
-                            <span>衣櫥</span>
-                        </div>
-                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}>
-                            <Icon name="plus" className="w-6 h-6" />
-                            <span>單品倉庫</span>
-                        </div>
+                        <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-6 h-6" /><span>搭配</span></div>
+                        <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}><Icon name="grid" className="w-6 h-6" /><span>衣櫥</span></div>
+                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}><Icon name="plus" className="w-6 h-6" /><span>新增</span></div>
                     </div>
                 </div>
             );
