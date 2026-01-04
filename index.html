@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_4.html -->
+<!-- minimalist-wardrobe-core_v27_5.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.4 - Filename Sync Fix</title>
+    <title>Minimalist V27.5 - Category Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.4 - Visuals based on V27.3] */
+        /* [V27.5 - Visuals based on V27.4] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -72,7 +72,7 @@
             will-change: transform, opacity; 
         }
 
-        /* Fallback UI - Shows Filename for Debugging */
+        /* Fallback UI */
         .img-fallback {
             width: 100%;
             height: 100%;
@@ -260,8 +260,8 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // --- 1. CORE UTILS: IndexedDB ---
-        const APP_VERSION = 'v27.4';
-        const DB_CONFIG = { name: 'MinimalistVault_V27_4', version: 1, store: 'inventory' };
+        const APP_VERSION = 'v27.5';
+        const DB_CONFIG = { name: 'MinimalistVault_V27_5', version: 1, store: 'inventory' };
 
         const checkMigration = () => {
             const current = localStorage.getItem('app_version');
@@ -320,29 +320,22 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING (Strictly Aligned with User Instructions) ---
+        // --- 2. LOGIC MAPPING (V27.5 Corrected) ---
         const PART_MAP = { 'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's' };
 
-        // [V27.4 FIX] Simplified keys to match the "Intuitive Table" exactly
-        const CATEGORY_MAP = {
-            // Outer
-            'suit': '西裝外套', 'coat': '大衣', 'leather': '皮衣', 
-            'jacket': '夾克', 'down': '羽絨',
-            // Inner
-            'shirt': '襯衫', 'tshirt': 'T-shirt', 'polo': 'Polo衫', 
-            'knit': '針織/毛衣', 'hoodie': '帽T', 'sweat': '衛衣',
-            // Bottom
-            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 
-            'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
-            // Shoes
-            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 
-            'sport': '運動鞋', 'boots': '靴子'
-        };
+        // [V27.5 FIX] Separate Maps to avoid name collision (Suit Jacket vs Suit Pants)
+        const OUTER_CATS = { 'suit': '西裝外套', 'coat': '大衣', 'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨' };
+        const INNER_CATS = { 'shirt': '襯衫', 'tshirt': 'T-shirt', 'polo': 'Polo衫', 'knit': '針織/毛衣', 'hoodie': '帽T', 'sweat': '衛衣' };
+        const BOTTOM_CATS = { 'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲' };
+        const SHOES_CATS = { 'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 'sport': '運動鞋', 'boots': '靴子' };
 
-        // UI Display Labels (Human Readable)
-        const CATEGORY_LABELS = {
-            ...CATEGORY_MAP,
-            // Add specific UI overrides if needed, but above map is good.
+        // Helper to get display name safely
+        const getCatLabel = (slot, code) => {
+            if (slot === 'outer') return OUTER_CATS[code] || code;
+            if (slot === 'inner') return INNER_CATS[code] || code;
+            if (slot === 'bottom') return BOTTOM_CATS[code] || code;
+            if (slot === 'shoes') return SHOES_CATS[code] || code;
+            return code;
         };
 
         const COLOR_MAP = {
@@ -376,7 +369,6 @@
         const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
         const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
         
-        // [V27.4 FIX] Master Categories aligned with filenames
         const MASTER_CATEGORIES = {
             outer: ['suit','coat','leather','jacket','down'],
             inner: ['shirt','tshirt','polo','knit','hoodie','sweat'], 
@@ -406,13 +398,14 @@
             return React.cloneElement(icons[name], { className });
         };
 
-        // --- 5. SAFE IMAGE COMPONENT (Shows Expected Filename) ---
+        // --- 5. SAFE IMAGE COMPONENT ---
         const SafeImage = ({ src, alt, style, className, item }) => {
             const [error, setError] = useState(false);
             
             if (error) {
                 const colorCode = item?.color || 'bk';
-                const catName = item?.category || alt || 'Item';
+                // [V27.5] Better Fallback Label
+                const catName = getCatLabel(item?.slot, item?.catCode) || alt || 'Item';
                 const bgHex = COLOR_MAP[colorCode]?.hex || '#000';
                 const displayFilename = src.split('/').pop();
                 
@@ -492,7 +485,7 @@
             const [inventoryTab, setInventoryTab] = useState('outer');
             
             const [whSlot, setWhSlot] = useState('outer');
-            const [whCatCode, setWhCatCode] = useState('suit'); // Default simple key
+            const [whCatCode, setWhCatCode] = useState('suit'); 
             const [whColorCode, setWhColorCode] = useState('bk'); 
             const [whInnerSleeve, setWhInnerSleeve] = useState('s'); 
 
@@ -514,7 +507,7 @@
             const getVirtualStock = () => {
                 const prefix = PART_MAP[whSlot];
                 let targetCat = whCatCode; 
-                const count = 5; // [V27.4] Scan 01-05
+                const count = 5; 
                 const stock = [];
                 for(let i=1; i<=count; i++) {
                     const num = i.toString().padStart(2, '0');
@@ -523,7 +516,7 @@
                         src: fname,
                         displayUrl: `./${fname}`,
                         slot: whSlot,
-                        category: CATEGORY_MAP[targetCat] || targetCat,
+                        category: getCatLabel(whSlot, targetCat),
                         color: whColorCode,
                         catCode: targetCat
                     });
@@ -608,19 +601,26 @@
                 setOutfit(newOutfit);
             }, [outfit, wardrobe, occasion, season]);
 
+            const handleInnerCatChange = (base) => {
+                setWhCatCode(base); // Just set base code, no suffix here
+            };
+            
+            // Removed complex useEffect syncing for inner code to avoid complexity. 
+            // Now logic uses base codes directly.
+
             const getCurrentCategories = () => {
                 return MASTER_CATEGORIES[whSlot] || [];
             };
 
             const handleSlotTabChange = (s) => {
                 setWhSlot(s);
-                // Reset category to first item in list when slot changes
-                const defaults = {
-                    outer: 'suit', inner: 'shirt', bottom: 'suit', shoes: 'dress'
-                };
-                setWhCatCode(defaults[s] || 'suit');
-                
-                if (s === 'inner') setWhInnerSleeve('s');
+                if (s === 'outer') setWhCatCode('suit');
+                if (s === 'bottom') setWhCatCode('suit');
+                if (s === 'shoes') setWhCatCode('dress');
+                if (s === 'inner') {
+                    setWhInnerSleeve('s');
+                    setWhCatCode('shirt');
+                }
             };
 
             return (
@@ -636,7 +636,7 @@
                     )}
 
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.4</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.5</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
@@ -737,10 +737,10 @@
                                     {getCurrentCategories().map(catKey => (
                                         <button 
                                             key={catKey} 
-                                            onClick={() => setWhCatCode(catKey)} 
+                                            onClick={() => handleInnerCatChange(catKey)} 
                                             className={`cat-pill ${whCatCode === catKey ? 'active' : 'inactive'}`}
                                         >
-                                            {CATEGORY_LABELS[catKey] || catKey}
+                                            {getCatLabel(whSlot, catKey)}
                                         </button>
                                     ))}
                                 </div>
@@ -768,6 +768,7 @@
                                             </div>
                                         </div>
                                     ))}
+                                    {getVirtualStock().length === 0 && <div className="col-span-2 text-center text-xs text-gray-400 py-8">暫無此規格圖片</div>}
                                 </div>
                             </div>
                         )}
