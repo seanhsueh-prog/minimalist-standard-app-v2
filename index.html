@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_2.html -->
+<!-- minimalist-wardrobe-core_v27_3.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.2 - Stability Fix</title>
+    <title>Minimalist V27.3 - Fallback UI Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.2 - Visuals based on V26.5] */
+        /* [V27.3 - Visuals with Fallback Support] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -72,6 +72,29 @@
             will-change: transform, opacity; 
         }
 
+        /* Fallback Placeholder Styling */
+        .img-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            padding: 4px;
+            box-sizing: border-box;
+        }
+        .img-fallback span.filename {
+            font-size: 8px;
+            opacity: 0.7;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+
         /* Floating Control Stack */
         .floating-controls {
             position: absolute;
@@ -133,8 +156,7 @@
             padding: 0; 
         }
         .dense-card:active { transform: scale(0.98); }
-        .dense-card img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
-
+        
         /* Warehouse Items */
         .warehouse-grid {
             display: grid;
@@ -157,7 +179,6 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
 
         /* Category Pills */
         .cat-pill {
@@ -227,12 +248,16 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- 1. CORE UTILS: IndexedDB (LOCKED) ---
-        // [V27.2 FIX] New DB name to force fresh start and avoid conflicts
-        const DB_CONFIG = {
-            name: 'MinimalistVault_V27_2_Stable', 
-            version: 1,
-            store: 'inventory'
+        // --- 1. CORE UTILS ---
+        const APP_VERSION = 'v27.3';
+        const DB_CONFIG = { name: 'MinimalistVault_V27_3_Beta', version: 1, store: 'inventory' };
+
+        const checkMigration = () => {
+            const current = localStorage.getItem('app_version');
+            if (current !== APP_VERSION) {
+                console.log('New version detected:', APP_VERSION);
+                localStorage.setItem('app_version', APP_VERSION);
+            }
         };
 
         const dbHelper = {
@@ -249,7 +274,7 @@
                         request.onsuccess = () => resolve(request.result);
                         request.onerror = () => reject(request.error);
                     } catch (e) {
-                        reject(new Error("IndexedDB Access Denied (Private Mode?)"));
+                        reject(new Error("IndexedDB Access Denied"));
                     }
                 });
             },
@@ -289,28 +314,18 @@
         const PART_MAP = { 'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's' };
 
         const CATEGORY_MAP = {
-            // Outer
-            'suits': '單排西裝', 'suitd': '雙排西裝', 'coat': '大衣', 
-            'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
-            // Inner
-            'shirts': '有袖襯衫', 'shirtn': '無袖襯衫',
-            'tshirts': '有袖T恤', 'tshirtn': '無袖T恤',
-            'polos': '有袖Polo', 'polon': '無袖Polo',
-            'knits': '有袖針織', 'knitn': '無袖針織',
-            'hoodies': '有袖帽T', 'hoodien': '無袖帽T',
-            'sweats': '有袖衛衣', 'sweatn': '無袖衛衣',
-            // Bottom
-            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 
-            'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
-            // Shoes
-            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 
-            'sport': '運動鞋', 'boots': '靴子'
+            'suits': '單排西裝', 'suitd': '雙排西裝', 'coat': '大衣', 'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
+            'shirts': '有袖襯衫', 'shirtn': '無袖襯衫', 'tshirts': '有袖T恤', 'tshirtn': '無袖T恤',
+            'polos': '有袖Polo', 'polon': '無袖Polo', 'knits': '有袖針織', 'knitn': '無袖針織',
+            'hoodies': '有袖帽T', 'hoodien': '無袖帽T', 'sweats': '有袖衛衣', 'sweatn': '無袖衛衣',
+            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
+            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 'sport': '運動鞋', 'boots': '靴子'
         };
 
         const COLOR_MAP = {
             'bk': { hex: '#1A1A1A', label: '黑' },
-            'wh': { hex: '#FFFFFF', label: '白', border: true },
-            'gy': { hex: '#808080', label: '灰' },
+            'wh': { hex: '#D1D5DB', label: '白', border: true }, /* Slightly darker white for visibility */
+            'gy': { hex: '#6B7280', label: '灰' },
             'nv': { hex: '#1E3A8A', label: '深藍' },
             'be': { hex: '#C3B091', label: '米/大地' },
             'br': { hex: '#5D4037', label: '棕' },
@@ -352,7 +367,7 @@
 
         const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
 
-        // --- 4. ICONS (Safety Fix) ---
+        // --- 4. ICONS & COMPONENTS ---
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -363,9 +378,37 @@
                 x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
             };
-            // [V27.2 FIX] Defensive check: if icon name not found, return null to prevent crash
             if (!icons[name]) return null;
             return React.cloneElement(icons[name], { className });
+        };
+
+        // [V27.3] Fallback Image Component
+        const SafeImage = ({ src, alt, style, className, item }) => {
+            const [error, setError] = useState(false);
+            
+            // If error, show color block placeholder
+            if (error) {
+                const colorCode = item?.color || 'bk';
+                const colorDef = COLOR_MAP[colorCode] || COLOR_MAP['bk'];
+                const label = item?.category || 'Item';
+                
+                return (
+                    <div className={`${className} img-fallback`} style={{ ...style, backgroundColor: colorDef.hex }}>
+                        <span>{label}</span>
+                        <span className="filename">{src.split('/').pop()}</span>
+                    </div>
+                );
+            }
+
+            return (
+                <img 
+                    src={src} 
+                    alt={alt} 
+                    className={className} 
+                    style={style}
+                    onError={() => setError(true)}
+                />
+            );
         };
 
         // --- 5. COMPONENTS ---
@@ -374,20 +417,19 @@
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
-                    {/* The Canvas */}
                     <div className="ghost-canvas-container mx-auto relative">
                         {shoes && (
-                            <img 
+                            <SafeImage 
                                 src={shoes.displayUrl} 
+                                item={shoes}
                                 className="ghost-layer z-10" 
                                 alt="Shoes" 
                                 style={{ transform: 'translateZ(0)' }} 
-                                onError={(e) => e.target.style.display='none'} 
                             />
                         )}
-                        {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" onError={(e) => e.target.style.display='none'} />}
-                        {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" onError={(e) => e.target.style.display='none'} />}
-                        {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" onError={(e) => e.target.style.display='none'} />}
+                        {bottom && <SafeImage src={bottom.displayUrl} item={bottom} className="ghost-layer z-20" alt="Bottom" />}
+                        {inner && <SafeImage src={inner.displayUrl} item={inner} className="ghost-layer z-30" alt="Inner" />}
+                        {(coat || outer) && <SafeImage src={coat?.displayUrl || outer?.displayUrl} item={coat || outer} className="ghost-layer z-40" alt="Outer" />}
                         
                         {(!shoes && !bottom && !inner && !outer && !coat) && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-auto">
@@ -399,7 +441,6 @@
                         )}
                     </div>
 
-                    {/* Right Floating Controls */}
                     <div className="floating-controls">
                         <div className="control-group mb-3">
                             {SEASONS.map(s => (
@@ -432,15 +473,15 @@
             const [whColorCode, setWhColorCode] = useState('bk'); 
             const [whInnerSleeve, setWhInnerSleeve] = useState('s'); 
 
-            useEffect(() => { loadData(); }, []);
+            useEffect(() => { 
+                checkMigration();
+                loadData(); 
+            }, []);
 
             const loadData = async () => {
                 try {
                     const items = await dbHelper.getAllItems();
-                    // [V27.2 FIX] Defensive mapping to prevent map errors
-                    if(Array.isArray(items)) {
-                        setWardrobe(items);
-                    }
+                    if(Array.isArray(items)) setWardrobe(items);
                 } catch (e) {
                     console.error("DB Load Failed:", e);
                     setDbError(true);
@@ -585,7 +626,7 @@
                     )}
 
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.2</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.3</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
@@ -602,10 +643,10 @@
                                                 <div className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}>
                                                     {outfit[slot] ? (
                                                         <div className={`w-full h-full overflow-hidden ${slot === 'shoes' ? '' : 'p-2 flex items-center justify-center'}`}>
-                                                            <img 
+                                                            <SafeImage 
                                                                 src={outfit[slot].displayUrl} 
+                                                                item={outfit[slot]}
                                                                 className="w-full h-full"
-                                                                // [V27.2 FIX] Defensive Safe Check
                                                                 style={(slot === 'shoes' || (outfit[slot]?.image || '').startsWith('s_'))
                                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center', willChange: 'transform' } 
                                                                     : { objectFit: 'contain' }
@@ -643,15 +684,14 @@
                                 <div className="grid grid-cols-3 gap-2">
                                     {wardrobe.filter(item => INVENTORY_TABS.find(t => t.id === inventoryTab)?.slots.includes(item.slot)).map(item => (
                                         <div key={item.id} onClick={() => { setOutfit(prev => ({...prev, [item.slot]: item})); setActiveTab('styling'); }} className="dense-card cursor-pointer overflow-hidden relative group">
-                                            <img 
+                                            <SafeImage 
                                                 src={item.displayUrl} 
+                                                item={item}
                                                 alt={item.category}
-                                                // [V27.2 FIX] Defensive Check
                                                 style={item.slot === 'shoes' || (item.image || '').startsWith('s_')
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
                                             />
-                                            {/* [V27.2 FIX] Safe Color Map Lookup */}
                                             <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-gray-100 shadow-sm" style={{ background: (COLOR_MAP[item.color] || {hex:'#000'}).hex }}></div>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
@@ -706,14 +746,12 @@
                                 <div className="grid grid-cols-2 gap-3 pb-20">
                                     {getVirtualStock().map((item, idx) => (
                                         <div key={idx} onClick={() => handleAddItem(item)} className="warehouse-item relative group bg-white shadow-sm hover:shadow-md overflow-hidden">
-                                            <img 
-                                                src={`./${item.src}`} 
-                                                alt="item" 
-                                                // [V27.2 FIX] Defensive Check
+                                            <SafeImage 
+                                                src={item.src} 
+                                                item={item}
                                                 style={whSlot === 'shoes' 
                                                     ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
                                                     : {}}
-                                                onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                             />
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
