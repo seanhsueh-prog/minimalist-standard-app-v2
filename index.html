@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_3.html -->
+<!-- minimalist-wardrobe-core_v27_4.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.3 - Fallback UI Mode</title>
+    <title>Minimalist V27.4 - Filename Sync Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.3 - Visuals with Fallback Support] */
+        /* [V27.4 - Visuals based on V27.3] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -72,7 +72,7 @@
             will-change: transform, opacity; 
         }
 
-        /* Fallback Placeholder Styling */
+        /* Fallback UI - Shows Filename for Debugging */
         .img-fallback {
             width: 100%;
             height: 100%;
@@ -81,17 +81,26 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            font-size: 10px;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-            padding: 4px;
+            padding: 2px;
             box-sizing: border-box;
+            overflow: hidden;
+            border: 1px dashed rgba(255,255,255,0.5);
+        }
+        .img-fallback span.label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            margin-bottom: 2px;
         }
         .img-fallback span.filename {
             font-size: 8px;
-            opacity: 0.7;
-            margin-top: 2px;
+            color: #fff;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 4px;
+            border-radius: 4px;
+            word-break: break-all;
+            line-height: 1.1;
             font-family: monospace;
         }
 
@@ -156,7 +165,8 @@
             padding: 0; 
         }
         .dense-card:active { transform: scale(0.98); }
-        
+        .dense-card img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+
         /* Warehouse Items */
         .warehouse-grid {
             display: grid;
@@ -179,6 +189,7 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
+        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
 
         /* Category Pills */
         .cat-pill {
@@ -248,14 +259,13 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- 1. CORE UTILS ---
-        const APP_VERSION = 'v27.3';
-        const DB_CONFIG = { name: 'MinimalistVault_V27_3_Beta', version: 1, store: 'inventory' };
+        // --- 1. CORE UTILS: IndexedDB ---
+        const APP_VERSION = 'v27.4';
+        const DB_CONFIG = { name: 'MinimalistVault_V27_4', version: 1, store: 'inventory' };
 
         const checkMigration = () => {
             const current = localStorage.getItem('app_version');
             if (current !== APP_VERSION) {
-                console.log('New version detected:', APP_VERSION);
                 localStorage.setItem('app_version', APP_VERSION);
             }
         };
@@ -310,21 +320,34 @@
             }
         };
 
-        // --- 2. LOGIC MAPPING ---
+        // --- 2. LOGIC MAPPING (Strictly Aligned with User Instructions) ---
         const PART_MAP = { 'outer': 'o', 'inner': 'i', 'bottom': 'b', 'shoes': 's' };
 
+        // [V27.4 FIX] Simplified keys to match the "Intuitive Table" exactly
         const CATEGORY_MAP = {
-            'suits': '單排西裝', 'suitd': '雙排西裝', 'coat': '大衣', 'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
-            'shirts': '有袖襯衫', 'shirtn': '無袖襯衫', 'tshirts': '有袖T恤', 'tshirtn': '無袖T恤',
-            'polos': '有袖Polo', 'polon': '無袖Polo', 'knits': '有袖針織', 'knitn': '無袖針織',
-            'hoodies': '有袖帽T', 'hoodien': '無袖帽T', 'sweats': '有袖衛衣', 'sweatn': '無袖衛衣',
-            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
-            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 'sport': '運動鞋', 'boots': '靴子'
+            // Outer
+            'suit': '西裝外套', 'coat': '大衣', 'leather': '皮衣', 
+            'jacket': '夾克', 'down': '羽絨',
+            // Inner
+            'shirt': '襯衫', 'tshirt': 'T-shirt', 'polo': 'Polo衫', 
+            'knit': '針織/毛衣', 'hoodie': '帽T', 'sweat': '衛衣',
+            // Bottom
+            'suit': '西裝褲', 'jeans': '牛仔褲', 'chino': '卡其褲', 
+            'shorts': '短褲', 'sport': '運動褲', 'cargo': '工裝褲',
+            // Shoes
+            'dress': '皮鞋', 'loafer': '樂福鞋', 'leasnk': '皮革休閒', 
+            'sport': '運動鞋', 'boots': '靴子'
+        };
+
+        // UI Display Labels (Human Readable)
+        const CATEGORY_LABELS = {
+            ...CATEGORY_MAP,
+            // Add specific UI overrides if needed, but above map is good.
         };
 
         const COLOR_MAP = {
             'bk': { hex: '#1A1A1A', label: '黑' },
-            'wh': { hex: '#D1D5DB', label: '白', border: true }, /* Slightly darker white for visibility */
+            'wh': { hex: '#E5E7EB', label: '白', border: true },
             'gy': { hex: '#6B7280', label: '灰' },
             'nv': { hex: '#1E3A8A', label: '深藍' },
             'be': { hex: '#C3B091', label: '米/大地' },
@@ -335,14 +358,14 @@
         };
 
         const STYLE_RULES = {
-            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'coat': ['Formal', 'Smart'], 
+            'suit': ['Formal', 'Smart'], 'coat': ['Formal', 'Smart'], 
             'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
-            'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
-            'tshirts': ['Smart', 'Casual'], 'tshirtn': ['Smart', 'Casual'],
-            'suit': ['Formal', 'Smart'], 'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
+            'shirt': ['Formal', 'Smart'], 'tshirt': ['Smart', 'Casual'], 'polo': ['Smart', 'Casual'],
+            'knit': ['Smart', 'Casual'], 'hoodie': ['Casual'], 'sweat': ['Casual'],
+            'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
             'shorts': ['Casual'], 'sport': ['Casual'], 'cargo': ['Casual'],
             'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual'],
-            'sport': ['Casual'], 'boots': ['Smart', 'Casual']
+            'boots': ['Smart', 'Casual']
         };
 
         const SLOTS = [
@@ -353,8 +376,9 @@
         const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
         const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
         
+        // [V27.4 FIX] Master Categories aligned with filenames
         const MASTER_CATEGORIES = {
-            outer: ['suits','suitd','coat','leather','jacket','down'],
+            outer: ['suit','coat','leather','jacket','down'],
             inner: ['shirt','tshirt','polo','knit','hoodie','sweat'], 
             bottom: ['suit','jeans','chino','shorts','sport','cargo'],
             shoes: ['dress','loafer','leasnk','sport','boots']
@@ -367,7 +391,7 @@
 
         const DEFAULT_OUTFIT = { coat: null, outer: null, inner: null, bottom: null, shoes: null };
 
-        // --- 4. ICONS & COMPONENTS ---
+        // --- 4. ICONS ---
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -382,20 +406,20 @@
             return React.cloneElement(icons[name], { className });
         };
 
-        // [V27.3] Fallback Image Component
+        // --- 5. SAFE IMAGE COMPONENT (Shows Expected Filename) ---
         const SafeImage = ({ src, alt, style, className, item }) => {
             const [error, setError] = useState(false);
             
-            // If error, show color block placeholder
             if (error) {
                 const colorCode = item?.color || 'bk';
-                const colorDef = COLOR_MAP[colorCode] || COLOR_MAP['bk'];
-                const label = item?.category || 'Item';
+                const catName = item?.category || alt || 'Item';
+                const bgHex = COLOR_MAP[colorCode]?.hex || '#000';
+                const displayFilename = src.split('/').pop();
                 
                 return (
-                    <div className={`${className} img-fallback`} style={{ ...style, backgroundColor: colorDef.hex }}>
-                        <span>{label}</span>
-                        <span className="filename">{src.split('/').pop()}</span>
+                    <div className={`${className} img-fallback`} style={{ ...style, backgroundColor: bgHex }}>
+                        <span className="label">{catName}</span>
+                        <span className="filename">{displayFilename}</span>
                     </div>
                 );
             }
@@ -411,8 +435,7 @@
             );
         };
 
-        // --- 5. COMPONENTS ---
-
+        // --- 6. GHOST ENGINE ---
         const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom, onGoToWarehouse }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             return (
@@ -457,7 +480,7 @@
             );
         };
 
-        // --- 6. MAIN APPLICATION ---
+        // --- 7. MAIN APP ---
         const App = () => {
             const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState(DEFAULT_OUTFIT);
@@ -469,7 +492,7 @@
             const [inventoryTab, setInventoryTab] = useState('outer');
             
             const [whSlot, setWhSlot] = useState('outer');
-            const [whCatCode, setWhCatCode] = useState('suits'); 
+            const [whCatCode, setWhCatCode] = useState('suit'); // Default simple key
             const [whColorCode, setWhColorCode] = useState('bk'); 
             const [whInnerSleeve, setWhInnerSleeve] = useState('s'); 
 
@@ -491,7 +514,7 @@
             const getVirtualStock = () => {
                 const prefix = PART_MAP[whSlot];
                 let targetCat = whCatCode; 
-                const count = 3; 
+                const count = 5; // [V27.4] Scan 01-05
                 const stock = [];
                 for(let i=1; i<=count; i++) {
                     const num = i.toString().padStart(2, '0');
@@ -512,7 +535,7 @@
                 let styles = STYLE_RULES[stockItem.catCode] || ['Casual'];
                 let sleeveType = 'standard';
                 if (whSlot === 'inner') {
-                    sleeveType = whCatCode.endsWith('n') ? 'sleeveless' : 'sleeved';
+                    sleeveType = whInnerSleeve === 'n' ? 'sleeveless' : 'sleeved';
                 }
 
                 const newItem = {
@@ -585,32 +608,19 @@
                 setOutfit(newOutfit);
             }, [outfit, wardrobe, occasion, season]);
 
-            const handleInnerCatChange = (base) => {
-                setWhCatCode(base + whInnerSleeve);
-            };
-            
-            useEffect(() => {
-                if (whSlot === 'inner') {
-                    const currentBase = whCatCode.slice(0, -1); 
-                    if (['shirt','tshirt','polo','knit','hoodie','sweat'].includes(currentBase)) {
-                        setWhCatCode(currentBase + whInnerSleeve);
-                    }
-                }
-            }, [whInnerSleeve]);
-
             const getCurrentCategories = () => {
                 return MASTER_CATEGORIES[whSlot] || [];
             };
 
             const handleSlotTabChange = (s) => {
                 setWhSlot(s);
-                if (s === 'outer') setWhCatCode('suits');
-                if (s === 'bottom') setWhCatCode('suit');
-                if (s === 'shoes') setWhCatCode('dress');
-                if (s === 'inner') {
-                    setWhInnerSleeve('s');
-                    setWhCatCode('shirts');
-                }
+                // Reset category to first item in list when slot changes
+                const defaults = {
+                    outer: 'suit', inner: 'shirt', bottom: 'suit', shoes: 'dress'
+                };
+                setWhCatCode(defaults[s] || 'suit');
+                
+                if (s === 'inner') setWhInnerSleeve('s');
             };
 
             return (
@@ -626,7 +636,7 @@
                     )}
 
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.3</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V27.4</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
@@ -727,10 +737,10 @@
                                     {getCurrentCategories().map(catKey => (
                                         <button 
                                             key={catKey} 
-                                            onClick={() => whSlot === 'inner' ? handleInnerCatChange(catKey) : setWhCatCode(catKey)} 
-                                            className={`cat-pill ${whCatCode.startsWith(catKey) || whCatCode === catKey ? 'active' : 'inactive'}`}
+                                            onClick={() => setWhCatCode(catKey)} 
+                                            className={`cat-pill ${whCatCode === catKey ? 'active' : 'inactive'}`}
                                         >
-                                            {CATEGORY_MAP[catKey] || CATEGORY_MAP[catKey+'s'] || catKey}
+                                            {CATEGORY_LABELS[catKey] || catKey}
                                         </button>
                                     ))}
                                 </div>
@@ -758,7 +768,6 @@
                                             </div>
                                         </div>
                                     ))}
-                                    {getVirtualStock().length === 0 && <div className="col-span-2 text-center text-xs text-gray-400 py-8">暫無此規格圖片</div>}
                                 </div>
                             </div>
                         )}
