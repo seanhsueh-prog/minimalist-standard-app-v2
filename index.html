@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V27 - Source of Truth</title>
+    <title>Minimalist Wardrobe V5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 基礎樣式 - 繼承自 V26.5 尺寸標準 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
             background-color: #111; 
-            color: #111; 
             margin: 0;
             min-height: 100vh;
             display: flex;
             justify-content: center; 
-            align-items: flex-start;
         }
         
         .app-container {
@@ -35,20 +32,17 @@
             flex: 1;
             overflow-y: auto;
             padding-bottom: 90px; 
-            -ms-overflow-style: none;
             scrollbar-width: none;
         }
         .content-area::-webkit-scrollbar { display: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* Ghost Engine - 視覺對齊核心 */
+        /* Ghost Engine - 視覺基準 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
@@ -68,10 +62,9 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            will-change: transform, opacity; 
         }
 
-        /* 渲染層級 (Z-Index) & 鞋子縮放 (Scale 3.8) */
+        /* 渲染層級與比例 */
         .layer-shoes { z-index: 10; transform: scale(3.8); transform-origin: bottom center; }
         .layer-bottom { z-index: 20; }
         .layer-inner { z-index: 30; }
@@ -108,12 +101,11 @@
             font-size: 10px;
             font-weight: 700;
             color: #9ca3af;
-            transition: all 0.2s;
             cursor: pointer;
         }
-        .mini-btn.active { background-color: #000; color: #fff; transform: scale(1.05); }
+        .mini-btn.active { background-color: #000; color: #fff; }
 
-        /* 網格與標籤優化 */
+        /* 網格卡片 */
         .item-card {
             background: #fff;
             border-radius: 12px;
@@ -133,31 +125,24 @@
             position: relative;
         }
         .item-info {
-            padding: 6px 8px;
+            padding: 4px 6px;
             text-align: center;
-            background: #fff;
         }
         .item-label {
             font-size: 10px;
             font-weight: 600;
             color: #374151;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        /* 顏色圓點切換器 */
         .color-dot {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             border: 1px solid #eee;
             cursor: pointer;
-            transition: transform 0.1s;
         }
         .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.1); }
 
-        /* Bottom Nav */
         .bottom-nav {
             position: absolute;
             bottom: 0;
@@ -195,9 +180,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. RAW MANIFEST (92 實體檔案) ---
+        // --- 1. MANIFEST (92 FILES) ---
         const RAW_MANIFEST = [
-            // 外套 (o_)
             "o_suits_bk_01.png", "o_suits_nv_01.png", "o_suitd_bk_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
             "o_leather_br_01.png", "o_leather_br_02.png", "o_leather_br_03.png",
@@ -207,7 +191,6 @@
             "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
             "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
             "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
-            // 內搭 (i_)
             "i_knits_bk_01.png", "i_knits_gy_01.png", "i_knits_nv_01.png", "i_knits_wh_01.png",
             "i_knitn_bk_01.png", "i_knitn_gy_01.png", "i_knitn_nv_01.png", "i_knitn_wh_01.png",
             "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png", "i_shirts_wh_02.png",
@@ -215,13 +198,11 @@
             "i_sweats_bk_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png",
             "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_nv_01.png", "i_tshirts_wh_01.png",
             "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
-            // 下身 (b_)
             "b_cargo_bk_01.png", "b_cargo_gn_01.png", "b_cargo_gy_01.png",
             "b_chino_be_01.png", "b_chino_bk_01.png", "b_chino_nv_01.png",
             "b_jeans_bk_01.png", "b_jeans_dm_01.png", "b_jeans_gy_01.png",
             "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png",
             "b_suit_bk_01.png", "b_suit_gy_01.png", "b_suit_nv_01.png",
-            // 鞋款 (s_)
             "s_dress_bk_01.png", "s_dress_br_01.png",
             "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
             "s_loafer_bk_01.png", "s_loafer_br_01.png",
@@ -232,12 +213,15 @@
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
         
         const PART_MAP = { o: '外套', i: '內搭', b: '下身', s: '鞋款' };
+        
+        // 修正品項名稱顛倒問題
         const TYPE_MAP = {
-            suits: '雙排西裝', suitd: '單排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨',
+            suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨',
             knits: '有袖針織', knitn: '無袖針織', shirts: '有袖襯衫', shirtn: '無袖襯衫', sweats: '衛衣',
             tshirts: '有袖T', tshirtn: '無袖T', cargo: '工裝褲', chino: '卡其褲', jeans: '牛仔褲',
-            sport: '運動褲', suit: '西裝褲', dress: '皮鞋', leasnk: '休閒皮鞋', loafer: '樂福鞋'
+            sport: '運動褲', suit: '西裝褲', dress: '皮鞋', leasnk: '休閒皮鞋', loafer: '樂福鞋', sport_s: '運動鞋'
         };
+
         const COLOR_MAP = {
             bk: { name: '黑', hex: '#111' }, wh: { name: '白', hex: '#fff' }, gy: { name: '灰', hex: '#888' },
             nv: { name: '深藍', hex: '#1e3a8a' }, br: { name: '棕', hex: '#78350f' }, gn: { name: '綠', hex: '#166534' },
@@ -245,22 +229,19 @@
         };
 
         const STYLE_LOGIC = {
-            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'suit': ['Formal', 'Smart'], 'dress': ['Formal', 'Smart'],
+            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'suit': ['Formal', 'Smart'], 'dress': ['Formal', 'Smart'], 'loafer': ['Smart', 'Formal'],
             'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'knits': ['Smart', 'Casual'], 'knitn': ['Smart', 'Casual'],
-            'chino': ['Smart', 'Casual'], 'jeans': ['Smart', 'Casual'], 'leasnk': ['Smart', 'Casual'], 'loafer': ['Smart', 'Casual'],
+            'chino': ['Smart', 'Casual'], 'jeans': ['Smart', 'Casual'], 'leasnk': ['Smart', 'Casual'],
             'tshirts': ['Casual'], 'tshirtn': ['Casual'], 'sweats': ['Casual'], 'cargo': ['Casual'], 'sport': ['Casual']
         };
 
         const parseFileName = (fn) => {
             const p = fn.replace('.png', '').split('_');
+            const type = p[1] === 'sport' && p[0] === 's' ? 'sport_s' : p[1];
             return {
-                fileName: fn,
-                part: p[0],
-                type: p[1],
-                color: p[2],
-                id: p[3],
-                displayName: `${TYPE_MAP[p[1]] || p[1]} / ${COLOR_MAP[p[2]]?.name || p[2]}`,
-                style: STYLE_LOGIC[p[1]] || ['Casual']
+                fileName: fn, part: p[0], type: type, color: p[2], id: p[3],
+                displayName: `${TYPE_MAP[type] || type} / ${COLOR_MAP[p[2]]?.name || p[2]}`,
+                style: STYLE_LOGIC[type] || ['Casual']
             };
         };
 
@@ -292,8 +273,6 @@
             }
         };
 
-        // --- 3. UI COMPONENTS ---
-
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -305,37 +284,6 @@
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
-        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom }) => {
-            return (
-                <div className="ghost-canvas-container animate-fade-in">
-                    {/* Z-Index & Scale 執行 */}
-                    {outfit.s && <img src={`./${outfit.s.fileName}`} className="ghost-layer layer-shoes" alt="Shoes" />}
-                    {outfit.b && <img src={`./${outfit.b.fileName}`} className="ghost-layer layer-bottom" alt="Bottom" />}
-                    {outfit.i && <img src={`./${outfit.i.fileName}`} className="ghost-layer layer-inner" alt="Inner" />}
-                    {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" alt="Outer" />}
-
-                    {/* Floating Control Stack */}
-                    <div className="floating-controls">
-                        <div className="control-group">
-                            {['Winter', 'Summer'].map(s => (
-                                <button key={s} className={`mini-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>
-                                    {s === 'Winter' ? '冬' : '夏'}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="control-group">
-                            {['Formal', 'Smart', 'Casual'].map(occ => (
-                                <button key={occ} className={`mini-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
-                                    {occ.slice(0, 2)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- 4. MAIN APP ---
         const App = () => {
             const [activeTab, setActiveTab] = useState('styling');
             const [wardrobe, setWardrobe] = useState([]);
@@ -343,12 +291,10 @@
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
 
-            // Warehouse Filtering State
+            // Warehouse Filters
             const [whPart, setWhPart] = useState('o');
             const [whType, setWhType] = useState('suits');
             const [whColor, setWhColor] = useState('bk');
-
-            // Closet Filter
             const [clPart, setClPart] = useState('o');
 
             useEffect(() => { loadWardrobe(); }, []);
@@ -364,6 +310,7 @@
             };
 
             const removeFromWardrobe = async (id) => {
+                if(!confirm("確定移除？")) return;
                 await dbHelper.delete(id);
                 await loadWardrobe();
                 setOutfit(prev => {
@@ -373,56 +320,41 @@
                 });
             };
 
-            // V26.5 智慧穿搭結構
+            // 100% 繼承 V26.5 智慧穿搭
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
-                
-                // 1. 季節排除 (夏季關閉外套與厚內搭)
-                let skipOuter = false;
-                if (season === 'Summer' && occasion !== 'Formal') skipOuter = true;
+                let skipOuter = (season === 'Summer' && occasion !== 'Formal');
 
                 parts.forEach(p => {
                     if (skipOuter && p === 'o') { newOutfit.o = null; return; }
-
                     let candidates = wardrobe.filter(item => item.part === p);
-                    
-                    // A. 場合過濾
                     candidates = candidates.filter(item => item.style.includes(occasion));
 
-                    // B. 袖子聯動 (Sleeve Logic)
                     if (p === 'i') {
                         const hasOuter = !!newOutfit.o;
-                        // o 存在則選無袖 (n), 否則選有袖 (s)
+                        // 袖子聯動邏輯
                         candidates = candidates.filter(item => hasOuter ? item.type.endsWith('n') : item.type.endsWith('s'));
                         if (season === 'Summer') candidates = candidates.filter(item => !['knits', 'sweats'].includes(item.type));
                     }
-
-                    // C. 正式場合同色聯動 (Formal Match)
                     if (p === 'b' && occasion === 'Formal' && newOutfit.o && (newOutfit.o.type === 'suits' || newOutfit.o.type === 'suitd')) {
                         const matchedSuit = candidates.filter(item => item.type === 'suit' && item.color === newOutfit.o.color);
                         if (matchedSuit.length > 0) candidates = matchedSuit;
                     }
-
-                    if (candidates.length > 0) {
-                        newOutfit[p] = candidates[Math.floor(Math.random() * candidates.length)];
-                    } else {
-                        newOutfit[p] = null;
+                    if (p === 's' && occasion === 'Smart' && newOutfit.b?.type === 'suit') {
+                        candidates = candidates.filter(item => item.type !== 'sport_s');
                     }
+
+                    newOutfit[p] = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
                 });
                 setOutfit(newOutfit);
             }, [wardrobe, occasion, season, outfit]);
 
-            // Warehouse Logic
-            const filteredWhItems = useMemo(() => {
-                return RAW_MANIFEST.map(parseFileName).filter(item => 
-                    item.part === whPart && item.type === whType && item.color === whColor
-                );
-            }, [whPart, whType, whColor]);
-
+            // Warehouse UI Logic
             const availableTypes = useMemo(() => {
                 const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === whPart);
-                return [...new Set(all.map(i => i.type))];
+                const types = [...new Set(all.map(i => i.type))];
+                return types;
             }, [whPart]);
 
             const availableColors = useMemo(() => {
@@ -430,41 +362,67 @@
                 return [...new Set(all.map(i => i.color))];
             }, [whPart, whType]);
 
-            // 衣櫥分頁
-            const filteredClosetItems = useMemo(() => {
-                return wardrobe.filter(i => i.part === clPart);
-            }, [wardrobe, clPart]);
+            const filteredWhItems = useMemo(() => {
+                return RAW_MANIFEST.map(parseFileName).filter(item => 
+                    item.part === whPart && item.type === whType && item.color === whColor
+                );
+            }, [whPart, whType, whColor]);
+
+            // 連鎖反應：切換部位時重置品項與顏色
+            const handlePartSwitch = (p) => {
+                setWhPart(p);
+                const firstType = RAW_MANIFEST.map(parseFileName).filter(i => i.part === p)[0].type;
+                setWhType(firstType);
+                const firstColor = RAW_MANIFEST.map(parseFileName).filter(i => i.part === p && i.type === firstType)[0].color;
+                setWhColor(firstColor);
+            };
 
             return (
                 <div className="app-container">
-                    <div className="px-6 pt-6 pb-2 bg-white flex justify-between items-center z-50">
-                        <h1 className="text-lg font-black tracking-tighter">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full">V27</span></h1>
+                    <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50">
+                        <h1 className="text-lg font-black tracking-tighter">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full">V5.0</span></h1>
                     </div>
 
                     <div className="content-area">
-                        {/* TAB 1: STYLING */}
+                        {/* 搭配介面 */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
-                                <GhostEngine outfit={outfit} occasion={occasion} setOccasion={setOccasion} season={season} setSeason={setSeason} triggerRandom={handleRandom} />
+                                <div className="ghost-canvas-container">
+                                    {outfit.s && <img src={`./${outfit.s.fileName}`} className="ghost-layer layer-shoes" alt="S" />}
+                                    {outfit.b && <img src={`./${outfit.b.fileName}`} className="ghost-layer layer-bottom" alt="B" />}
+                                    {outfit.i && <img src={`./${outfit.i.fileName}`} className="ghost-layer layer-inner" alt="I" />}
+                                    {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" alt="O" />}
+                                    
+                                    <div className="floating-controls">
+                                        <div className="control-group">
+                                            {['Winter', 'Summer'].map(s => (
+                                                <button key={s} className={`mini-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬' : '夏'}</button>
+                                            ))}
+                                        </div>
+                                        <div className="control-group">
+                                            {['Formal', 'Smart', 'Casual'].map(occ => (
+                                                <button key={occ} className={`mini-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>{occ.slice(0, 2)}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="px-6 mt-4">
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {['o','i','b','s'].map(p => (
-                                            <div key={p} className={`aspect-square rounded-xl border-2 flex items-center justify-center relative overflow-hidden transition-all ${outfit[p] ? 'border-black bg-white' : 'border-dashed border-gray-200 bg-gray-50'}`}>
-                                                {outfit[p] ? (
-                                                    <img src={`./${outfit[p].fileName}`} className={`w-full h-full object-contain ${p === 's' ? 'scale-[3.8] origin-bottom' : 'p-1'}`} />
-                                                ) : <span className="text-[9px] font-bold text-gray-300 uppercase">{PART_MAP[p]}</span>}
+                                            <div key={p} className={`aspect-square rounded-xl border-2 flex items-center justify-center relative overflow-hidden ${outfit[p] ? 'border-black bg-white' : 'border-dashed border-gray-200 bg-gray-50'}`}>
+                                                {outfit[p] ? <img src={`./${outfit[p].fileName}`} className={`w-full h-full object-contain ${p === 's' ? 'scale-[3.8] origin-bottom' : 'p-1'}`} /> : <span className="text-[9px] font-bold text-gray-300">{PART_MAP[p]}</span>}
                                             </div>
                                         ))}
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="flex-1 py-4 bg-white border border-gray-200 rounded-2xl flex justify-center items-center gap-2 text-xs font-bold active:scale-95 transition-transform"><Icon name="trash" className="w-4 h-4"/> 重置</button>
-                                        <button onClick={handleRandom} className="flex-[2.5] py-4 bg-black text-white rounded-2xl flex justify-center items-center gap-2 text-xs font-bold shadow-xl active:scale-95 transition-transform"><Icon name="dice" className="w-4 h-4"/> 智慧搭配</button>
+                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="flex-1 py-4 bg-white border border-gray-200 rounded-2xl flex justify-center items-center gap-2 text-xs font-bold active:scale-95 transition-all"><Icon name="trash" className="w-4 h-4"/> 重置</button>
+                                        <button onClick={handleRandom} className="flex-[2.5] py-4 bg-black text-white rounded-2xl flex justify-center items-center gap-2 text-xs font-bold shadow-xl active:scale-95 transition-all"><Icon name="dice" className="w-4 h-4"/> 智慧搭配</button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB 2: CLOSET */}
+                        {/* 衣櫥介面 */}
                         {activeTab === 'closet' && (
                             <div className="p-6 animate-fade-in">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥</h2>
@@ -474,62 +432,56 @@
                                     ))}
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
-                                    {filteredClosetItems.map(item => (
+                                    {wardrobe.filter(i => i.part === clPart).map(item => (
                                         <div key={item.id} className="item-card relative" onClick={() => { setOutfit(prev => ({...prev, [item.part]: item})); setActiveTab('styling'); }}>
                                             <div className="item-image-box">
-                                                <img src={`./${item.fileName}`} className={`w-full h-full object-contain ${item.part === 's' ? 'scale-[3.5] origin-bottom' : 'p-2'}`} />
+                                                <img src={`./${item.fileName}`} className={`w-full h-full object-contain ${item.part === 's' ? 'scale-[3.5] origin-bottom' : 'p-1'}`} />
                                             </div>
-                                            <div className="item-info">
-                                                <div className="item-label">{item.displayName}</div>
-                                            </div>
+                                            <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                             <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
                                     ))}
                                 </div>
-                                {filteredClosetItems.length === 0 && <div className="text-center py-20 text-gray-300 text-xs">該類別目前無單品</div>}
                             </div>
                         )}
 
-                        {/* TAB 3: WAREHOUSE (三級過濾) */}
+                        {/* 倉庫介面 */}
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
-                                
-                                {/* 1. 部位選擇 */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {['o','i','b','s'].map(p => (
-                                        <button key={p} onClick={() => { setWhPart(p); const items = RAW_MANIFEST.map(parseFileName).filter(i => i.part === p); setWhType(items[0].type); setWhColor(items[0].color); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold border ${whPart === p ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200'}`}>{PART_MAP[p]}</button>
+                                        <button key={p} onClick={() => handlePartSwitch(p)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${whPart === p ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200'}`}>{PART_MAP[p]}</button>
                                     ))}
                                 </div>
 
-                                {/* 2. 品項膠囊 */}
+                                {whPart === 'i' && (
+                                    <p className="text-[10px] text-gray-500 mb-3 bg-gray-50 p-2 rounded-lg leading-relaxed">
+                                        <b>智慧聯動提醒：</b>必須同時準備有袖(s系列)與無袖(n系列)單品。系統會根據是否有外套自動切換袖口長度。
+                                    </p>
+                                )}
+
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar py-1">
                                     {availableTypes.map(t => (
-                                        <button key={t} onClick={() => { setWhType(t); const items = RAW_MANIFEST.map(parseFileName).filter(i => i.part === whPart && i.type === t); setWhColor(items[0].color); }} className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${whType === t ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{TYPE_MAP[t] || t}</button>
+                                        <button key={t} onClick={() => setWhType(t)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all ${whType === t ? 'bg-gray-800 text-white border-gray-800 shadow-md' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{TYPE_MAP[t] || t}</button>
                                     ))}
                                 </div>
 
-                                {/* 3. 顏色點點 */}
-                                <div className="flex gap-4 mb-6 py-2 border-b border-gray-50">
+                                <div className="flex gap-4 mb-6 py-2 border-b border-gray-50 overflow-x-auto no-scrollbar">
                                     {availableColors.map(c => (
-                                        <div key={c} onClick={() => setWhColor(c)} className={`color-dot ${whColor === c ? 'active' : ''}`} style={{ background: COLOR_MAP[c]?.hex || '#ccc' }}></div>
+                                        <div key={c} onClick={() => setWhColor(c)} className={`color-dot flex-shrink-0 ${whColor === c ? 'active' : ''}`} style={{ background: COLOR_MAP[c]?.hex || '#ccc' }}></div>
                                     ))}
-                                    <span className="text-[10px] font-bold text-gray-400 ml-auto">{COLOR_MAP[whColor]?.name}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 ml-auto flex-shrink-0">{COLOR_MAP[whColor]?.name}</span>
                                 </div>
 
-                                {/* 結果網格 */}
                                 <div className="grid grid-cols-2 gap-4 pb-12">
                                     {filteredWhItems.map((item, idx) => (
-                                        <div key={idx} className="item-card cursor-pointer group" onClick={() => { addToWardrobe(item); alert('已加入衣櫥'); }}>
-                                            <div className="item-image-box overflow-hidden">
-                                                <img src={`./${item.fileName}`} className={`w-full h-full object-contain transition-transform group-hover:scale-110 ${item.part === 's' ? 'scale-[3.5] origin-bottom' : 'p-4'}`} />
-                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <div className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold">新增</div>
-                                                </div>
+                                        <div key={idx} className="item-card cursor-pointer group" onClick={() => { addToWardrobe(item); alert('已入庫'); }}>
+                                            <div className="item-image-box">
+                                                <img src={`./${item.fileName}`} className={`w-full h-full object-contain transition-transform group-hover:scale-105 ${item.part === 's' ? 'scale-[3.5] origin-bottom' : 'p-2'}`} />
+                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><span className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold">新增</span></div>
                                             </div>
-                                            <div className="item-info">
-                                                <div className="item-label">{item.displayName}</div>
-                                            </div>
+                                            <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                         </div>
                                     ))}
                                 </div>
@@ -538,18 +490,9 @@
                     </div>
 
                     <div className="bottom-nav">
-                        <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}>
-                            <Icon name="hanger" className="w-6 h-6" />
-                            <span>搭配</span>
-                        </div>
-                        <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}>
-                            <Icon name="grid" className="w-6 h-6" />
-                            <span>衣櫥</span>
-                        </div>
-                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}>
-                            <Icon name="plus" className="w-6 h-6" />
-                            <span>倉庫</span>
-                        </div>
+                        <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-6 h-6" /><span>搭配</span></div>
+                        <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}><Icon name="grid" className="w-6 h-6" /><span>衣櫥</span></div>
+                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}><Icon name="plus" className="w-6 h-6" /><span>倉庫</span></div>
                     </div>
                 </div>
             );
