@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_18.html -->
+<!-- minimalist-wardrobe-core_v27_19.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.18 - Logic Restored</title>
+    <title>Minimalist V27.19 - Crash Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.18 - Strict V26.5 Rendering Standard] */
+        /* [V27.19 - Crash Fix & DB Locked] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -221,7 +221,6 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // --- 1. MANIFEST (Filename Database) ---
-        // Same source for both Warehouse and Styling
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
@@ -253,6 +252,7 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
+        // [LOCKED] Data Preservation Guaranteed
         const DB_CONFIG = { name: 'MinimalistVault_V27_Master', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
@@ -298,7 +298,6 @@
         ];
 
         // --- 3. CORE LOGIC ---
-        // Determines Sleeve type based on filename conventions
         const parseManifest = () => {
             return RAW_MANIFEST.map(filename => {
                 const parts = filename.replace('.png', '').split('_'); 
@@ -309,7 +308,6 @@
                 const colorCode = parts[2];
                 
                 let sleeve = 'standard';
-                // Strict naming rules for V27 logic
                 if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
                 else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
                 else if (catCode === 'sweats') sleeve = 'sleeved';
@@ -332,7 +330,7 @@
 
         const MANIFEST_ITEMS = parseManifest();
 
-        // --- 4. DB UTILS (Safari Safe) ---
+        // --- 4. DB UTILS ---
         const dbHelper = {
             open: () => new Promise((resolve, reject) => {
                 const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
@@ -385,20 +383,18 @@
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
-        // [V27.18 FIX] Ghost Engine Restored to V26.5 Standard (Only Shoes Scaled)
+        // [V27.19] Ghost Engine - Only Shoes Scaled (Mother Logic)
         const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom }) => {
             const { coat, outer, inner, bottom, shoes } = outfit;
             
             const getGhostStyle = (slot) => {
-                // V26.5 Base: Object fit contain, no scaling by default
                 const base = { width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', top: 0, left: 0 };
                 
                 if (slot === 'shoes') {
                     // Only Shoes get the magic zoom
                     return { ...base, transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center' };
                 }
-                // All other slots (outer, inner, bottom) rely on the original image's whitespace/positioning
-                // This prevents the "Flying / Giant Clothes" visual chaos
+                // Others remain unscaled as per V26.5
                 return base;
             };
 
@@ -494,14 +490,12 @@
                 let candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
                 candidates = candidates.filter(item => item.style.includes(occ));
                 
-                // [V27.18] Inner Logic: Match "Sleeve" property which is determined by filename in parseManifest
+                // [V27.18] Inner Logic: Match "Sleeve" property
                 if (slot === 'inner') {
                     const hasOuter = currentOutfit.outer || currentOutfit.coat;
                     if (hasOuter) {
-                        // Needs Layering (Sleeveless)
                         candidates = candidates.filter(i => i.sleeve === 'sleeveless');
                     } else {
-                        // Needs Standard (Sleeved)
                         candidates = candidates.filter(i => i.sleeve === 'sleeved');
                     }
                     if (sea === 'Summer') candidates = candidates.filter(i => !['knits','sweats','knitn'].includes(i.catCode));
@@ -514,7 +508,7 @@
             const handleRandom = (targetOcc, targetSea) => {
                 const newOutfit = { ...outfit };
                 
-                // 1. Determine Outer (Must run first for Inner logic to work)
+                // 1. Determine Outer
                 if (targetSea === 'Summer' && targetOcc !== 'Formal') {
                     newOutfit.outer = null; 
                     newOutfit.coat = null;
@@ -522,7 +516,7 @@
                     newOutfit.outer = getRandomItem('outer', targetOcc, targetSea, newOutfit);
                 }
 
-                // 2. Determine Bottom (Matching Logic for Suits)
+                // 2. Determine Bottom
                 if (targetOcc === 'Formal' && newOutfit.outer && (newOutfit.outer.catCode === 'suits' || newOutfit.outer.catCode === 'suitd')) {
                      const suitPants = wardrobe.find(b => b.slot === 'bottom' && b.catCode === 'suit' && b.color === newOutfit.outer.color);
                      newOutfit.bottom = suitPants || getRandomItem('bottom', targetOcc, targetSea, newOutfit);
@@ -530,7 +524,7 @@
                     newOutfit.bottom = getRandomItem('bottom', targetOcc, targetSea, newOutfit);
                 }
 
-                // 3. Determine Inner (Now aware of newOutfit.outer)
+                // 3. Determine Inner
                 newOutfit.inner = getRandomItem('inner', targetOcc, targetSea, newOutfit);
                 
                 // 4. Determine Shoes
@@ -591,7 +585,7 @@
                 return items;
             };
 
-            // Grid Icon Zoom for Preview/Closet/Warehouse
+            // Grid Icon Zoom
             const getGridIconStyle = (slot) => {
                 const common = { width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.3s' };
                 if (slot === 'shoes') return { ...common, transform: 'scale(3.5)', transformOrigin: '50% 100%' };
@@ -604,7 +598,7 @@
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.18</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.19</span>
                         </h1>
                     </div>
 
@@ -722,7 +716,7 @@
                     </div>
 
                     <div className="bottom-nav">
-                        <div onClick={()=>setActiveTab('styling')} className={`nav-item ${activeTab==='styling'?'active'?'active':''}`}><Icon name="hanger" className="w-6 h-6"/><span>搭配</span></div>
+                        <div onClick={()=>setActiveTab('styling')} className={`nav-item ${activeTab==='styling'?'active':''}`}><Icon name="hanger" className="w-6 h-6"/><span>搭配</span></div>
                         <div onClick={()=>setActiveTab('closet')} className={`nav-item ${activeTab==='closet'?'active':''}`}><Icon name="grid" className="w-6 h-6"/><span>衣櫥</span></div>
                         <div onClick={()=>setActiveTab('add')} className={`nav-item ${activeTab==='add'?'active':''}`}><Icon name="plus" className="w-6 h-6"/><span>倉庫</span></div>
                     </div>
