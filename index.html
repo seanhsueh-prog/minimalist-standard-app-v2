@@ -1,10 +1,10 @@
-<!-- minimalist-wardrobe-core_v27_8.html -->
+<!-- minimalist-wardrobe-core_v27_8_fix.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.8 - Sorting Logic</title>
+    <title>Minimalist V27.8 - Fixed Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* [V27.8 - Visuals aligned strictly with V26.5/V27.7] */
@@ -256,7 +256,8 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
-        const DB_CONFIG = { name: 'MinimalistVault_V27_8', version: 1, store: 'inventory' };
+        // [FIX]: Changed DB name to ensure clean state
+        const DB_CONFIG = { name: 'MinimalistVault_V27_8_Fix', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
         
@@ -441,17 +442,22 @@
 
             const addToWardrobe = async (manifestItem) => {
                 const styles = STYLE_RULES[manifestItem.catCode] || ['Casual'];
+                // [FIX]: Create a new object and delete 'id' to ensure no conflict during insert
                 const newItem = {
                     ...manifestItem,
-                    id: undefined, // Let DB assign
                     style: styles,
                     createdAt: Date.now()
                 };
+                delete newItem.id; 
+
                 try {
                     await dbHelper.addItem(newItem);
                     await loadData();
                     alert("已加入衣櫥");
-                } catch (e) { alert("加入失敗"); }
+                } catch (e) { 
+                    console.error(e);
+                    alert("加入失敗"); 
+                }
             };
 
             const removeFromWardrobe = async (id) => {
@@ -592,7 +598,7 @@
                     {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.8</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.8 Fixed</span>
                         </h1>
                     </div>
 
