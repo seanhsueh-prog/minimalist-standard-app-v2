@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_7.html -->
+<!-- minimalist-wardrobe-core_v27_8.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.7 - Final Fixes</title>
+    <title>Minimalist V27.8 - Sorting Logic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.7 - Visuals aligned strictly with V26.5] */
+        /* [V27.8 - Visuals aligned strictly with V26.5/V27.7] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -118,7 +118,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Warehouse Items [Restored V26.5 Style] */
+        /* Warehouse Items */
         .warehouse-item {
             aspect-ratio: 3/4;
             border: 1px solid #eee;
@@ -134,7 +134,6 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        /* General items have padding, overridden inline for shoes */
         .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
 
         /* Category Pills */
@@ -257,20 +256,20 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
-        const DB_CONFIG = { name: 'MinimalistVault_V27_7', version: 1, store: 'inventory' };
+        const DB_CONFIG = { name: 'MinimalistVault_V27_8', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
         
         const CAT_DISPLAY = {
             'suits': '單排西裝', 'suitd': '雙排西裝', 'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
-            'knits': '針織', 'knitn': '針織背心', 'shirts': '襯衫', 'shirtn': '襯衫背心', 'sweats': '衛衣', 'tshirts': 'T-shirt', 'tshirtn': 'T-shirt背心',
+            'knits': '針織', 'knitn': '針織背心', 'shirts': '襯衫', 'shirtn': '襯衫背心', 'sweats': '衛衣', 'tshirts': 'T-shirt', 'tshirtn': 'T-shirt背心', 'polo': 'Polo衫',
             'cargo': '工裝褲', 'chino': '卡其褲', 'jeans': '牛仔褲', 'sport': '運動褲', 'suit': '西裝褲',
-            'dress': '皮鞋', 'leasnk': '皮革休閒', 'loafer': '樂福鞋'
+            'dress': '皮鞋', 'leasnk': '皮革休閒', 'loafer': '樂福鞋', 'boots': '靴子'
         };
 
         const COLOR_MAP = {
             'bk': '#1A1A1A', 'wh': '#E5E7EB', 'gy': '#6B7280', 'nv': '#1E3A8A', 
-            'be': '#C3B091', 'br': '#5D4037', 'gn': '#355E3B', 'rd': '#7F1D1D'
+            'be': '#C3B091', 'br': '#5D4037', 'gn': '#355E3B', 'rd': '#7F1D1D', 'dn': '#3B82F6'
         };
 
         const STYLE_RULES = {
@@ -284,12 +283,15 @@
             'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual']
         };
 
-        // Specific Sorting Order for Bottoms
+        // --- SORTING ORDERS ---
         const BOTTOM_SORT_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
+        const INNER_SORT_ORDER = ['shirts', 'shirtn', 'tshirts', 'tshirtn', 'polo', 'knits', 'knitn', 'sweats', 'hoodie'];
+        const SHOES_SORT_ORDER = ['dress', 'loafer', 'leasnk', 'sport', 'boots'];
+        const COLOR_SORT_ORDER = ['bk', 'wh', 'gy', 'nv', 'be', 'br', 'gn', 'rd', 'dn'];
 
         const SLOTS = [
             { id: 'coat', label: '大衣' }, { id: 'outer', label: '外套' }, { id: 'inner', label: '內搭' },
-            { id: 'bottom', label: '下身' }, { id: 'shoes', label: '鞋款' }
+            { id: 'bottom', label: '褲裝' }, { id: 'shoes', label: '鞋款' }
         ];
 
         // --- 3. CORE LOGIC ---
@@ -307,6 +309,10 @@
                 else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
                 else if (catCode === 'sweats') sleeve = 'sleeved';
 
+                // Label Fix: 'sport' means Sport Shoes in 's' slot, but Sport Pants in 'b' slot
+                let displayLabel = CAT_DISPLAY[catCode] || catCode;
+                if (slotCode === 's' && catCode === 'sport') displayLabel = '運動鞋';
+                
                 return {
                     src: filename,
                     displayUrl: `./${filename}`,
@@ -314,7 +320,7 @@
                     catCode: catCode,
                     color: colorCode,
                     sleeve: sleeve,
-                    label: CAT_DISPLAY[catCode] || catCode,
+                    label: displayLabel,
                     hex: COLOR_MAP[colorCode] || '#000'
                 };
             }).filter(Boolean);
@@ -508,17 +514,34 @@
                 const base = getFilteredManifest();
                 const codes = [...new Set(base.map(i => i.catCode))];
                 
-                // Sort Bottoms specially
+                // --- CUSTOM SORTING ---
                 if (whSlot === 'bottom') {
                     codes.sort((a,b) => {
                         const idxA = BOTTOM_SORT_ORDER.indexOf(a);
                         const idxB = BOTTOM_SORT_ORDER.indexOf(b);
-                        // If not found in list, put at end
+                        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                    });
+                } else if (whSlot === 'inner') {
+                    codes.sort((a,b) => {
+                        const idxA = INNER_SORT_ORDER.indexOf(a);
+                        const idxB = INNER_SORT_ORDER.indexOf(b);
+                        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                    });
+                } else if (whSlot === 'shoes') {
+                    codes.sort((a,b) => {
+                        const idxA = SHOES_SORT_ORDER.indexOf(a);
+                        const idxB = SHOES_SORT_ORDER.indexOf(b);
                         return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
                     });
                 }
                 
-                return codes.map(c => ({ code: c, label: CAT_DISPLAY[c] }));
+                // Get correct label for the current slot context
+                return codes.map(c => {
+                    let label = CAT_DISPLAY[c] || c;
+                    if (whSlot === 'shoes' && c === 'sport') label = '運動鞋';
+                    if (whSlot === 'bottom' && c === 'sport') label = '運動褲';
+                    return { code: c, label: label };
+                });
             };
 
             const getAvailableColors = () => {
@@ -526,6 +549,14 @@
                 let base = getFilteredManifest();
                 base = base.filter(i => i.catCode === whCatFilter);
                 const codes = [...new Set(base.map(i => i.color))];
+                
+                // --- COLOR SORTING ---
+                codes.sort((a,b) => {
+                    const idxA = COLOR_SORT_ORDER.indexOf(a);
+                    const idxB = COLOR_SORT_ORDER.indexOf(b);
+                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                });
+
                 return codes;
             };
 
@@ -561,7 +592,7 @@
                     {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.7</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.8</span>
                         </h1>
                     </div>
 
@@ -630,7 +661,7 @@
                                     ))}
                                 </div>
 
-                                {/* 2. Inner Sleeve Toggle + Hint [RESTORED] */}
+                                {/* 2. Inner Sleeve Toggle + Hint */}
                                 {whSlot === 'inner' && (
                                     <div className="flex flex-col gap-2 mb-4">
                                         <div className="flex gap-2">
@@ -644,7 +675,7 @@
                                     </div>
                                 )}
 
-                                {/* 3. Category Filter (No All) */}
+                                {/* 3. Category Filter */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {getAvailableCats().map(c => (
                                         <button key={c.code} onClick={()=>setWhCatFilter(c.code)} className={`cat-pill ${whCatFilter===c.code?'active':'inactive'}`}>
@@ -653,7 +684,7 @@
                                     ))}
                                 </div>
 
-                                {/* 4. Color Filter (No All) */}
+                                {/* 4. Color Filter */}
                                 <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1">
                                     {getAvailableColors().map(c => (
                                         <div key={c} onClick={()=>setWhColorFilter(c)} className={`w-6 h-6 rounded-full border cursor-pointer flex-shrink-0 ${whColorFilter===c?'ring-2 ring-offset-2 ring-black':''}`} 
