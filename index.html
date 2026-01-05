@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v28_3.html -->
+<!-- minimalist-wardrobe-core_v27_6.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V28.3 - V26 UI + V28 Engine</title>
+    <title>Minimalist V27.6 - Manifest Core</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V26.5 ORIGINAL STYLES - RESTORED] */
+        /* [V27.6 - Visuals based on V26.5/V27.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -118,30 +118,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Dense Card */
-        .dense-card {
-            aspect-ratio: 1/1;
-            position: relative;
-            background: #fff;
-            border-radius: 0.75rem;
-            border: 1px solid #f3f4f6;
-            overflow: hidden; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.2s;
-            padding: 0; 
-        }
-        .dense-card:active { transform: scale(0.98); }
-        .dense-card img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
-
         /* Warehouse Items */
-        .warehouse-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            padding-bottom: 2rem;
-        }
         .warehouse-item {
             aspect-ratio: 3/4;
             border: 1px solid #eee;
@@ -169,6 +146,7 @@
             transition: all 0.2s;
             border: 1px solid #eee;
             cursor: pointer;
+            margin-right: 4px;
         }
         .cat-pill.active {
             background-color: #000;
@@ -215,15 +193,20 @@
         .nav-item:active svg {
             transform: scale(0.9);
         }
-
-        /* [V28 EXTRA] Error Fallback Style (Grey Box) */
-        .img-fallback {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #f3f4f6; color: #9ca3af; padding: 4px; text-align: center;
+        
+        /* Dense Card for Closet */
+        .dense-card {
+            aspect-ratio: 1/1;
+            position: relative;
+            background: #fff;
+            border-radius: 0.75rem;
+            border: 1px solid #f3f4f6;
+            overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
         }
-        .img-fallback span.label { font-size: 10px; font-weight: bold; color: #000; }
-        .img-fallback span.file { font-size: 8px; margin-top: 2px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -236,183 +219,185 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // =================================================================
-        // ⚠️ 1. V28 設定區域 (請在此貼上您的資料) ⚠️
-        // =================================================================
-        
-        // [GITHUB PATH] 修正後的標準路徑 (無 refs/heads)
-        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/oaoxd/my-wardrobe/main/images";
-
-        // [FILE MANIFEST] 請貼上您的檔案清單
+        // --- 1. MANIFEST (THE TRUTH) ---
+        // 92 Files provided by user
         const RAW_MANIFEST = [
-            // "o_suit_bk_01.png", 
-            // "i_shirts_wh_01.png",
+            // Outer (34)
+            "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
+            "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
+            "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png", 
+            "o_leather_br_01.png", "o_leather_br_02.png", "o_leather_br_03.png",
+            "o_jacket_bk_01.png", "o_jacket_bk_03.png", "o_jacket_bk_04.png",
+            "o_jacket_br_01.png", "o_jacket_br_02.png", "o_jacket_br_03.png",
+            "o_jacket_gn_01.png", "o_jacket_gn_02.png", "o_jacket_gn_03.png",
+            "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
+            "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
+            "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
+            // Inner (28)
+            "i_knits_be_01.png", "i_knits_bk_01.png", "i_knits_br_01.png", "i_knits_gy_01.png", "i_knits_rd_01.png",
+            "i_knitn_be_01.png", "i_knitn_bk_01.png", "i_knitn_br_01.png", "i_knitn_gy_01.png", "i_knitn_rd_01.png",
+            "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png",
+            "i_shirtn_bk_01.png", "i_shirtn_nv_01.png", "i_shirtn_wh_01.png",
+            "i_sweats_bk_01.png", "i_sweats_gn_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png", "i_sweats_wh_01.png",
+            "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_wh_01.png",
+            "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
+            // Bottom (20)
+            "b_cargo_be_01.png", "b_cargo_bk_01.png", "b_cargo_gn_01.png",
+            "b_chino_be_01.png",
+            "b_jeans_bk_01.png", "b_jeans_nv_01.png",
+            "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png", "b_sport_wh_01.png",
+            "b_suit_be_02.png", "b_suit_bk_01.png", "b_suit_bk_02.png", "b_suit_br_01.png", "b_suit_br_02.png", 
+            "b_suit_gn_01.png", "b_suit_gn_02.png", "b_suit_gy_01.png", "b_suit_gy_02.png", "b_suit_nv_01.png",
+            // Shoes (10)
+            "s_dress_bk_01.png", "s_dress_br_01.png",
+            "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
+            "s_loafer_bk_01.png", "s_loafer_br_01.png", "s_loafer_nv_01.png",
+            "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        // =================================================================
-        // --- 2. V28 PARSER ENGINE (核心邏輯) ---
-        // =================================================================
-
-        const UI_LABELS = {
-            o: '外套', i: '內搭', b: '下身', s: '鞋款',
-            suits: '西裝(單)', suitd: '西裝(雙)', coat: '大衣', leather: '皮衣', jacket: '夾克',
-            shirt: '襯衫', tshirt: 'T恤', polo: 'Polo', knit: '針織',
-            jeans: '牛仔', chino: '卡其', shorts: '短褲', sport: '運動',
-            dress: '皮鞋', loafer: '樂福', sneaker: '球鞋', boots: '靴子',
-            bk: '黑', wh: '白', gy: '灰', nv: '深藍', be: '米', br: '棕', dn: '丹寧'
+        // --- 2. CONFIG & MAPS ---
+        const DB_CONFIG = { name: 'MinimalistVault_V27_6', version: 1, store: 'inventory' };
+        
+        const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
+        
+        const CAT_DISPLAY = {
+            'suits': '單排西裝', 'suitd': '雙排西裝', 'leather': '皮衣', 'jacket': '夾克', 'down': '羽絨',
+            'knits': '針織', 'knitn': '針織背心', 'shirts': '襯衫', 'shirtn': '襯衫背心', 'sweats': '衛衣', 'tshirts': 'T-shirt', 'tshirtn': 'T-shirt背心',
+            'cargo': '工裝褲', 'chino': '卡其褲', 'jeans': '牛仔褲', 'sport': '運動褲', 'suit': '西裝褲',
+            'dress': '皮鞋', 'leasnk': '皮革休閒', 'loafer': '樂福鞋'
         };
 
-        const COLOR_HEX = {
-            bk: '#1a1a1a', wh: '#f3f4f6', gy: '#6b7280', nv: '#1e3a8a',
-            be: '#d2b48c', br: '#5d4037', dn: '#3b82f6', gn: '#355e3b'
+        const COLOR_MAP = {
+            'bk': '#1A1A1A', 'wh': '#E5E7EB', 'gy': '#6B7280', 'nv': '#1E3A8A', 
+            'be': '#C3B091', 'br': '#5D4037', 'gn': '#355E3B', 'rd': '#7F1D1D'
         };
 
-        const parseFilename = (rawName) => {
-            const cleanName = rawName.trim().replace(/\.png$/i, '');
-            const parts = cleanName.split('_'); // [slot, cat, color, id]
-
-            if (parts.length < 4) return null;
-
-            const [slotCode, catRaw, colorCode] = parts;
-            let finalCat = catRaw;
-            let sleeveType = 'standard';
-
-            // 內搭去字尾邏輯
-            if (slotCode === 'i') {
-                const suffix = catRaw.slice(-1);
-                if (suffix === 'n') {
-                    sleeveType = 'sleeveless';
-                    finalCat = catRaw.slice(0, -1);
-                } else if (suffix === 's') {
-                    sleeveType = 'sleeved';
-                    finalCat = catRaw.slice(0, -1);
-                }
-            }
-
-            return {
-                uuid: cleanName,
-                filename: rawName.trim(),
-                url: `${GITHUB_RAW_URL}/${rawName.trim()}`,
-                displayUrl: `${GITHUB_RAW_URL}/${rawName.trim()}`, // V26相容字段
-                slot: slotCode,
-                category: finalCat,
-                color: colorCode,
-                sleeve: sleeveType,
-                isShoe: slotCode === 's',
-                label: UI_LABELS[finalCat] || finalCat,
-                labelColor: UI_LABELS[colorCode] || colorCode
-            };
+        const STYLE_RULES = {
+            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 'leather': ['Smart', 'Casual'], 
+            'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
+            'knits': ['Smart', 'Casual'], 'knitn': ['Smart', 'Casual'], 
+            'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'],
+            'sweats': ['Casual'], 'tshirts': ['Smart', 'Casual'], 'tshirtn': ['Smart', 'Casual'],
+            'suit': ['Formal', 'Smart'], 'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
+            'cargo': ['Casual'], 'sport': ['Casual'],
+            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual']
         };
 
-        const SYSTEM_STOCK = RAW_MANIFEST.map(parseFilename).filter(Boolean);
+        const SLOTS = [
+            { id: 'coat', label: '大衣' }, { id: 'outer', label: '外套' }, { id: 'inner', label: '內搭' },
+            { id: 'bottom', label: '下身' }, { id: 'shoes', label: '鞋款' }
+        ];
 
-        // --- 3. DATABASE (V28 Logic) ---
-        const DB_KEY = 'MinimalistVault_V28_3';
-        const dbAPI = {
-            open: () => new Promise(r => {
-                const req = indexedDB.open(DB_KEY, 1);
-                req.onupgradeneeded = e => e.target.result.createObjectStore('items', { keyPath: 'uuid' });
-                req.onsuccess = e => r(e.target.result);
+        // --- 3. CORE LOGIC ---
+        const parseManifest = () => {
+            return RAW_MANIFEST.map(filename => {
+                const parts = filename.replace('.png', '').split('_'); // [o, suits, bk, 01]
+                if (parts.length < 4) return null;
+                
+                const slotCode = parts[0];
+                const catCode = parts[1];
+                const colorCode = parts[2];
+                
+                // Determine Sleeve Type from Cat Code (User's Logic)
+                let sleeve = 'standard';
+                if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
+                else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
+                else if (catCode === 'sweats') sleeve = 'sleeved'; // Exception
+
+                return {
+                    src: filename,
+                    displayUrl: `./${filename}`,
+                    slot: SLOT_MAP[slotCode] || 'unknown',
+                    catCode: catCode,
+                    color: colorCode,
+                    sleeve: sleeve,
+                    label: CAT_DISPLAY[catCode] || catCode,
+                    hex: COLOR_MAP[colorCode] || '#000'
+                };
+            }).filter(Boolean);
+        };
+
+        const MANIFEST_ITEMS = parseManifest();
+
+        // --- 4. DB UTILS ---
+        const dbHelper = {
+            open: () => new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(DB_CONFIG.store)) db.createObjectStore(DB_CONFIG.store, { keyPath: 'id', autoIncrement: true });
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
             }),
-            getAll: async () => {
-                const db = await dbAPI.open();
-                return new Promise(r => {
-                    const tx = db.transaction('items', 'readonly');
-                    const req = tx.objectStore('items').getAll();
-                    req.onsuccess = () => r(req.result);
+            addItem: async (item) => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readwrite');
+                    const req = tx.objectStore(DB_CONFIG.store).add(item);
+                    req.onsuccess = () => resolve({ ...item, id: req.result });
+                    req.onerror = () => reject(req.error);
                 });
             },
-            add: async (item) => {
-                const db = await dbAPI.open();
-                const tx = db.transaction('items', 'readwrite');
-                tx.objectStore('items').put(item);
-                return new Promise(r => tx.oncomplete = r);
+            getAll: async () => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readonly');
+                    const req = tx.objectStore(DB_CONFIG.store).getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
             },
-            del: async (id) => {
-                const db = await dbAPI.open();
-                const tx = db.transaction('items', 'readwrite');
-                tx.objectStore('items').delete(id);
-                return new Promise(r => tx.oncomplete = r);
+            delete: async (id) => {
+                const db = await dbHelper.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(DB_CONFIG.store, 'readwrite');
+                    const req = tx.objectStore(DB_CONFIG.store).delete(id);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
             }
         };
 
-        // --- 4. CONSTANTS (V26.5 Compatible) ---
-        const SLOTS = [
-            { id: 'o', label: '外套' }, { id: 'i', label: '內搭' }, 
-            { id: 'b', label: '下身' }, { id: 's', label: '鞋款' }
-        ];
-        const SEASONS = [ { id: 'Winter', label: '冬季' }, { id: 'Summer', label: '夏季' } ];
-        const OCCASIONS = [ { id: 'Formal', label: '正式' }, { id: 'Smart', label: '大人' }, { id: 'Casual', label: '休閒' } ];
-        
-        const INVENTORY_TABS = [
-            { id: 'o', label: '外套' }, { id: 'i', label: '內搭' },
-            { id: 'b', label: '下身' }, { id: 's', label: '鞋款' }
-        ];
-
         // --- 5. COMPONENTS ---
-
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
                 grid: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
                 trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
                 dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>,
-                x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
 
-        const SafeImage = ({ item, className, style }) => {
-            const [error, setError] = useState(false);
-            if (error || !item) {
-                return (
-                    <div className={`${className} img-fallback`} style={style}>
-                        <span className="label">{item?.label || 'Item'}</span>
-                        <span className="file">{item?.filename}</span>
-                    </div>
-                );
-            }
-            return (
-                <img 
-                    src={item.url} 
-                    alt={item.label}
-                    className={className}
-                    style={style}
-                    onError={() => setError(true)}
-                />
-            );
-        };
-
-        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom, onGoToWarehouse }) => {
-            const { o, i, b, s } = outfit;
+        const GhostEngine = ({ outfit, occasion, setOccasion, season, setSeason, triggerRandom }) => {
+            const { coat, outer, inner, bottom, shoes } = outfit;
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
                     <div className="ghost-canvas-container mx-auto relative">
-                        {s && <SafeImage item={s} className="ghost-layer z-10" style={{ transform: 'translateZ(0)' }} />}
-                        {b && <SafeImage item={b} className="ghost-layer z-20" />}
-                        {i && <SafeImage item={i} className="ghost-layer z-30" />}
-                        {o && <SafeImage item={o} className="ghost-layer z-40" />}
+                        {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" style={{ transform: 'translateZ(0)' }} />}
+                        {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" />}
+                        {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" />}
+                        {(coat || outer) && <img src={coat?.displayUrl || outer?.displayUrl} className="ghost-layer z-40" alt="Outer" />}
                         
-                        {(!s && !b && !i && !o) && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-auto">
-                                <p className="text-gray-300 text-xs tracking-widest mb-4">您的衣櫥目前是空的</p>
-                                <button onClick={onGoToWarehouse} className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full shadow-lg hover:scale-105 transition-transform">
-                                    💡 前往單品倉庫新增單品
-                                </button>
+                        {!shoes && !bottom && !inner && !outer && !coat && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                                <p className="text-gray-300 text-xs tracking-widest">WARDROBE EMPTY</p>
                             </div>
                         )}
                     </div>
 
                     <div className="floating-controls">
                         <div className="control-group mb-3">
-                            {SEASONS.map(sea => (
-                                <button key={sea.id} className={`mini-btn ${season === sea.id ? 'active' : ''}`} onClick={() => { setSeason(sea.id); }} title={sea.label}>{sea.label.slice(0, 1)}</button>
+                            {[{id:'Winter',l:'冬'}, {id:'Summer',l:'夏'}].map(s => (
+                                <button key={s.id} className={`mini-btn ${season === s.id ? 'active' : ''}`} onClick={() => { setSeason(s.id); triggerRandom(occasion, s.id); }}>{s.l}</button>
                             ))}
                         </div>
                         <div className="control-group">
-                            {OCCASIONS.map(occ => (
-                                <button key={occ.id} className={`mini-btn ${occasion === occ.id ? 'active' : ''}`} onClick={() => { setOccasion(occ.id); }} title={occ.label}>{occ.label.slice(0, 2)}</button>
+                            {[{id:'Formal',l:'正式'}, {id:'Smart',l:'大人'}, {id:'Casual',l:'休閒'}].map(o => (
+                                <button key={o.id} className={`mini-btn ${occasion === o.id ? 'active' : ''}`} onClick={() => { setOccasion(o.id); triggerRandom(o.id, season); }}>{o.l.slice(0,1)}</button>
                             ))}
                         </div>
                     </div>
@@ -420,204 +405,265 @@
             );
         };
 
-        // --- 6. MAIN APP ---
+        // --- 6. APP ---
         const App = () => {
             const [wardrobe, setWardrobe] = useState([]);
-            const [outfit, setOutfit] = useState({ o: null, i: null, b: null, s: null });
+            const [outfit, setOutfit] = useState({ coat: null, outer: null, inner: null, bottom: null, shoes: null });
             const [activeTab, setActiveTab] = useState('styling');
             
+            // Random Context
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
-            const [inventoryTab, setInventoryTab] = useState('o');
 
-            // Warehouse States (Dynamic V28)
-            const [whSlot, setWhSlot] = useState('o');
-            const [whCat, setWhCat] = useState('all');
-            const [whColor, setWhColor] = useState('all');
+            // Warehouse Context
+            const [whSlot, setWhSlot] = useState('outer');
+            const [whSleeve, setWhSleeve] = useState('sleeved'); // For inner
+            const [whCatFilter, setWhCatFilter] = useState('all'); // To filter sub-cats
+            const [whColorFilter, setWhColorFilter] = useState('all');
+
+            const loadData = async () => {
+                try {
+                    const items = await dbHelper.getAll();
+                    setWardrobe(items);
+                } catch (e) { console.error("DB Error", e); }
+            };
 
             useEffect(() => { loadData(); }, []);
 
-            const loadData = async () => {
-                const items = await dbAPI.getAll();
-                setWardrobe(items);
-            };
-
-            const toggleItem = async (sysItem) => {
-                const exists = wardrobe.find(x => x.uuid === sysItem.uuid);
-                if (exists) {
-                    if(!confirm(`移除 ${sysItem.label}？`)) return;
-                    await dbAPI.del(sysItem.uuid);
-                } else {
-                    await dbAPI.add(sysItem);
-                }
-                loadData();
-            };
-
-            const handleClearSlot = (slot) => setOutfit(prev => ({ ...prev, [slot]: null }));
-            const handleClearAll = () => setOutfit({ o: null, i: null, b: null, s: null });
-
-            const handleRandom = () => {
-                const getR = (s) => {
-                    const pool = wardrobe.filter(x => x.slot === s);
-                    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+            const addToWardrobe = async (manifestItem) => {
+                const styles = STYLE_RULES[manifestItem.catCode] || ['Casual'];
+                const newItem = {
+                    ...manifestItem,
+                    id: undefined, // Let DB assign
+                    style: styles,
+                    createdAt: Date.now()
                 };
-                setOutfit({ o: getR('o'), i: getR('i'), b: getR('b'), s: getR('s') });
+                try {
+                    await dbHelper.addItem(newItem);
+                    await loadData();
+                    alert("已加入衣櫥");
+                } catch (e) { alert("加入失敗"); }
             };
 
-            // Dynamic Warehouse Filters
-            const filteredStock = useMemo(() => {
-                return SYSTEM_STOCK.filter(x => {
-                    if (x.slot !== whSlot) return false;
-                    if (whCat !== 'all' && x.category !== whCat) return false;
-                    if (whColor !== 'all' && x.color !== whColor) return false;
-                    return true;
+            const removeFromWardrobe = async (id) => {
+                if(!confirm("確定移除?")) return;
+                await dbHelper.delete(id);
+                loadData();
+                setOutfit(prev => {
+                    const next = { ...prev };
+                    Object.keys(next).forEach(k => { if(next[k]?.id === id) next[k] = null; });
+                    return next;
                 });
-            }, [whSlot, whCat, whColor]);
+            };
 
-            const availCats = useMemo(() => [...new Set(SYSTEM_STOCK.filter(x => x.slot === whSlot).map(x => x.category))], [whSlot]);
-            const availColors = useMemo(() => {
-                let pool = SYSTEM_STOCK.filter(x => x.slot === whSlot);
-                if(whCat !== 'all') pool = pool.filter(x => x.category === whCat);
-                return [...new Set(pool.map(x => x.color))];
-            }, [whSlot, whCat]);
+            const getRandomItem = (slot, occ, sea, currentOutfit) => {
+                let candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
+                
+                // Occasion Filter
+                candidates = candidates.filter(item => item.style.includes(occ));
+                
+                // Season/Logic Filter
+                if (slot === 'inner') {
+                    const hasOuter = currentOutfit.outer || currentOutfit.coat;
+                    if (hasOuter) candidates = candidates.filter(i => i.sleeve === 'sleeveless');
+                    else candidates = candidates.filter(i => i.sleeve === 'sleeved');
+
+                    if (sea === 'Summer') candidates = candidates.filter(i => !['knits','sweats','knitn'].includes(i.catCode));
+                }
+
+                if (candidates.length === 0) return null;
+                return candidates[Math.floor(Math.random() * candidates.length)];
+            };
+
+            const handleRandom = (targetOcc, targetSea) => {
+                const newOutfit = { ...outfit };
+                
+                // Logic: Outer -> Bottom -> Inner -> Shoes
+                
+                // 1. Outer
+                if (targetSea === 'Summer' && targetOcc !== 'Formal') {
+                    newOutfit.outer = null; 
+                    newOutfit.coat = null;
+                } else {
+                    newOutfit.outer = getRandomItem('outer', targetOcc, targetSea, newOutfit);
+                }
+
+                // 2. Bottom (Match Outer if Formal Suit)
+                if (targetOcc === 'Formal' && newOutfit.outer && (newOutfit.outer.catCode === 'suits' || newOutfit.outer.catCode === 'suitd')) {
+                     const suitPants = wardrobe.find(b => b.slot === 'bottom' && b.catCode === 'suit' && b.color === newOutfit.outer.color);
+                     newOutfit.bottom = suitPants || getRandomItem('bottom', targetOcc, targetSea, newOutfit);
+                } else {
+                    newOutfit.bottom = getRandomItem('bottom', targetOcc, targetSea, newOutfit);
+                }
+
+                // 3. Inner
+                newOutfit.inner = getRandomItem('inner', targetOcc, targetSea, newOutfit);
+
+                // 4. Shoes
+                newOutfit.shoes = getRandomItem('shoes', targetOcc, targetSea, newOutfit);
+
+                setOutfit(newOutfit);
+            };
+
+            // Warehouse Filtering Logic
+            const getWarehouseItems = () => {
+                let items = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
+                
+                // Inner Sleeve Filter
+                if (whSlot === 'inner') {
+                    items = items.filter(i => i.sleeve === whSleeve);
+                }
+
+                // Category Filter
+                if (whCatFilter !== 'all') {
+                    items = items.filter(i => i.catCode === whCatFilter);
+                }
+
+                // Color Filter
+                if (whColorFilter !== 'all') {
+                    items = items.filter(i => i.color === whColorFilter);
+                }
+
+                return items;
+            };
+
+            const getAvailableCats = () => {
+                let base = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
+                if (whSlot === 'inner') base = base.filter(i => i.sleeve === whSleeve);
+                const codes = [...new Set(base.map(i => i.catCode))];
+                return codes.map(c => ({ code: c, label: CAT_DISPLAY[c] }));
+            };
+
+            const getAvailableColors = () => {
+                let base = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
+                if (whSlot === 'inner') base = base.filter(i => i.sleeve === whSleeve);
+                if (whCatFilter !== 'all') base = base.filter(i => i.catCode === whCatFilter);
+                const codes = [...new Set(base.map(i => i.color))];
+                return codes;
+            };
 
             return (
                 <div className="app-container">
+                    {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V28.3</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.6</span>
+                        </h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
-                        {/* TAB 1: STYLING */}
+                        {/* TAB: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
                                 <GhostEngine 
-                                    outfit={outfit} occasion={occasion} setOccasion={setOccasion} season={season} setSeason={setSeason}
-                                    triggerRandom={handleRandom} onGoToWarehouse={() => setActiveTab('add')} 
+                                    outfit={outfit} 
+                                    occasion={occasion} setOccasion={setOccasion}
+                                    season={season} setSeason={setSeason}
+                                    triggerRandom={handleRandom}
                                 />
-                                <div className="px-6 mt-4 mb-4">
+                                <div className="px-6 mt-4">
                                     <div className="grid grid-cols-4 gap-2 mb-4">
-                                        {['o','i','b','s'].map(slot => (
+                                        {['outer','inner','bottom','shoes'].map(slot => (
                                             <div key={slot} className="relative group">
-                                                <div className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}>
+                                                <div className={`aspect-square rounded-xl border flex items-center justify-center overflow-hidden ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}>
                                                     {outfit[slot] ? (
-                                                        <div className={`w-full h-full overflow-hidden ${slot === 's' ? '' : 'p-2 flex items-center justify-center'}`}>
-                                                            <SafeImage 
-                                                                item={outfit[slot]}
-                                                                className="w-full h-full"
-                                                                style={slot === 's' || (outfit[slot]?.isShoe)
-                                                                    ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center' } 
-                                                                    : { objectFit: 'contain' }
-                                                                }
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <span className="text-[9px] font-bold uppercase text-gray-400 mb-1">{SLOTS.find(s=>s.id===slot)?.label}</span>
-                                                            <span className="text-xs text-gray-300 font-bold">+</span>
-                                                        </>
-                                                    )}
+                                                        <img src={outfit[slot].displayUrl} className="w-full h-full object-contain" 
+                                                             style={slot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}} />
+                                                    ) : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
                                                 </div>
-                                                {outfit[slot] && <button onClick={() => handleClearSlot(slot)} className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 rounded-full p-1 shadow hover:text-red-500 z-20"><Icon name="x" className="w-3 h-3" /></button>}
+                                                {outfit[slot] && (
+                                                    <button onClick={()=>setOutfit(p=>({...p,[slot]:null}))} className="absolute -top-1 -right-1 bg-white border rounded-full p-1 shadow z-20"><Icon name="x" className="w-3 h-3 text-gray-400"/></button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                     <div className="flex gap-3">
-                                        <button onClick={handleClearAll} className="flex-1 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"><Icon name="trash" className="w-4 h-4" /> 重置</button>
-                                        <button onClick={handleRandom} className="flex-[2] py-3 bg-black text-white text-xs font-bold tracking-widest uppercase rounded-xl hover:bg-gray-900 shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"><Icon name="dice" className="w-4 h-4" /> 智慧搭配</button>
+                                        <button onClick={()=>setOutfit({coat:null,outer:null,inner:null,bottom:null,shoes:null})} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-500 flex items-center justify-center gap-2"><Icon name="trash" className="w-4 h-4"/>重置</button>
+                                        <button onClick={()=>handleRandom(occasion, season)} className="flex-[2] py-3 bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"><Icon name="dice" className="w-4 h-4"/>智慧搭配</button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB 2: CLOSET */}
+                        {/* TAB: CLOSET */}
                         {activeTab === 'closet' && (
                             <div className="p-6 animate-fade-in min-h-full bg-white">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥 ({wardrobe.length})</h2>
-                                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                                    {INVENTORY_TABS.map(tab => (
-                                        <button key={tab.id} onClick={() => setInventoryTab(tab.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${inventoryTab === tab.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>{tab.label}</button>
-                                    ))}
-                                </div>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {wardrobe.filter(item => item.slot === inventoryTab).map(item => (
-                                        <div key={item.uuid} onClick={() => { setOutfit(prev => ({...prev, [item.slot]: item})); setActiveTab('styling'); }} className="dense-card cursor-pointer overflow-hidden relative group">
-                                            <SafeImage 
-                                                item={item}
-                                                style={item.slot === 's' 
-                                                    ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
-                                                    : {}}
-                                            />
-                                            <button onClick={(e) => { e.stopPropagation(); toggleItem(item); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                    {wardrobe.map(item => (
+                                        <div key={item.id} className="dense-card group cursor-pointer" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
+                                            <img src={item.displayUrl} className="w-full h-full object-contain" style={item.slot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}}/>
+                                            <button onClick={(e)=>{e.stopPropagation();removeFromWardrobe(item.id)}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>
                                         </div>
                                     ))}
                                 </div>
-                                {wardrobe.length === 0 && <div className="text-center py-12 text-gray-300 text-xs">衣櫥空空如也</div>}
                             </div>
                         )}
 
-                        {/* TAB 3: WAREHOUSE (V28 Dynamic Filter Style) */}
+                        {/* TAB: ADD (MANIFEST) */}
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 
-                                {/* 1. Slot Filter */}
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-                                    {SLOTS.map(s => (
-                                        <button key={s.id} onClick={() => { setWhSlot(s.id); setWhCat('all'); setWhColor('all'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border transition-colors ${whSlot === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-500 border-gray-200'}`}>{s.label}</button>
+                                {/* 1. Slot Tabs */}
+                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+                                    {SLOTS.filter(s=>s.id!=='coat').map(s => (
+                                        <button key={s.id} onClick={()=>{setWhSlot(s.id);setWhCatFilter('all');setWhColorFilter('all');}} 
+                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border ${whSlot===s.id?'bg-black text-white border-black':'bg-white text-gray-500 border-gray-200'}`}>
+                                            {s.label}
+                                        </button>
                                     ))}
                                 </div>
 
-                                {/* 2. Category Filter (Dynamic) */}
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-                                    <button onClick={() => setWhCat('all')} className={`cat-pill ${whCat === 'all' ? 'active' : 'inactive'}`}>全部</button>
-                                    {availCats.map(c => (
-                                        <button key={c} onClick={() => setWhCat(c)} className={`cat-pill ${whCat === c ? 'active' : 'inactive'}`}>{UI_LABELS[c] || c}</button>
-                                    ))}
-                                </div>
-
-                                {/* 3. Color Filter (Dynamic) */}
-                                <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 py-1">
-                                    <div className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setWhColor('all')}>
-                                         <span className={`text-xs font-bold ${whColor === 'all' ? 'text-black' : 'text-gray-400'}`}>All</span>
+                                {/* 2. Inner Sleeve Toggle */}
+                                {whSlot === 'inner' && (
+                                    <div className="flex gap-2 mb-4">
+                                        <button onClick={()=>setWhSleeve('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeved'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>有袖 (Standard)</button>
+                                        <button onClick={()=>setWhSleeve('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeveless'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>無袖 (Layering)</button>
                                     </div>
-                                    {availColors.map(c => (
-                                        <div key={c} className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => setWhColor(c)}>
-                                            <div className={`w-6 h-6 rounded-full transition-all shadow-sm ${whColor === c ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105'}`} style={{ background: COLOR_HEX[c] || '#ccc' }}></div>
+                                )}
+
+                                {/* 3. Category Filter */}
+                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+                                    <button onClick={()=>setWhCatFilter('all')} className={`cat-pill ${whCatFilter==='all'?'active':'inactive'}`}>全部</button>
+                                    {getAvailableCats().map(c => (
+                                        <button key={c.code} onClick={()=>setWhCatFilter(c.code)} className={`cat-pill ${whCatFilter===c.code?'active':'inactive'}`}>
+                                            {c.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 4. Color Filter */}
+                                <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1">
+                                    <div onClick={()=>setWhColorFilter('all')} className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] cursor-pointer ${whColorFilter==='all'?'ring-2 ring-black':''}`}>All</div>
+                                    {getAvailableColors().map(c => (
+                                        <div key={c} onClick={()=>setWhColorFilter(c)} className={`w-6 h-6 rounded-full border cursor-pointer flex-shrink-0 ${whColorFilter===c?'ring-2 ring-offset-2 ring-black':''}`} 
+                                             style={{background:COLOR_MAP[c]}}></div>
+                                    ))}
+                                </div>
+
+                                {/* 5. Grid */}
+                                <div className="grid grid-cols-2 gap-3 pb-20">
+                                    {getWarehouseItems().map((item, idx) => (
+                                        <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item group">
+                                            <img src={item.displayUrl} alt={item.label} style={whSlot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}} />
+                                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
+                                            </div>
+                                            <div className="absolute bottom-1 left-1 text-[9px] text-gray-400 bg-white/80 px-1 rounded">{item.label}</div>
                                         </div>
                                     ))}
-                                </div>
-
-                                {/* 4. Grid */}
-                                <div className="warehouse-grid">
-                                    {filteredStock.map((item) => {
-                                        const inCloset = wardrobe.some(x => x.uuid === item.uuid);
-                                        return (
-                                            <div key={item.uuid} onClick={() => toggleItem(item)} className={`warehouse-item relative group ${inCloset ? 'border-black' : ''}`}>
-                                                <SafeImage 
-                                                    item={item}
-                                                    style={whSlot === 's' 
-                                                        ? { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center', padding: 0 } 
-                                                        : {}}
-                                                />
-                                                <div className={`absolute inset-0 flex items-center justify-center bg-black/5 transition-opacity ${inCloset ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                    <span className={`text-white text-[10px] px-2 py-1 rounded-full font-bold ${inCloset ? 'bg-black' : 'bg-gray-400'}`}>
-                                                        {inCloset ? '已入庫' : '入庫'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    {filteredStock.length === 0 && <div className="col-span-2 text-center text-xs text-gray-400 py-8">無符合條件單品</div>}
+                                    {getWarehouseItems().length === 0 && <p className="text-gray-400 text-xs col-span-2 text-center py-4">無符合條件單品</p>}
                                 </div>
                             </div>
                         )}
                     </div>
 
+                    {/* Bottom Nav */}
                     <div className="bottom-nav">
-                        <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-6 h-6" /><span>搭配</span></div>
-                        <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}><Icon name="grid" className="w-6 h-6" /><span>衣櫥</span></div>
-                        <div onClick={() => setActiveTab('add')} className={`nav-item ${activeTab === 'add' ? 'active' : ''}`}><Icon name="plus" className="w-6 h-6" /><span>倉庫</span></div>
+                        <div onClick={()=>setActiveTab('styling')} className={`nav-item ${activeTab==='styling'?'active':''}`}><Icon name="hanger" className="w-6 h-6"/><span>搭配</span></div>
+                        <div onClick={()=>setActiveTab('closet')} className={`nav-item ${activeTab==='closet'?'active':''}`}><Icon name="grid" className="w-6 h-6"/><span>衣櫥</span></div>
+                        <div onClick={()=>setActiveTab('add')} className={`nav-item ${activeTab==='add'?'active':''}`}><Icon name="plus" className="w-6 h-6"/><span>倉庫</span></div>
                     </div>
                 </div>
             );
