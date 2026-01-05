@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_6.html -->
+<!-- minimalist-wardrobe-core_v27_7.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.6 - Manifest Core</title>
+    <title>Minimalist V27.7 - Final Fixes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.6 - Visuals based on V26.5/V27.5] */
+        /* [V27.7 - Visuals aligned strictly with V26.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -118,7 +118,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Warehouse Items */
+        /* Warehouse Items [Restored V26.5 Style] */
         .warehouse-item {
             aspect-ratio: 3/4;
             border: 1px solid #eee;
@@ -134,6 +134,7 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
+        /* General items have padding, overridden inline for shoes */
         .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
 
         /* Category Pills */
@@ -256,7 +257,7 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
-        const DB_CONFIG = { name: 'MinimalistVault_V27_6', version: 1, store: 'inventory' };
+        const DB_CONFIG = { name: 'MinimalistVault_V27_7', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
         
@@ -283,6 +284,9 @@
             'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual']
         };
 
+        // Specific Sorting Order for Bottoms
+        const BOTTOM_SORT_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
+
         const SLOTS = [
             { id: 'coat', label: '大衣' }, { id: 'outer', label: '外套' }, { id: 'inner', label: '內搭' },
             { id: 'bottom', label: '下身' }, { id: 'shoes', label: '鞋款' }
@@ -298,11 +302,10 @@
                 const catCode = parts[1];
                 const colorCode = parts[2];
                 
-                // Determine Sleeve Type from Cat Code (User's Logic)
                 let sleeve = 'standard';
                 if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
                 else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
-                else if (catCode === 'sweats') sleeve = 'sleeved'; // Exception
+                else if (catCode === 'sweats') sleeve = 'sleeved';
 
                 return {
                     src: filename,
@@ -418,8 +421,8 @@
             // Warehouse Context
             const [whSlot, setWhSlot] = useState('outer');
             const [whSleeve, setWhSleeve] = useState('sleeved'); // For inner
-            const [whCatFilter, setWhCatFilter] = useState('all'); // To filter sub-cats
-            const [whColorFilter, setWhColorFilter] = useState('all');
+            const [whCatFilter, setWhCatFilter] = useState(''); // Init empty
+            const [whColorFilter, setWhColorFilter] = useState(''); // Init empty
 
             const loadData = async () => {
                 try {
@@ -458,16 +461,12 @@
 
             const getRandomItem = (slot, occ, sea, currentOutfit) => {
                 let candidates = wardrobe.filter(item => item.slot === slot || (slot === 'outer' && item.slot === 'coat'));
-                
-                // Occasion Filter
                 candidates = candidates.filter(item => item.style.includes(occ));
                 
-                // Season/Logic Filter
                 if (slot === 'inner') {
                     const hasOuter = currentOutfit.outer || currentOutfit.coat;
                     if (hasOuter) candidates = candidates.filter(i => i.sleeve === 'sleeveless');
                     else candidates = candidates.filter(i => i.sleeve === 'sleeved');
-
                     if (sea === 'Summer') candidates = candidates.filter(i => !['knits','sweats','knitn'].includes(i.catCode));
                 }
 
@@ -478,9 +477,6 @@
             const handleRandom = (targetOcc, targetSea) => {
                 const newOutfit = { ...outfit };
                 
-                // Logic: Outer -> Bottom -> Inner -> Shoes
-                
-                // 1. Outer
                 if (targetSea === 'Summer' && targetOcc !== 'Formal') {
                     newOutfit.outer = null; 
                     newOutfit.coat = null;
@@ -488,7 +484,6 @@
                     newOutfit.outer = getRandomItem('outer', targetOcc, targetSea, newOutfit);
                 }
 
-                // 2. Bottom (Match Outer if Formal Suit)
                 if (targetOcc === 'Formal' && newOutfit.outer && (newOutfit.outer.catCode === 'suits' || newOutfit.outer.catCode === 'suitd')) {
                      const suitPants = wardrobe.find(b => b.slot === 'bottom' && b.catCode === 'suit' && b.color === newOutfit.outer.color);
                      newOutfit.bottom = suitPants || getRandomItem('bottom', targetOcc, targetSea, newOutfit);
@@ -496,50 +491,69 @@
                     newOutfit.bottom = getRandomItem('bottom', targetOcc, targetSea, newOutfit);
                 }
 
-                // 3. Inner
                 newOutfit.inner = getRandomItem('inner', targetOcc, targetSea, newOutfit);
-
-                // 4. Shoes
                 newOutfit.shoes = getRandomItem('shoes', targetOcc, targetSea, newOutfit);
 
                 setOutfit(newOutfit);
             };
 
-            // Warehouse Filtering Logic
-            const getWarehouseItems = () => {
-                let items = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
-                
-                // Inner Sleeve Filter
-                if (whSlot === 'inner') {
-                    items = items.filter(i => i.sleeve === whSleeve);
-                }
-
-                // Category Filter
-                if (whCatFilter !== 'all') {
-                    items = items.filter(i => i.catCode === whCatFilter);
-                }
-
-                // Color Filter
-                if (whColorFilter !== 'all') {
-                    items = items.filter(i => i.color === whColorFilter);
-                }
-
-                return items;
+            // --- Warehouse Helpers ---
+            const getFilteredManifest = () => {
+                let base = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
+                if (whSlot === 'inner') base = base.filter(i => i.sleeve === whSleeve);
+                return base;
             };
 
             const getAvailableCats = () => {
-                let base = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
-                if (whSlot === 'inner') base = base.filter(i => i.sleeve === whSleeve);
+                const base = getFilteredManifest();
                 const codes = [...new Set(base.map(i => i.catCode))];
+                
+                // Sort Bottoms specially
+                if (whSlot === 'bottom') {
+                    codes.sort((a,b) => {
+                        const idxA = BOTTOM_SORT_ORDER.indexOf(a);
+                        const idxB = BOTTOM_SORT_ORDER.indexOf(b);
+                        // If not found in list, put at end
+                        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                    });
+                }
+                
                 return codes.map(c => ({ code: c, label: CAT_DISPLAY[c] }));
             };
 
             const getAvailableColors = () => {
-                let base = MANIFEST_ITEMS.filter(i => i.slot === whSlot);
-                if (whSlot === 'inner') base = base.filter(i => i.sleeve === whSleeve);
-                if (whCatFilter !== 'all') base = base.filter(i => i.catCode === whCatFilter);
+                if (!whCatFilter) return [];
+                let base = getFilteredManifest();
+                base = base.filter(i => i.catCode === whCatFilter);
                 const codes = [...new Set(base.map(i => i.color))];
                 return codes;
+            };
+
+            // Auto-Select First Category Logic
+            useEffect(() => {
+                const cats = getAvailableCats();
+                if (cats.length > 0) {
+                    setWhCatFilter(cats[0].code);
+                } else {
+                    setWhCatFilter('');
+                }
+            }, [whSlot, whSleeve]);
+
+            // Auto-Select First Color Logic
+            useEffect(() => {
+                const colors = getAvailableColors();
+                if (colors.length > 0) {
+                    setWhColorFilter(colors[0]);
+                } else {
+                    setWhColorFilter('');
+                }
+            }, [whCatFilter]);
+
+            const getWarehouseItems = () => {
+                if (!whCatFilter || !whColorFilter) return [];
+                let items = getFilteredManifest();
+                items = items.filter(i => i.catCode === whCatFilter && i.color === whColorFilter);
+                return items;
             };
 
             return (
@@ -547,7 +561,7 @@
                     {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.6</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.7</span>
                         </h1>
                     </div>
 
@@ -568,7 +582,7 @@
                                                 <div className={`aspect-square rounded-xl border flex items-center justify-center overflow-hidden ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}>
                                                     {outfit[slot] ? (
                                                         <img src={outfit[slot].displayUrl} className="w-full h-full object-contain" 
-                                                             style={slot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}} />
+                                                             style={slot==='shoes'?{width:'100%',height:'100%',objectFit:'contain',transform:'scale(3.5)',transformOrigin:'bottom center',padding:0}:{}} />
                                                     ) : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
                                                 </div>
                                                 {outfit[slot] && (
@@ -592,7 +606,8 @@
                                 <div className="grid grid-cols-3 gap-2">
                                     {wardrobe.map(item => (
                                         <div key={item.id} className="dense-card group cursor-pointer" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
-                                            <img src={item.displayUrl} className="w-full h-full object-contain" style={item.slot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}}/>
+                                            <img src={item.displayUrl} className="w-full h-full object-contain" 
+                                                style={item.slot==='shoes'?{width:'100%',height:'100%',objectFit:'contain',transform:'scale(3.5)',transformOrigin:'bottom center',padding:0}:{padding:'2px'}}/>
                                             <button onClick={(e)=>{e.stopPropagation();removeFromWardrobe(item.id)}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>
                                         </div>
                                     ))}
@@ -608,24 +623,29 @@
                                 {/* 1. Slot Tabs */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {SLOTS.filter(s=>s.id!=='coat').map(s => (
-                                        <button key={s.id} onClick={()=>{setWhSlot(s.id);setWhCatFilter('all');setWhColorFilter('all');}} 
+                                        <button key={s.id} onClick={()=>{setWhSlot(s.id);}} 
                                             className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap border ${whSlot===s.id?'bg-black text-white border-black':'bg-white text-gray-500 border-gray-200'}`}>
                                             {s.label}
                                         </button>
                                     ))}
                                 </div>
 
-                                {/* 2. Inner Sleeve Toggle */}
+                                {/* 2. Inner Sleeve Toggle + Hint [RESTORED] */}
                                 {whSlot === 'inner' && (
-                                    <div className="flex gap-2 mb-4">
-                                        <button onClick={()=>setWhSleeve('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeved'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>有袖 (Standard)</button>
-                                        <button onClick={()=>setWhSleeve('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeveless'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>無袖 (Layering)</button>
+                                    <div className="flex flex-col gap-2 mb-4">
+                                        <div className="flex gap-2">
+                                            <button onClick={()=>setWhSleeve('sleeved')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeved'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>有袖 (Standard)</button>
+                                            <button onClick={()=>setWhSleeve('sleeveless')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${whSleeve==='sleeveless'?'bg-gray-800 text-white':'bg-gray-50 text-gray-400'}`}>無袖 (Layering)</button>
+                                        </div>
+                                        <p className="text-[11px] text-[#4b5563] leading-relaxed">
+                                            <span className="font-bold block mb-1">必須同時準備有袖與無袖單品</span>
+                                            無袖用於外套層次，有袖用於單穿展現，以確保智慧搭配能呈現最佳效果。
+                                        </p>
                                     </div>
                                 )}
 
-                                {/* 3. Category Filter */}
+                                {/* 3. Category Filter (No All) */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-                                    <button onClick={()=>setWhCatFilter('all')} className={`cat-pill ${whCatFilter==='all'?'active':'inactive'}`}>全部</button>
                                     {getAvailableCats().map(c => (
                                         <button key={c.code} onClick={()=>setWhCatFilter(c.code)} className={`cat-pill ${whCatFilter===c.code?'active':'inactive'}`}>
                                             {c.label}
@@ -633,9 +653,8 @@
                                     ))}
                                 </div>
 
-                                {/* 4. Color Filter */}
+                                {/* 4. Color Filter (No All) */}
                                 <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1">
-                                    <div onClick={()=>setWhColorFilter('all')} className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] cursor-pointer ${whColorFilter==='all'?'ring-2 ring-black':''}`}>All</div>
                                     {getAvailableColors().map(c => (
                                         <div key={c} onClick={()=>setWhColorFilter(c)} className={`w-6 h-6 rounded-full border cursor-pointer flex-shrink-0 ${whColorFilter===c?'ring-2 ring-offset-2 ring-black':''}`} 
                                              style={{background:COLOR_MAP[c]}}></div>
@@ -646,14 +665,14 @@
                                 <div className="grid grid-cols-2 gap-3 pb-20">
                                     {getWarehouseItems().map((item, idx) => (
                                         <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item group">
-                                            <img src={item.displayUrl} alt={item.label} style={whSlot==='shoes'?{transform:'scale(3.5) translateY(20%)'}:{}} />
+                                            <img src={item.displayUrl} alt={item.label} 
+                                                style={whSlot==='shoes'?{width:'100%',height:'100%',objectFit:'contain',transform:'scale(3.5)',transformOrigin:'bottom center',padding:0}:{}} />
                                             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
                                             </div>
-                                            <div className="absolute bottom-1 left-1 text-[9px] text-gray-400 bg-white/80 px-1 rounded">{item.label}</div>
                                         </div>
                                     ))}
-                                    {getWarehouseItems().length === 0 && <p className="text-gray-400 text-xs col-span-2 text-center py-4">無符合條件單品</p>}
+                                    {getWarehouseItems().length === 0 && <p className="text-gray-400 text-xs col-span-2 text-center py-4">暫無此規格單品</p>}
                                 </div>
                             </div>
                         )}
