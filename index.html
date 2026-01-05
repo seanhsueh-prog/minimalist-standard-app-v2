@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_13.html -->
+<!-- minimalist-wardrobe-core_v27_14.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.13 - Logic Separation</title>
+    <title>Minimalist V27.14 - Logic Separated</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.13 - Visuals aligned strictly with V26.5/V27.12] */
+        /* [V27.14 - Ghost Engine RESTORED to V26.5 / Warehouse ZOOMED] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -59,6 +59,7 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
+        /* Ghost Layer: STRICTLY V26.5 LOGIC - NO SCALING */
         .ghost-layer {
             position: absolute;
             top: 0;
@@ -66,7 +67,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain; 
-            object-position: bottom center;
+            object-position: bottom center; /* Align everything to bottom */
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
             will-change: transform, opacity; 
@@ -222,7 +223,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // --- 1. MANIFEST (THE TRUTH) ---
+        // --- 1. MANIFEST ---
         const RAW_MANIFEST = [
             // Outer (34)
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
@@ -258,7 +259,7 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
-        const DB_CONFIG = { name: 'MinimalistVault_V27_12', version: 1, store: 'inventory' };
+        const DB_CONFIG = { name: 'MinimalistVault_V27_14', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
         
@@ -386,6 +387,7 @@
             return (
                 <div className="w-full mb-0 flex justify-center items-center animate-fade-in bg-white relative">
                     <div className="ghost-canvas-container mx-auto relative">
+                        {/* STRICT V26.5 LOGIC: NO ZOOM, JUST STACKING */}
                         {shoes && <img src={shoes.displayUrl} className="ghost-layer z-10" alt="Shoes" style={{ transform: 'translateZ(0)' }} />}
                         {bottom && <img src={bottom.displayUrl} className="ghost-layer z-20" alt="Bottom" />}
                         {inner && <img src={inner.displayUrl} className="ghost-layer z-30" alt="Inner" />}
@@ -444,7 +446,7 @@
                     style: styles,
                     createdAt: Date.now()
                 };
-                delete newItem.id; // Force DB to assign new ID
+                delete newItem.id; 
 
                 try {
                     await dbHelper.addItem(newItem);
@@ -557,8 +559,7 @@
                 return items;
             };
 
-            // --- [V27.13] LOGIC SPLIT ---
-            // 1. Grid Logic (Zoomed In, Locked)
+            // --- [V27.14] GRID ICON ZOOM (Applied only to Warehouse/Preview, NOT Ghost Engine) ---
             const getGridIconStyle = (slot) => {
                 const common = { width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.3s' };
                 if (slot === 'shoes') return { ...common, transform: 'scale(3.5)', transformOrigin: '50% 100%' };
@@ -571,7 +572,7 @@
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.13</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.14</span>
                         </h1>
                     </div>
 
@@ -590,6 +591,7 @@
                                             <div key={slot} className="relative group">
                                                 <div className={`aspect-square rounded-xl border flex items-center justify-center overflow-hidden ${outfit[slot] ? 'bg-white border-black' : 'bg-gray-100 border-dashed border-gray-300'}`}>
                                                     {outfit[slot] ? (
+                                                        /* PREVIEW SLOTS: Apply Zoom logic */
                                                         <img src={outfit[slot].displayUrl} style={getGridIconStyle(slot)} />
                                                     ) : <Icon name="plus" className="w-4 h-4 text-gray-300"/>}
                                                 </div>
@@ -613,6 +615,7 @@
                                 <div className="grid grid-cols-3 gap-2">
                                     {wardrobe.map(item => (
                                         <div key={item.id} className="dense-card group cursor-pointer" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
+                                            {/* CLOSET ICONS: Apply Zoom logic */}
                                             <img src={item.displayUrl} style={getGridIconStyle(item.slot)} />
                                             <button onClick={(e)=>{e.stopPropagation();removeFromWardrobe(item.id)}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>
                                         </div>
@@ -665,6 +668,7 @@
                                 <div className="grid grid-cols-2 gap-3 pb-20">
                                     {getWarehouseItems().map((item, idx) => (
                                         <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item group">
+                                            {/* WAREHOUSE ICONS: Apply Zoom logic */}
                                             <img src={item.displayUrl} style={getGridIconStyle(whSlot)} />
                                             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
