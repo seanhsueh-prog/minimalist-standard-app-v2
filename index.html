@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V5.2</title>
+    <title>Minimalist Wardrobe V5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
@@ -42,7 +42,7 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* Ghost Engine - 還原 V26.5 職人比例與透視感 */
+        /* Ghost Engine - 100% 回歸 V26.5 職人比例 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
@@ -62,16 +62,16 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            padding: 10% 8%; /* 恢復 V26.5 經典留白，避免壓迫感 */
+            padding: 10% 8%; /* 關鍵：還原 V26.5 留白感，防止褲裝爆框 */
         }
 
-        /* 渲染層級與比例 - 鞋子 3.8 倍對齊底邊 */
+        /* 渲染層級與比例 - 僅鞋子縮放，褲裝回歸標準 */
         .layer-shoes { z-index: 10; transform: scale(3.8); transform-origin: bottom center; padding: 0 !important; }
         .layer-bottom { z-index: 20; }
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* Floating Controls - 回歸中文按鈕 */
+        /* Floating Controls - 全中文 */
         .floating-controls {
             position: absolute;
             right: 12px;
@@ -107,7 +107,7 @@
         }
         .mini-btn.active { background-color: #000; color: #fff; transform: scale(1.05); }
 
-        /* 網格卡片 - 強化倉庫視覺清晰度 */
+        /* 網格系統 - 倉庫獨立視覺 (大圖清晰) */
         .item-card {
             background: #fff;
             border-radius: 12px;
@@ -125,13 +125,16 @@
             justify-content: center;
             background: #fafafa;
             position: relative;
-            padding: 4px; /* 減少 Padding 讓圖片更大 */
+            padding: 4px; /* 極小 Padding，讓單品圖片最大化 */
         }
         .item-image-box img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
+        /* 倉庫內的鞋子縮放，但不影響畫布 */
+        .warehouse-img-shoes { transform: scale(3.5); transform-origin: bottom center; }
+
         .item-info {
             padding: 6px 4px;
             text-align: center;
@@ -192,7 +195,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. RAW MANIFEST (92 實體檔案) ---
+        // --- 1. MANIFEST (92 實體檔案) ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_nv_01.png", "o_suitd_bk_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
@@ -225,7 +228,7 @@
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
         
-        // 品項排序清單 (依照職人規格排序)
+        // 職人級排序邏輯
         const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
         const BOTTOM_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
 
@@ -333,7 +336,7 @@
                     await dbHelper.save(item);
                     await loadWardrobe();
                     alert('單品已入庫');
-                } catch (e) { alert('入庫失敗'); }
+                } catch (e) { alert('存檔失敗'); }
             };
 
             const removeFromWardrobe = async (id) => {
@@ -347,14 +350,14 @@
                 });
             };
 
-            // 智慧搭配 - 還原 V26.5 「鎖定」慧根
+            // 智慧搭配 - 100% 還原 V26.5 「鎖定」慧根
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
                 let skipOuter = (season === 'Summer' && occasion !== 'Formal');
 
                 parts.forEach(p => {
-                    // 慧根邏輯：如果該部位已有單品，則跳過（鎖定已選項目）
+                    // 鎖定邏輯：若已有單品則跳過，僅針對空白處補件
                     if (newOutfit[p] && !(skipOuter && p === 'o')) return;
 
                     if (skipOuter && p === 'o') { newOutfit.o = null; return; }
@@ -364,7 +367,7 @@
 
                     if (p === 'i') {
                         const hasOuter = !!newOutfit.o;
-                        // 袖子聯動：有外套則選 n，單穿則選 s
+                        // 袖子聯動：有外套則選無袖 n，單穿則選有袖 s
                         candidates = candidates.filter(item => hasOuter ? item.type.endsWith('n') : item.type.endsWith('s'));
                         if (season === 'Summer') candidates = candidates.filter(item => !['knits', 'sweats'].includes(item.type));
                     }
@@ -385,17 +388,12 @@
                 setOutfit(newOutfit);
             }, [wardrobe, occasion, season, outfit]);
 
-            // 品項過濾與排序
-            const availableTypes = useMemo(() => {
+            // 品項排序
+            const sortedTypes = useMemo(() => {
                 const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === whPart);
                 const types = [...new Set(all.map(i => i.type))];
-                
-                if (whPart === 'i') {
-                    return types.sort((a, b) => INNER_ORDER.indexOf(a.replace(/[ns]$/, '')) - INNER_ORDER.indexOf(b.replace(/[ns]$/, '')));
-                }
-                if (whPart === 'b') {
-                    return types.sort((a, b) => BOTTOM_ORDER.indexOf(a) - BOTTOM_ORDER.indexOf(b));
-                }
+                if (whPart === 'i') return types.sort((a, b) => INNER_ORDER.indexOf(a.replace(/[ns]$/, '')) - INNER_ORDER.indexOf(b.replace(/[ns]$/, '')));
+                if (whPart === 'b') return types.sort((a, b) => BOTTOM_ORDER.indexOf(a) - BOTTOM_ORDER.indexOf(b));
                 return types;
             }, [whPart]);
 
@@ -411,12 +409,11 @@
             const handlePartSwitch = (p) => {
                 setWhPart(p);
                 const allForPart = RAW_MANIFEST.map(parseFileName).filter(i => i.part === p);
-                const sortedTypes = [...new Set(allForPart.map(i => i.type))].sort((a, b) => {
+                const firstType = [...new Set(allForPart.map(i => i.type))].sort((a, b) => {
                     if (p === 'i') return INNER_ORDER.indexOf(a.replace(/[ns]$/, '')) - INNER_ORDER.indexOf(b.replace(/[ns]$/, ''));
                     if (p === 'b') return BOTTOM_ORDER.indexOf(a) - BOTTOM_ORDER.indexOf(b);
                     return 0;
-                });
-                const firstType = sortedTypes[0];
+                })[0];
                 setWhType(firstType);
                 setWhColor(allForPart.find(i => i.type === firstType).color);
             };
@@ -424,11 +421,11 @@
             return (
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50">
-                        <h1 className="text-lg font-black tracking-tighter italic">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V5.2</span></h1>
+                        <h1 className="text-lg font-black tracking-tighter italic">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V5.3</span></h1>
                     </div>
 
                     <div className="content-area">
-                        {/* TAB: STYLING */}
+                        {/* 搭配頁面 */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
                                 <div className="ghost-canvas-container">
@@ -468,7 +465,7 @@
                             </div>
                         )}
 
-                        {/* TAB: CLOSET */}
+                        {/* 衣櫥頁面 */}
                         {activeTab === 'closet' && (
                             <div className="p-6 animate-fade-in">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥</h2>
@@ -481,7 +478,7 @@
                                     {wardrobe.filter(i => i.part === clPart).map(item => (
                                         <div key={item.id} className="item-card relative cursor-pointer" onClick={() => { setOutfit(prev => ({...prev, [item.part]: item})); setActiveTab('styling'); }}>
                                             <div className="item-image-box">
-                                                <img src={`./${item.fileName}`} className={`${item.part === 's' ? 'scale-[3.5] origin-bottom' : ''}`} />
+                                                <img src={`./${item.fileName}`} className={`${item.part === 's' ? 'warehouse-img-shoes' : ''}`} />
                                             </div>
                                             <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                             <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
@@ -491,7 +488,7 @@
                             </div>
                         )}
 
-                        {/* TAB: WAREHOUSE */}
+                        {/* 倉庫頁面 (大圖清晰) */}
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
@@ -508,7 +505,7 @@
                                 )}
 
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar py-1">
-                                    {availableTypes.map(t => (
+                                    {sortedTypes.map(t => (
                                         <button key={t} onClick={() => setWhType(t)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all ${whType === t ? 'bg-black text-white border-black shadow-md' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{TYPE_MAP[t] || t}</button>
                                     ))}
                                 </div>
@@ -524,7 +521,7 @@
                                     {filteredWhItems.map((item, idx) => (
                                         <div key={idx} className="item-card cursor-pointer group" onClick={() => addToWardrobe(item)}>
                                             <div className="item-image-box">
-                                                <img src={`./${item.fileName}`} className={`transition-transform group-hover:scale-105 ${item.part === 's' ? 'scale-[3.5] origin-bottom' : ''}`} />
+                                                <img src={`./${item.fileName}`} className={`transition-transform group-hover:scale-105 ${item.part === 's' ? 'warehouse-img-shoes' : ''}`} />
                                                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><span className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-lg">新增入庫</span></div>
                                             </div>
                                             <div className="item-info"><div className="item-label">{item.displayName}</div></div>
