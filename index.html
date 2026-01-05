@@ -1,13 +1,12 @@
-<!-- minimalist-wardrobe-core_v29.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V29.0 - Core Recovery</title>
+    <title>Minimalist V31.0 - Logic Core 26.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V26.5 MOTHER LAYOUT - DO NOT CHANGE] */
+        /* [V26.5 - 絕對版面標準：嚴格鎖死高度] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -35,12 +34,19 @@
         .content-area {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 90px; 
+            padding-bottom: 80px; /* V26.5 標準間距 */
             scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         .content-area::-webkit-scrollbar { display: none; }
-        
-        /* [V26.5 GHOST ENGINE - SCALE LOCK] */
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* [V26.5 - 畫布縮放靈魂：鞋子 3.8x] */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
@@ -63,54 +69,10 @@
             will-change: transform, opacity; 
         }
 
-        /* 核心縮放比例 (V26.5) */
         .layer-shoes {
             transform: scale(3.8) translateZ(0);
             transform-origin: bottom center;
         }
-
-        /* [V28.2 WAREHOUSE GRID] */
-        .warehouse-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            padding-bottom: 2rem;
-        }
-        .warehouse-item {
-            aspect-ratio: 3/4;
-            border: 1px solid #f3f4f6;
-            border-radius: 12px;
-            padding: 0; 
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            background: #fff;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        .warehouse-item img { 
-            width: 100%; 
-            height: 80%; 
-            object-fit: contain; 
-            padding: 8px; 
-        }
-
-        /* [V27.8 PILLS] */
-        .cat-pill {
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-            transition: all 0.2s;
-            border: 1px solid #eee;
-            cursor: pointer;
-        }
-        .cat-pill.active { background-color: #000; color: #fff; border-color: #000; }
 
         .floating-controls {
             position: absolute;
@@ -122,6 +84,7 @@
             gap: 12px;
             z-index: 30;
         }
+
         .control-group {
             display: flex;
             flex-direction: column;
@@ -132,6 +95,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid rgba(255,255,255,0.5);
         }
+
         .mini-btn {
             width: 36px;
             height: 36px;
@@ -146,6 +110,36 @@
             margin-bottom: 2px;
         }
         .mini-btn.active { background-color: #000; color: #fff; }
+
+        /* [V27.8/28.2 - 分類介面優化] */
+        .warehouse-item {
+            aspect-ratio: 3/4;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 0; 
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .warehouse-item:active { transform: scale(0.98); border-color: #000; }
+        .warehouse-item img { width: 100%; height: 85%; object-fit: contain; padding: 8px; }
+
+        .cat-pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+            cursor: pointer;
+        }
+        .cat-pill.active { background-color: #000; color: #fff; border-color: #000; }
 
         .bottom-nav {
             position: absolute;
@@ -184,7 +178,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. RAW MANIFEST (The 92 Files) ---
+        // --- 1. MANIFEST (92 實體檔案) ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
@@ -214,7 +208,7 @@
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        // --- 2. CONFIG & MAPS ---
+        // --- 2. CONFIG & MAPS (V26.5 中文標籤映射) ---
         const LABEL_MAP = {
             o: '外套', i: '內搭', b: '下身', s: '鞋款',
             suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨',
@@ -233,7 +227,7 @@
             dress: ['Formal', 'Smart'], loafer: ['Formal', 'Smart'], leasnk: ['Smart', 'Casual']
         };
 
-        // --- 3. DATABASE (Stable Helper) ---
+        // --- 3. DATABASE (V31 穩定修復) ---
         const DB_CONFIG = { name: 'Minimalist_Vault_Final', version: 1, store: 'inventory' };
         const dbHelper = {
             open: () => new Promise((resolve) => {
@@ -251,9 +245,10 @@
             addItem: async (item) => {
                 const db = await dbHelper.open();
                 const tx = db.transaction(DB_CONFIG.store, 'readwrite');
-                item.uuid = Date.now().toString() + Math.random().toString(16).slice(2);
-                tx.objectStore(DB_CONFIG.store).add(item);
-                return new Promise(r => tx.oncomplete = () => r(item));
+                // 生成隨機 UUID 確保寫入不衝突
+                const newItem = { ...item, uuid: Date.now().toString() + Math.random().toString(16).slice(2) };
+                tx.objectStore(DB_CONFIG.store).add(newItem);
+                return new Promise(r => tx.oncomplete = () => r(newItem));
             },
             deleteItem: async (uuid) => {
                 const db = await dbHelper.open();
@@ -282,7 +277,7 @@
             };
         });
 
-        // --- 5. APP ---
+        // --- 5. APP COMPONENT ---
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -302,7 +297,7 @@
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
 
-            // Warehouse State
+            // Warehouse States
             const [whSlot, setWhSlot] = useState('outer');
             const [whCat, setWhCat] = useState('');
             const [whColor, setWhColor] = useState('');
@@ -310,7 +305,7 @@
             const loadData = async () => setWardrobe(await dbHelper.getAll());
             useEffect(() => { loadData(); }, []);
 
-            // Auto-filter logic
+            // V27.8 分類連動邏輯
             useEffect(() => {
                 const cats = [...new Set(MASTER_ITEMS.filter(i => i.slot === whSlot).map(i => i.catCode))];
                 setWhCat(cats[0] || '');
@@ -321,15 +316,14 @@
                 setWhColor(colors[0] || '');
             }, [whCat, whSlot]);
 
-            const onAdd = async (item) => {
+            const handleAdd = async (item) => {
                 const styles = STYLE_RULES[item.catCode] || ['Casual'];
                 await dbHelper.addItem({ ...item, styles });
                 await loadData();
-                // No Alert - Silent Add for better UX
             };
 
-            const onDelete = async (uuid) => {
-                if(!confirm("確定移除？")) return;
+            const handleDelete = async (uuid) => {
+                if(!confirm("確定移除此單品？")) return;
                 await dbHelper.deleteItem(uuid);
                 await loadData();
                 setOutfit(p => {
@@ -339,34 +333,45 @@
                 });
             };
 
-            // [V26.5 SMART LOGIC]
+            // [V26.5 - 智慧搭配大腦移植]
             const handleRandom = useCallback((targetOcc = occasion, targetSea = season) => {
                 const next = { ...outfit };
                 const getPool = (slot) => wardrobe.filter(i => i.slot === slot && i.styles.includes(targetOcc));
 
-                // Jacket
-                if (targetSea === 'Summer' && targetOcc !== 'Formal') next.outer = null;
-                else {
+                // 1. 外搭規則
+                if (targetSea === 'Summer' && targetOcc !== 'Formal') {
+                    next.outer = null;
+                } else {
                     const pool = getPool('outer');
                     next.outer = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
                 }
 
-                // Inner (Sleeveless if Jacket exists)
+                // 2. 內搭袖子與外套連動 (核心)
                 let iPool = getPool('inner');
-                if (next.outer) iPool = iPool.filter(i => i.sleeve === 'sleeveless');
-                else iPool = iPool.filter(i => i.sleeve === 'sleeved');
-                if (targetSea === 'Summer') iPool = iPool.filter(i => !['knits', 'knitn', 'sweats'].includes(i.catCode));
+                if (next.outer) {
+                    iPool = iPool.filter(i => i.sleeve === 'sleeveless'); // 有外套必無袖
+                } else {
+                    iPool = iPool.filter(i => i.sleeve === 'sleeved'); // 沒外套必有袖
+                }
+                if (targetSea === 'Summer') {
+                    iPool = iPool.filter(i => !['knits', 'knitn', 'sweats'].includes(i.catCode));
+                }
                 next.inner = iPool.length ? iPool[Math.floor(Math.random() * iPool.length)] : null;
 
-                // Bottom
+                // 3. 下身同步 (西裝套裝邏輯)
                 let bPool = getPool('bottom');
                 if (targetOcc === 'Formal' && next.outer?.catCode.startsWith('suit')) {
                     const match = bPool.filter(b => b.catCode === 'suit' && b.colorCode === next.outer.colorCode);
                     next.bottom = match.length ? match[0] : (bPool.length ? bPool[Math.floor(Math.random() * bPool.length)] : null);
-                } else next.bottom = bPool.length ? bPool[Math.floor(Math.random() * bPool.length)] : null;
+                } else {
+                    next.bottom = bPool.length ? bPool[Math.floor(Math.random() * bPool.length)] : null;
+                }
 
-                // Shoes
-                const sPool = getPool('shoes');
+                // 4. 鞋款過濾 (大人風禁運動鞋邏輯)
+                let sPool = getPool('shoes');
+                if (targetOcc === 'Smart' && next.bottom?.catCode === 'suit') {
+                    sPool = sPool.filter(s => s.catCode !== 'sport');
+                }
                 next.shoes = sPool.length ? sPool[Math.floor(Math.random() * sPool.length)] : null;
 
                 setOutfit(next);
@@ -374,13 +379,13 @@
 
             return (
                 <div className="app-container">
-                    {/* Header Fixed */}
+                    {/* Header - 固定不跳動 */}
                     <div className="px-6 pt-6 pb-2 bg-white flex justify-between items-center z-20">
-                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V29.0 CORE</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V31.0 CORE</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
-                        {/* STYLING TAB */}
+                        {/* TAB: 搭配分頁 (完全復刻 26.5) */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in">
                                 <div className="ghost-canvas-container mx-auto relative bg-white">
@@ -389,7 +394,7 @@
                                     {outfit.inner && <img src={outfit.inner.displayUrl} className="ghost-layer z-30" alt="I" />}
                                     {outfit.outer && <img src={outfit.outer.displayUrl} className="ghost-layer z-40" alt="O" />}
                                     {!outfit.shoes && !outfit.bottom && !outfit.inner && !outfit.outer && (
-                                        <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-[10px] tracking-widest font-bold">WARDROBE EMPTY</div>
+                                        <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-[10px] tracking-widest font-bold">WARDROBE EMPTY</div>
                                     )}
                                 </div>
 
@@ -422,7 +427,7 @@
                             </div>
                         )}
 
-                        {/* CLOSET TAB */}
+                        {/* TAB: 衣櫥分頁 */}
                         {activeTab === 'closet' && (
                             <div className="p-6 bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥 ({wardrobe.length})</h2>
@@ -431,14 +436,14 @@
                                         <div key={item.uuid} className="warehouse-item border-none bg-gray-50" onClick={() => { setOutfit(p => ({...p, [item.slot]: item})); setActiveTab('styling'); }}>
                                             <img src={item.displayUrl} style={item.slot==='shoes'?{transform:'scale(3.5)',transformOrigin:'bottom'}:{}} />
                                             <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full" style={{background: COLOR_HEX[item.colorCode]}}></div>
-                                            <button onClick={e => { e.stopPropagation(); onDelete(item.uuid); }} className="absolute top-1 right-1 p-1 text-gray-200 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                            <button onClick={e => { e.stopPropagation(); handleDelete(item.uuid); }} className="absolute top-1 right-1 p-1 text-gray-200 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* WAREHOUSE TAB */}
+                        {/* TAB: 倉庫分頁 (27.8 分類嵌入) */}
                         {activeTab === 'add' && (
                             <div className="p-6 bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
@@ -457,9 +462,9 @@
                                         <div key={col} onClick={() => setWhColor(col)} className={`w-6 h-6 rounded-full border-2 ${whColor === col ? 'border-black scale-110' : 'border-transparent'}`} style={{background: COLOR_HEX[col]}}></div>
                                     ))}
                                 </div>
-                                <div className="warehouse-grid">
+                                <div className="grid grid-cols-2 gap-3 pb-24">
                                     {MASTER_ITEMS.filter(i => i.slot === whSlot && i.catCode === whCat && i.colorCode === whColor).map((item, idx) => (
-                                        <div key={idx} onClick={() => onAdd(item)} className="warehouse-item border-dashed border-2 hover:border-black">
+                                        <div key={idx} onClick={() => handleAdd(item)} className="warehouse-item border-dashed border-2 hover:border-black">
                                             <img src={item.displayUrl} style={whSlot === 'shoes' ? {transform:'scale(3.5)',transformOrigin:'bottom'} : {}} />
                                             <span className="text-[9px] font-bold text-gray-400 mb-2">{item.label} ({item.colorLabel})</span>
                                             <div className="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"><span className="bg-black text-white text-[10px] px-3 py-1.5 rounded-full font-bold">入庫</span></div>
@@ -470,6 +475,7 @@
                         )}
                     </div>
 
+                    {/* Bottom Nav - 固定位置 */}
                     <div className="bottom-nav">
                         <div onClick={() => setActiveTab('styling')} className={`nav-item ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-6 h-6" /><span>搭配</span></div>
                         <div onClick={() => setActiveTab('closet')} className={`nav-item ${activeTab === 'closet' ? 'active' : ''}`}><Icon name="grid" className="w-6 h-6" /><span>衣櫥</span></div>
@@ -479,7 +485,8 @@
             );
         };
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
