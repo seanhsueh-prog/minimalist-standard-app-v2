@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v27_8.html -->
+<!-- minimalist-wardrobe-core_v27_9.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V27.8 - Sorting Logic</title>
+    <title>Minimalist V27.9 - Visual Scale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V27.8 - Visuals aligned strictly with V26.5/V27.7] */
+        /* [V27.9 - Visuals Optimized] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -134,7 +134,8 @@
             justify-content: center;
         }
         .warehouse-item:active { transform: scale(0.98); border-color: #000; }
-        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+        /* Removed padding to allow scaling logic in JS to take full effect */
+        .warehouse-item img { width: 100%; height: 100%; object-fit: contain; padding: 0; }
 
         /* Category Pills */
         .cat-pill {
@@ -256,7 +257,7 @@
         ];
 
         // --- 2. CONFIG & MAPS ---
-        const DB_CONFIG = { name: 'MinimalistVault_V27_8', version: 1, store: 'inventory' };
+        const DB_CONFIG = { name: 'MinimalistVault_V27_9', version: 1, store: 'inventory' };
         
         const SLOT_MAP = { 'o': 'outer', 'i': 'inner', 'b': 'bottom', 's': 'shoes' };
         
@@ -268,7 +269,7 @@
         };
 
         const COLOR_MAP = {
-            'bk': '#1A1A1A', 'wh': '#E5E7EB', 'gy': '#6B7280', 'nv': '#1E3A8A', 
+            'bk': '#1A1A1A', 'wh': '#FFFFFF', 'gy': '#6B7280', 'nv': '#1E3A8A', 
             'be': '#C3B091', 'br': '#5D4037', 'gn': '#355E3B', 'rd': '#7F1D1D', 'dn': '#3B82F6'
         };
 
@@ -514,7 +515,6 @@
                 const base = getFilteredManifest();
                 const codes = [...new Set(base.map(i => i.catCode))];
                 
-                // --- CUSTOM SORTING ---
                 if (whSlot === 'bottom') {
                     codes.sort((a,b) => {
                         const idxA = BOTTOM_SORT_ORDER.indexOf(a);
@@ -535,7 +535,6 @@
                     });
                 }
                 
-                // Get correct label for the current slot context
                 return codes.map(c => {
                     let label = CAT_DISPLAY[c] || c;
                     if (whSlot === 'shoes' && c === 'sport') label = '運動鞋';
@@ -550,7 +549,6 @@
                 base = base.filter(i => i.catCode === whCatFilter);
                 const codes = [...new Set(base.map(i => i.color))];
                 
-                // --- COLOR SORTING ---
                 codes.sort((a,b) => {
                     const idxA = COLOR_SORT_ORDER.indexOf(a);
                     const idxB = COLOR_SORT_ORDER.indexOf(b);
@@ -560,7 +558,7 @@
                 return codes;
             };
 
-            // Auto-Select First Category Logic
+            // Auto-Select First Category
             useEffect(() => {
                 const cats = getAvailableCats();
                 if (cats.length > 0) {
@@ -570,7 +568,7 @@
                 }
             }, [whSlot, whSleeve]);
 
-            // Auto-Select First Color Logic
+            // Auto-Select First Color
             useEffect(() => {
                 const colors = getAvailableColors();
                 if (colors.length > 0) {
@@ -587,12 +585,26 @@
                 return items;
             };
 
+            // --- Custom Scaling for Warehouse Items ---
+            const getWhImgStyle = (slot) => {
+                if (slot === 'shoes') {
+                    return { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(3.5)', transformOrigin: 'bottom center' };
+                }
+                if (slot === 'outer' || slot === 'inner') {
+                    return { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.15)', transformOrigin: 'center center' };
+                }
+                if (slot === 'bottom') {
+                    return { width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.05)', transformOrigin: 'center center' };
+                }
+                return { width: '100%', height: '100%', objectFit: 'contain' };
+            };
+
             return (
                 <div className="app-container">
                     {/* Header */}
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
                         <h1 className="text-lg font-bold tracking-tighter flex items-center gap-2">
-                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.8</span>
+                            Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">V27.9</span>
                         </h1>
                     </div>
 
@@ -684,20 +696,19 @@
                                     ))}
                                 </div>
 
-                                {/* 4. Color Filter */}
+                                {/* 4. Color Filter (Optimized Size) */}
                                 <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1">
                                     {getAvailableColors().map(c => (
-                                        <div key={c} onClick={()=>setWhColorFilter(c)} className={`w-6 h-6 rounded-full border cursor-pointer flex-shrink-0 ${whColorFilter===c?'ring-2 ring-offset-2 ring-black':''}`} 
-                                             style={{background:COLOR_MAP[c]}}></div>
+                                        <div key={c} onClick={()=>setWhColorFilter(c)} className={`w-8 h-8 rounded-full border cursor-pointer flex-shrink-0 ${whColorFilter===c?'ring-2 ring-offset-2 ring-black':''}`} 
+                                             style={{background:COLOR_MAP[c], borderColor: c==='wh' ? '#e5e7eb' : 'transparent'}}></div>
                                     ))}
                                 </div>
 
-                                {/* 5. Grid */}
+                                {/* 5. Grid (Optimized Images) */}
                                 <div className="grid grid-cols-2 gap-3 pb-20">
                                     {getWarehouseItems().map((item, idx) => (
                                         <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item group">
-                                            <img src={item.displayUrl} alt={item.label} 
-                                                style={whSlot==='shoes'?{width:'100%',height:'100%',objectFit:'contain',transform:'scale(3.5)',transformOrigin:'bottom center',padding:0}:{}} />
+                                            <img src={item.displayUrl} alt={item.label} style={getWhImgStyle(whSlot)} />
                                             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-2 py-1 rounded-full font-bold">入庫</span>
                                             </div>
