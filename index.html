@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v28_2.html -->
+<!-- minimalist-wardrobe-core_v28_3.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V28.2 - Master Fix</title>
+    <title>Minimalist V28.3 - Stable Categories</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V28.2 - Visual System strictly based on Mother v26.5] */
+        /* [V28.3 - UI Restored to V27.8 Logic] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -114,7 +114,6 @@
             align-items: center;
             justify-content: center;
         }
-        .warehouse-item:active { transform: scale(0.98); border-color: #000; }
 
         .cat-pill {
             padding: 6px 12px;
@@ -154,6 +153,21 @@
             flex: 1;
         }
         .nav-item.active { color: #000; }
+        
+        .dense-card {
+            aspect-ratio: 1/1;
+            position: relative;
+            background: #fff;
+            border-radius: 0.75rem;
+            border: 1px solid #f3f4f6;
+            overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-entry { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -199,7 +213,7 @@
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        // --- 3. UI LABELS ---
+        // --- 3. UI MAPPINGS (RESTORED) ---
         const UI_LABELS = {
             o: '外套', i: '內搭', b: '下身', s: '鞋款',
             suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨', coat: '大衣',
@@ -219,45 +233,41 @@
             'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'],
             'sweats': ['Casual'], 'tshirts': ['Smart', 'Casual'], 'tshirtn': ['Smart', 'Casual'],
             'suit': ['Formal', 'Smart'], 'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
-            'cargo': ['Casual'], 'sport': ['Casual']
+            'cargo': ['Casual'], 'sport': ['Casual'],
+            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual']
         };
 
         // --- 4. CORE PARSER ---
-        const parseManifest = () => {
-            return RAW_MANIFEST.map(filename => {
-                const raw = filename.replace('.png', '');
-                const parts = raw.split('_'); 
-                if (parts.length < 4) return null;
-                const [slotCode, catCode, colorCode] = parts;
-                
-                let sleeve = 'standard';
-                if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
-                else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
-                else if (catCode === 'sweats') sleeve = 'sleeved';
+        const parseFilename = (filename) => {
+            const raw = filename.replace('.png', '');
+            const parts = raw.split('_'); 
+            if (parts.length < 4) return null;
+            const [slotCode, catCode, colorCode] = parts;
+            
+            let sleeve = 'standard';
+            if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
+            else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
+            else if (catCode === 'sweats') sleeve = 'sleeved';
 
-                return {
-                    id: raw,
-                    filename: filename,
-                    displayUrl: `./${filename}`, // 支援本地相對路徑
-                    slot: SLOT_MAP[slotCode] || 'unknown',
-                    catCode: catCode,
-                    color: colorCode,
-                    sleeve: sleeve,
-                    isShoe: slotCode === 's',
-                    label: UI_LABELS[catCode] || catCode,
-                    colorLabel: UI_LABELS[colorCode] || colorCode
-                };
-            }).filter(Boolean);
+            return {
+                uuid: raw, // 使用檔名作為初步 ID
+                filename: filename,
+                displayUrl: `${GITHUB_RAW_URL}/${filename}`,
+                slot: SLOT_MAP[slotCode] || 'unknown',
+                catCode, color: colorCode, sleeve,
+                label: UI_LABELS[catCode] || catCode,
+                colorLabel: UI_LABELS[colorCode] || colorCode
+            };
         };
 
-        const SYSTEM_STOCK = parseManifest();
+        const SYSTEM_STOCK = RAW_MANIFEST.map(parseFilename).filter(Boolean);
 
-        // --- 5. DATABASE (IndexedDB) ---
-        const DB_CONFIG = { name: 'MinimalistVault_V28_2', version: 1, store: 'inventory' };
+        // --- 5. DATABASE ---
+        const DB_CONFIG = { name: 'MinimalistVault_Master_V28', version: 1, store: 'inventory' };
         const dbHelper = {
             open: () => new Promise((resolve) => {
                 const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
-                req.onupgradeneeded = e => e.target.result.createObjectStore(DB_CONFIG.store, { keyPath: 'uuid' });
+                req.onupgradeneeded = e => e.target.result.createObjectStore(DB_CONFIG.store, { keyPath: 'dbId', autoIncrement: true });
                 req.onsuccess = e => resolve(e.target.result);
             }),
             getAll: async () => {
@@ -270,19 +280,18 @@
             add: async (item) => {
                 const db = await dbHelper.open();
                 const tx = db.transaction(DB_CONFIG.store, 'readwrite');
-                item.uuid = Date.now().toString();
                 tx.objectStore(DB_CONFIG.store).add(item);
                 return new Promise(r => tx.oncomplete = r);
             },
-            del: async (uuid) => {
+            del: async (dbId) => {
                 const db = await dbHelper.open();
                 const tx = db.transaction(DB_CONFIG.store, 'readwrite');
-                tx.objectStore(DB_CONFIG.store).delete(uuid);
+                tx.objectStore(DB_CONFIG.store).delete(dbId);
                 return new Promise(r => tx.oncomplete = r);
             }
         };
 
-        // --- 6. COMPONENTS ---
+        // --- 6. UI COMPONENTS ---
         const Icon = ({ name, className }) => {
             const icons = {
                 hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
@@ -299,22 +308,29 @@
             const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState({ outer: null, inner: null, bottom: null, shoes: null });
             const [activeTab, setActiveTab] = useState('styling');
+            
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
+            
+            // Filters
             const [whSlot, setWhSlot] = useState('o');
+            const [whCat, setWhCat] = useState('all');
+            const [whColor, setWhColor] = useState('all');
+            const [closetSlot, setClosetSlot] = useState('o');
 
             const loadData = async () => setWardrobe(await dbHelper.getAll());
             useEffect(() => { loadData(); }, []);
 
             const addToWardrobe = async sysItem => {
-                await dbHelper.add({ ...sysItem, style: STYLE_RULES[sysItem.catCode] || ['Casual'] });
-                await loadData(); alert(`已入庫：${sysItem.label}`);
+                await dbHelper.add({ ...sysItem, style: STYLE_RULES[sysItem.catCode] || ['Casual'], addedAt: Date.now() });
+                await loadData();
+                alert(`[${sysItem.label}] 已入庫`);
             };
 
-            const removeFromWardrobe = async uuid => {
+            const removeFromWardrobe = async dbId => {
                 if(!confirm("確定移除?")) return;
-                await dbHelper.del(uuid); loadData();
-                setOutfit(p => { const n={...p}; Object.keys(n).forEach(k=>{if(n[k]?.uuid===uuid) n[k]=null;}); return n; });
+                await dbHelper.del(dbId); loadData();
+                setOutfit(p => { const n={...p}; Object.keys(n).forEach(k=>{if(n[k]?.dbId===dbId) n[k]=null;}); return n; });
             };
 
             const handleRandom = (targetOcc, targetSea) => {
@@ -342,7 +358,7 @@
                 setOutfit(newOutfit);
             };
 
-            // [RESTORE V26.5 Ghost Logic]
+            // [RESTORE V26.5 Mother Scale]
             const getGhostStyle = (slot) => {
                 const base = { width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'bottom center' };
                 if (slot === 'shoes') return { ...base, transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center' };
@@ -356,15 +372,40 @@
                 return base;
             };
 
+            // Dynamic Filters for Warehouse
+            const availCats = useMemo(() => {
+                const items = SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]);
+                return ['all', ...new Set(items.map(i => i.catCode))];
+            }, [whSlot]);
+
+            const availColors = useMemo(() => {
+                let pool = SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]);
+                if (whCat !== 'all') pool = pool.filter(i => i.catCode === whCat);
+                return ['all', ...new Set(pool.map(i => i.color))];
+            }, [whSlot, whCat]);
+
+            const filteredStock = useMemo(() => {
+                return SYSTEM_STOCK.filter(i => {
+                    if (i.slot !== SLOT_MAP[whSlot]) return false;
+                    if (whCat !== 'all' && i.catCode !== whCat) return false;
+                    if (whColor !== 'all' && i.color !== whColor) return false;
+                    return true;
+                });
+            }, [whSlot, whCat, whColor]);
+
+            // Auto-reset filters
+            useEffect(() => { setWhCat('all'); setWhColor('all'); }, [whSlot]);
+
             return (
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V28.2 MASTER FIX</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm tracking-normal">V28.3 STABLE</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
+                        {/* 1. STYLING */}
                         {activeTab === 'styling' && (
-                            <div className="animate-fade-in">
+                            <div className="anim-entry">
                                 <div className="ghost-canvas-container mx-auto relative bg-white">
                                     {outfit.shoes && <img src={outfit.shoes.displayUrl} className="ghost-layer z-10" style={getGhostStyle('shoes')} />}
                                     {outfit.bottom && <img src={outfit.bottom.displayUrl} className="ghost-layer z-20" style={getGhostStyle('bottom')} />}
@@ -389,9 +430,9 @@
                                 <div className="px-6 mt-4">
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {['outer','inner','bottom','shoes'].map(slot => (
-                                            <div key={slot} className="relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden bg-white shadow-sm">
-                                                {outfit[slot] ? <img src={outfit[slot].displayUrl} style={getGridStyle(slot)} /> : <span className="text-[10px] text-gray-300 font-bold uppercase">{UI_LABELS[slot[0]]}</span>}
-                                                {outfit[slot] && <button onClick={()=>setOutfit(p=>({...p,[slot]:null}))} className="absolute top-0 right-0 p-1 bg-white/80"><Icon name="x" className="w-3 text-gray-400"/></button>}
+                                            <div key={slot} className="relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden bg-white shadow-sm border-gray-100">
+                                                {outfit[slot] ? <img src={outfit[slot].displayUrl} style={getGridStyle(slot)} /> : <span className="text-[10px] text-gray-200 font-bold">{UI_LABELS[slot[0]]}</span>}
+                                                {outfit[slot] && <button onClick={()=>setOutfit(p=>({...p,[slot]:null}))} className="absolute top-0 right-0 p-1 bg-white/80 rounded-bl-lg shadow-sm"><Icon name="x" className="w-3 text-gray-400"/></button>}
                                             </div>
                                         ))}
                                     </div>
@@ -400,34 +441,57 @@
                             </div>
                         )}
 
+                        {/* 2. CLOSET (Categorized Tabs) */}
                         {activeTab === 'closet' && (
                             <div className="p-6 bg-white min-h-full anim-entry">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥 ({wardrobe.length})</h2>
+                                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                                    {['o','i','b','s'].map(s => (
+                                        <button key={s} onClick={()=>setClosetSlot(s)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${closetSlot === s ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>{UI_LABELS[s]}</button>
+                                    ))}
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {wardrobe.map(item => (
-                                        <div key={item.uuid} className="dense-card relative group" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
+                                    {wardrobe.filter(i => i.slot === SLOT_MAP[closetSlot]).map(item => (
+                                        <div key={item.dbId} className="dense-card relative group" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
                                             <img src={item.displayUrl} style={getGridStyle(item.slot)} />
-                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full" style={{background: COLOR_HEX[item.color]}}></div>
-                                            <button onClick={e=>{e.stopPropagation(); removeFromWardrobe(item.uuid);}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3"/></button>
+                                            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border" style={{background: COLOR_HEX[item.color]}}></div>
+                                            <button onClick={e=>{e.stopPropagation(); removeFromWardrobe(item.dbId);}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500 shadow-sm"><Icon name="trash" className="w-3 h-3"/></button>
                                         </div>
                                     ))}
                                 </div>
+                                {wardrobe.filter(i => i.slot === SLOT_MAP[closetSlot]).length === 0 && <div className="text-center py-20 text-gray-300 text-xs tracking-widest">此分類無單品</div>}
                             </div>
                         )}
 
+                        {/* 3. WAREHOUSE (V27.8 Filters) */}
                         {activeTab === 'add' && (
                             <div className="p-6 bg-white min-h-full anim-entry">
-                                <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
+                                <h2 className="text-xl font-bold mb-4">新增單品</h2>
+                                {/* Slot Filter */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {['o','i','b','s'].map(s => (
-                                        <button key={s} onClick={()=>setWhSlot(s)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${whSlot===s?'bg-black text-white border-black':'bg-white text-gray-400 border-gray-100'}`}>{UI_LABELS[s]}</button>
+                                        <button key={s} onClick={()=>setWhSlot(s)} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${whSlot===s?'bg-black text-white border-black':'bg-white text-gray-400 border-gray-100'}`}>{UI_LABELS[s]}</button>
                                     ))}
                                 </div>
+                                {/* Category Pills */}
+                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
+                                    {availCats.map(c => (
+                                        <button key={c} onClick={()=>setWhCat(c)} className={`cat-pill ${whCat===c?'active':'inactive'}`}>{c === 'all' ? '全部品項' : UI_LABELS[c]}</button>
+                                    ))}
+                                </div>
+                                {/* Color Dots */}
+                                <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1 items-center">
+                                    <button onClick={()=>setWhColor('all')} className={`text-[10px] font-bold px-2 ${whColor==='all'?'text-black':'text-gray-300'}`}>ALL</button>
+                                    {availColors.filter(c=>c!=='all').map(c => (
+                                        <div key={c} onClick={()=>setWhColor(c)} className={`w-6 h-6 rounded-full border cursor-pointer shadow-sm flex-shrink-0 transition-transform ${whColor === c ? 'ring-2 ring-black ring-offset-2 scale-110' : ''}`} style={{background: COLOR_HEX[c]}}></div>
+                                    ))}
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-3 pb-24">
-                                    {SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]).map((item, idx) => (
-                                        <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item relative group flex flex-col p-2 bg-gray-50 border-dashed border-2 hover:border-black">
-                                            <img src={item.displayUrl} style={getGridStyle(SLOT_MAP[whSlot])} />
-                                            <div className="text-[9px] mt-1 font-bold text-center text-gray-400">{item.label} ({item.colorLabel})</div>
+                                    {filteredStock.map((item, idx) => (
+                                        <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item relative group flex flex-col p-2 bg-gray-50 border-dashed border-2 hover:border-black transition-all">
+                                            <img src={item.displayUrl} style={getGridStyle(item.slot)} />
+                                            <div className="text-[9px] mt-1 font-bold text-center text-gray-400 uppercase tracking-tighter">{item.label} / {item.colorLabel}</div>
                                             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-3 py-1.5 rounded-full font-bold shadow-lg">入庫</span>
                                             </div>
