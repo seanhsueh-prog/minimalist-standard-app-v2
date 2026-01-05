@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v28_3.html -->
+<!-- minimalist-wardrobe-core_v28_4.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist V28.3 - Stable Categories</title>
+    <title>Minimalist V28.4 - Master Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V28.3 - UI Restored to V27.8 Logic] */
+        /* [V28.4 - Visual System: Best of V28.2 + Logic of V26.5] */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -36,7 +36,6 @@
             flex: 1;
             overflow-y: auto;
             padding-bottom: 80px; 
-            -ms-overflow-style: none;
             scrollbar-width: none;
         }
         .content-area::-webkit-scrollbar { display: none; }
@@ -100,6 +99,19 @@
         }
         .mini-btn.active { background-color: #000; color: #fff; transform: scale(1.05); }
 
+        /* Grid Visuals from V28.2 */
+        .dense-card {
+            aspect-ratio: 1/1;
+            position: relative;
+            background: #fff;
+            border-radius: 0.75rem;
+            border: 1px solid #f3f4f6;
+            overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .warehouse-item {
             aspect-ratio: 3/4;
             border: 1px solid #eee;
@@ -111,6 +123,7 @@
             background: #fff;
             overflow: hidden;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
@@ -153,21 +166,9 @@
             flex: 1;
         }
         .nav-item.active { color: #000; }
-        
-        .dense-card {
-            aspect-ratio: 1/1;
-            position: relative;
-            background: #fff;
-            border-radius: 0.75rem;
-            border: 1px solid #f3f4f6;
-            overflow: hidden; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .anim-entry { animation: fadeIn 0.3s ease-out forwards; }
+        .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 1px solid #eee; transition: 0.2s; }
+        .color-dot.active { ring: 2px solid black; ring-offset: 2px; transform: scale(1.15); }
     </style>
 </head>
 <body>
@@ -180,11 +181,12 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. CONFIG: GitHub Path ---
+        // --- 1. CONFIG: GitHub Path (或本地 ./images/) ---
         const GITHUB_RAW_URL = "https://raw.githubusercontent.com/oaoxd/my-wardrobe/main/images";
 
-        // --- 2. MANIFEST (THE 92 FILES TRUTH) ---
+        // --- 2. MANIFEST (92 FILES) ---
         const RAW_MANIFEST = [
+            // Outer (34)
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png", 
@@ -195,6 +197,7 @@
             "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
             "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
             "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
+            // Inner (28)
             "i_knits_be_01.png", "i_knits_bk_01.png", "i_knits_br_01.png", "i_knits_gy_01.png", "i_knits_rd_01.png",
             "i_knitn_be_01.png", "i_knitn_bk_01.png", "i_knitn_br_01.png", "i_knitn_gy_01.png", "i_knitn_rd_01.png",
             "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png",
@@ -202,18 +205,20 @@
             "i_sweats_bk_01.png", "i_sweats_gn_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png", "i_sweats_wh_01.png",
             "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_wh_01.png",
             "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
+            // Bottom (20)
             "b_cargo_be_01.png", "b_cargo_bk_01.png", "b_cargo_gn_01.png",
             "b_chino_be_01.png", "b_jeans_bk_01.png", "b_jeans_nv_01.png",
             "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png", "b_sport_wh_01.png",
             "b_suit_be_02.png", "b_suit_bk_01.png", "b_suit_bk_02.png", "b_suit_br_01.png", "b_suit_br_02.png", 
             "b_suit_gn_01.png", "b_suit_gn_02.png", "b_suit_gy_01.png", "b_suit_gy_02.png", "b_suit_nv_01.png",
+            // Shoes (10)
             "s_dress_bk_01.png", "s_dress_br_01.png",
             "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
             "s_loafer_bk_01.png", "s_loafer_br_01.png", "s_loafer_nv_01.png",
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        // --- 3. UI MAPPINGS (RESTORED) ---
+        // --- 3. UI MAPPINGS ---
         const UI_LABELS = {
             o: '外套', i: '內搭', b: '下身', s: '鞋款',
             suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨', coat: '大衣',
@@ -234,25 +239,28 @@
             'sweats': ['Casual'], 'tshirts': ['Smart', 'Casual'], 'tshirtn': ['Smart', 'Casual'],
             'suit': ['Formal', 'Smart'], 'jeans': ['Smart', 'Casual'], 'chino': ['Smart', 'Casual'],
             'cargo': ['Casual'], 'sport': ['Casual'],
-            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual']
+            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 'leasnk': ['Smart', 'Casual'],
+            'sport': ['Casual']
         };
 
         // --- 4. CORE PARSER ---
-        const parseFilename = (filename) => {
+        const parseItem = (filename) => {
             const raw = filename.replace('.png', '');
             const parts = raw.split('_'); 
             if (parts.length < 4) return null;
             const [slotCode, catCode, colorCode] = parts;
             
             let sleeve = 'standard';
-            if (catCode.endsWith('n') && slotCode === 'i') sleeve = 'sleeveless';
-            else if (catCode.endsWith('s') && slotCode === 'i') sleeve = 'sleeved';
-            else if (catCode === 'sweats') sleeve = 'sleeved';
+            // i_...n 是無袖, i_...s 是有袖
+            if (slotCode === 'i') {
+                if (catCode.endsWith('n')) sleeve = 'sleeveless';
+                else sleeve = 'sleeved';
+            }
 
             return {
-                uuid: raw, // 使用檔名作為初步 ID
+                id: raw,
                 filename: filename,
-                displayUrl: `${GITHUB_RAW_URL}/${filename}`,
+                displayUrl: GITHUB_RAW_URL ? `${GITHUB_RAW_URL}/${filename}` : `./images/${filename}`,
                 slot: SLOT_MAP[slotCode] || 'unknown',
                 catCode, color: colorCode, sleeve,
                 label: UI_LABELS[catCode] || catCode,
@@ -260,15 +268,15 @@
             };
         };
 
-        const SYSTEM_STOCK = RAW_MANIFEST.map(parseFilename).filter(Boolean);
+        const SYSTEM_STOCK = RAW_MANIFEST.map(parseItem).filter(Boolean);
 
         // --- 5. DATABASE ---
-        const DB_CONFIG = { name: 'MinimalistVault_Master_V28', version: 1, store: 'inventory' };
+        const DB_CONFIG = { name: 'Minimalist_Global_Vault', version: 1, store: 'inventory' };
         const dbHelper = {
-            open: () => new Promise((resolve) => {
+            open: () => new Promise(r => {
                 const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
-                req.onupgradeneeded = e => e.target.result.createObjectStore(DB_CONFIG.store, { keyPath: 'dbId', autoIncrement: true });
-                req.onsuccess = e => resolve(e.target.result);
+                req.onupgradeneeded = e => e.target.result.createObjectStore(DB_CONFIG.store, { keyPath: 'uuid', autoIncrement: true });
+                req.onsuccess = e => r(e.target.result);
             }),
             getAll: async () => {
                 const db = await dbHelper.open();
@@ -280,13 +288,13 @@
             add: async (item) => {
                 const db = await dbHelper.open();
                 const tx = db.transaction(DB_CONFIG.store, 'readwrite');
-                tx.objectStore(DB_CONFIG.store).add(item);
+                tx.objectStore(DB_CONFIG.store).add({ ...item, addedAt: Date.now() });
                 return new Promise(r => tx.oncomplete = r);
             },
-            del: async (dbId) => {
+            del: async (uuid) => {
                 const db = await dbHelper.open();
                 const tx = db.transaction(DB_CONFIG.store, 'readwrite');
-                tx.objectStore(DB_CONFIG.store).delete(dbId);
+                tx.objectStore(DB_CONFIG.store).delete(uuid);
                 return new Promise(r => tx.oncomplete = r);
             }
         };
@@ -308,10 +316,9 @@
             const [wardrobe, setWardrobe] = useState([]);
             const [outfit, setOutfit] = useState({ outer: null, inner: null, bottom: null, shoes: null });
             const [activeTab, setActiveTab] = useState('styling');
-            
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
-            
+
             // Filters
             const [whSlot, setWhSlot] = useState('o');
             const [whCat, setWhCat] = useState('all');
@@ -321,44 +328,41 @@
             const loadData = async () => setWardrobe(await dbHelper.getAll());
             useEffect(() => { loadData(); }, []);
 
-            const addToWardrobe = async sysItem => {
-                await dbHelper.add({ ...sysItem, style: STYLE_RULES[sysItem.catCode] || ['Casual'], addedAt: Date.now() });
-                await loadData();
-                alert(`[${sysItem.label}] 已入庫`);
-            };
-
-            const removeFromWardrobe = async dbId => {
-                if(!confirm("確定移除?")) return;
-                await dbHelper.del(dbId); loadData();
-                setOutfit(p => { const n={...p}; Object.keys(n).forEach(k=>{if(n[k]?.dbId===dbId) n[k]=null;}); return n; });
-            };
-
+            // [RESTORE V26.5 LOGIC]
             const handleRandom = (targetOcc, targetSea) => {
                 const newOutfit = { ...outfit };
+                
                 const getRandom = (slot, occ, sea, current) => {
                     let pool = wardrobe.filter(i => i.slot === slot);
-                    pool = pool.filter(i => i.style.includes(occ));
+                    pool = pool.filter(i => i.style && i.style.includes(occ));
+                    
                     if (slot === 'inner') {
                         const hasOuter = current.outer;
+                        // 有外套選無袖 (n), 沒外套選有袖 (s/standard)
                         pool = pool.filter(i => hasOuter ? i.sleeve === 'sleeveless' : i.sleeve === 'sleeved');
                         if (sea === 'Summer') pool = pool.filter(i => !['knits','sweats','knitn'].includes(i.catCode));
                     }
                     return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
                 };
 
+                // 夏季過濾
                 if (targetSea === 'Summer' && targetOcc !== 'Formal') newOutfit.outer = null;
                 else newOutfit.outer = getRandom('outer', targetOcc, targetSea, newOutfit);
 
+                // 西裝對齊邏輯
                 if (targetOcc === 'Formal' && newOutfit.outer?.catCode.startsWith('suit')) {
                     newOutfit.bottom = wardrobe.find(b => b.slot === 'bottom' && b.catCode === 'suit' && b.color === newOutfit.outer.color) || getRandom('bottom', targetOcc, targetSea, newOutfit);
-                } else newOutfit.bottom = getRandom('bottom', targetOcc, targetSea, newOutfit);
+                } else {
+                    newOutfit.bottom = getRandom('bottom', targetOcc, targetSea, newOutfit);
+                }
 
                 newOutfit.inner = getRandom('inner', targetOcc, targetSea, newOutfit);
                 newOutfit.shoes = getRandom('shoes', targetOcc, targetSea, newOutfit);
+                
                 setOutfit(newOutfit);
             };
 
-            // [RESTORE V26.5 Mother Scale]
+            // [RESTORE V26.5 MOTHER SCALE]
             const getGhostStyle = (slot) => {
                 const base = { width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'bottom center' };
                 if (slot === 'shoes') return { ...base, transform: 'scale(3.8) translateZ(0)', transformOrigin: 'bottom center' };
@@ -372,12 +376,19 @@
                 return base;
             };
 
-            // Dynamic Filters for Warehouse
-            const availCats = useMemo(() => {
-                const items = SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]);
-                return ['all', ...new Set(items.map(i => i.catCode))];
-            }, [whSlot]);
+            const addToWardrobe = async sysItem => {
+                await dbHelper.add({ ...sysItem, style: STYLE_RULES[sysItem.catCode] || ['Casual'] });
+                await loadData();
+                alert(`入庫成功：${sysItem.label}`);
+            };
 
+            const removeFromWardrobe = async uuid => {
+                if(!confirm("確定移除?")) return;
+                await dbHelper.del(uuid); await loadData();
+                setOutfit(p => { const n={...p}; Object.keys(n).forEach(k=>{if(n[k]?.uuid===uuid) n[k]=null;}); return n; });
+            };
+
+            const availCats = useMemo(() => ['all', ...new Set(SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]).map(i => i.catCode))], [whSlot]);
             const availColors = useMemo(() => {
                 let pool = SYSTEM_STOCK.filter(i => i.slot === SLOT_MAP[whSlot]);
                 if (whCat !== 'all') pool = pool.filter(i => i.catCode === whCat);
@@ -393,25 +404,22 @@
                 });
             }, [whSlot, whCat, whColor]);
 
-            // Auto-reset filters
-            useEffect(() => { setWhCat('all'); setWhColor('all'); }, [whSlot]);
-
             return (
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 bg-white border-b border-gray-100 flex justify-between items-center z-10 sticky top-0">
-                        <h1 className="text-lg font-bold tracking-tighter">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm tracking-normal">V28.3 STABLE</span></h1>
+                        <h1 className="text-lg font-bold tracking-tighter">Minimalist <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">V28.4 MASTER</span></h1>
                     </div>
 
                     <div className="content-area bg-gray-50">
-                        {/* 1. STYLING */}
+                        {/* 1. STYLING (Ghost Engine Restoration) */}
                         {activeTab === 'styling' && (
-                            <div className="anim-entry">
+                            <div className="animate-fade-in">
                                 <div className="ghost-canvas-container mx-auto relative bg-white">
                                     {outfit.shoes && <img src={outfit.shoes.displayUrl} className="ghost-layer z-10" style={getGhostStyle('shoes')} />}
                                     {outfit.bottom && <img src={outfit.bottom.displayUrl} className="ghost-layer z-20" style={getGhostStyle('bottom')} />}
                                     {outfit.inner && <img src={outfit.inner.displayUrl} className="ghost-layer z-30" style={getGhostStyle('inner')} />}
                                     {outfit.outer && <img src={outfit.outer.displayUrl} className="ghost-layer z-40" style={getGhostStyle('outer')} />}
-                                    {(!outfit.outer && !outfit.inner && !outfit.bottom && !outfit.shoes) && <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest">WARDROBE EMPTY</div>}
+                                    {(!outfit.outer && !outfit.inner && !outfit.bottom && !outfit.shoes) && <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs tracking-widest uppercase">Select Item</div>}
                                 </div>
 
                                 <div className="floating-controls">
@@ -431,7 +439,7 @@
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {['outer','inner','bottom','shoes'].map(slot => (
                                             <div key={slot} className="relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden bg-white shadow-sm border-gray-100">
-                                                {outfit[slot] ? <img src={outfit[slot].displayUrl} style={getGridStyle(slot)} /> : <span className="text-[10px] text-gray-200 font-bold">{UI_LABELS[slot[0]]}</span>}
+                                                {outfit[slot] ? <img src={outfit[slot].displayUrl} style={getGridStyle(slot)} /> : <span className="text-[10px] text-gray-200 font-bold uppercase">{UI_LABELS[slot[0]]}</span>}
                                                 {outfit[slot] && <button onClick={()=>setOutfit(p=>({...p,[slot]:null}))} className="absolute top-0 right-0 p-1 bg-white/80 rounded-bl-lg shadow-sm"><Icon name="x" className="w-3 text-gray-400"/></button>}
                                             </div>
                                         ))}
@@ -443,7 +451,7 @@
 
                         {/* 2. CLOSET (Categorized Tabs) */}
                         {activeTab === 'closet' && (
-                            <div className="p-6 bg-white min-h-full anim-entry">
+                            <div className="p-6 bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥 ({wardrobe.length})</h2>
                                 <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
                                     {['o','i','b','s'].map(s => (
@@ -452,46 +460,43 @@
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     {wardrobe.filter(i => i.slot === SLOT_MAP[closetSlot]).map(item => (
-                                        <div key={item.dbId} className="dense-card relative group" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
+                                        <div key={item.uuid} className="dense-card group" onClick={()=>{setOutfit(p=>({...p,[item.slot]:item}));setActiveTab('styling');}}>
                                             <img src={item.displayUrl} style={getGridStyle(item.slot)} />
                                             <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border" style={{background: COLOR_HEX[item.color]}}></div>
-                                            <button onClick={e=>{e.stopPropagation(); removeFromWardrobe(item.dbId);}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500 shadow-sm"><Icon name="trash" className="w-3 h-3"/></button>
+                                            <button onClick={e=>{e.stopPropagation(); removeFromWardrobe(item.uuid);}} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500 shadow-sm"><Icon name="trash" className="w-3 h-3"/></button>
                                         </div>
                                     ))}
                                 </div>
-                                {wardrobe.filter(i => i.slot === SLOT_MAP[closetSlot]).length === 0 && <div className="text-center py-20 text-gray-300 text-xs tracking-widest">此分類無單品</div>}
+                                {wardrobe.filter(i => i.slot === SLOT_MAP[closetSlot]).length === 0 && <div className="text-center py-20 text-gray-200 text-xs uppercase tracking-widest">No Items</div>}
                             </div>
                         )}
 
                         {/* 3. WAREHOUSE (V27.8 Filters) */}
                         {activeTab === 'add' && (
-                            <div className="p-6 bg-white min-h-full anim-entry">
-                                <h2 className="text-xl font-bold mb-4">新增單品</h2>
-                                {/* Slot Filter */}
+                            <div className="p-6 bg-white min-h-full">
+                                <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {['o','i','b','s'].map(s => (
-                                        <button key={s} onClick={()=>setWhSlot(s)} className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${whSlot===s?'bg-black text-white border-black':'bg-white text-gray-400 border-gray-100'}`}>{UI_LABELS[s]}</button>
+                                        <button key={s} onClick={()=>setWhSlot(s)} className={`px-4 py-2 rounded-lg text-xs font-bold border ${whSlot===s?'bg-black text-white border-black':'bg-white text-gray-400 border-gray-100'}`}>{UI_LABELS[s]}</button>
                                     ))}
                                 </div>
-                                {/* Category Pills */}
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
                                     {availCats.map(c => (
                                         <button key={c} onClick={()=>setWhCat(c)} className={`cat-pill ${whCat===c?'active':'inactive'}`}>{c === 'all' ? '全部品項' : UI_LABELS[c]}</button>
                                     ))}
                                 </div>
-                                {/* Color Dots */}
                                 <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-1 items-center">
                                     <button onClick={()=>setWhColor('all')} className={`text-[10px] font-bold px-2 ${whColor==='all'?'text-black':'text-gray-300'}`}>ALL</button>
                                     {availColors.filter(c=>c!=='all').map(c => (
-                                        <div key={c} onClick={()=>setWhColor(c)} className={`w-6 h-6 rounded-full border cursor-pointer shadow-sm flex-shrink-0 transition-transform ${whColor === c ? 'ring-2 ring-black ring-offset-2 scale-110' : ''}`} style={{background: COLOR_HEX[c]}}></div>
+                                        <div key={c} onClick={()=>setWhColor(c)} className={`color-dot ${whColor === c ? 'active' : ''}`} style={{background: COLOR_HEX[c]}}></div>
                                     ))}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 pb-24">
                                     {filteredStock.map((item, idx) => (
-                                        <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item relative group flex flex-col p-2 bg-gray-50 border-dashed border-2 hover:border-black transition-all">
+                                        <div key={idx} onClick={()=>addToWardrobe(item)} className="warehouse-item group p-2 bg-gray-50 border-dashed border-2 hover:border-black">
                                             <img src={item.displayUrl} style={getGridStyle(item.slot)} />
-                                            <div className="text-[9px] mt-1 font-bold text-center text-gray-400 uppercase tracking-tighter">{item.label} / {item.colorLabel}</div>
+                                            <div className="text-[9px] mt-1 font-bold text-gray-400 uppercase tracking-tighter">{item.label} / {item.colorLabel}</div>
                                             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                 <span className="bg-black text-white text-[10px] px-3 py-1.5 rounded-full font-bold shadow-lg">入庫</span>
                                             </div>
