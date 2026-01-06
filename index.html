@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V6.4</title>
+    <title>Minimalist Wardrobe V6.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V6.4] 修正版：圖片完整性修復、保留 V6.3 的優秀佈局 */
+        /* [V6.5] 最終完美版：單欄霸氣展示、右側核心操作流 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -51,7 +51,7 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine V6.4 - 畫布 */
+        /* Ghost Engine V6.5 */
         .ghost-canvas-container {
             position: absolute; 
             top: 0;
@@ -73,7 +73,6 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* 保持 V6.3 的佈局優點：避開標題與底部導航 */
             padding: 15vh 4vw 110px 4vw; 
         }
 
@@ -82,33 +81,10 @@
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* 頂部功能區按鈕 */
-        .header-action-btn {
-            background-color: #fff;
-            border: 1px solid #e5e7eb;
-            color: #374151;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 99px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .header-action-btn.primary {
-            background-color: #000;
-            color: #fff;
-            border-color: #000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .header-action-btn:active { transform: scale(0.95); }
-
         /* 直立式控制塔 */
         .control-stack {
             position: absolute;
-            bottom: 100px;
+            bottom: 100px; /* 避開底部導航 */
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -158,6 +134,30 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         
+        /* [V6.5] 動作膠囊 (重置/搭配) */
+        .action-pill {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            padding: 12px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #374151;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            margin-bottom: 2px;
+        }
+        .action-pill.primary {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .action-pill:active { transform: scale(0.95); }
+
         .status-dot {
             width: 4px;
             height: 4px;
@@ -169,22 +169,24 @@
             transform: translateX(-50%);
         }
 
-        /* 網格系統 V6.4 */
+        /* [V6.5] 單欄霸氣網格 */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 0 4px 20px 4px;
+            /* 改為單列，讓圖片最大化 */
+            grid-template-columns: 1fr; 
+            gap: 24px; /* 增加間距，讓每張卡片更獨立 */
+            padding: 0 16px 40px 16px; /* 兩側留白，底部加厚 */
         }
         
         .item-card {
             background: #fff;
-            border-radius: 12px;
+            border-radius: 16px; /* 圓角加大 */
             border: 1px solid #f3f4f6;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03); /* 增加質感陰影 */
         }
         
         .item-image-box {
@@ -196,48 +198,45 @@
             background: #fafafa;
             position: relative;
             overflow: hidden;
-            /* [V6.4] 使用 padding: 0 讓圖片極大化，但不使用 scale 強制放大，避免裁切 */
             padding: 0;
         }
 
         .item-image-box img {
             width: 100%;
             height: 100%;
-            /* [V6.4] 核心修正：contain 確保完整顯示，不裁切任何部位 */
             object-fit: contain; 
             transform: none; 
             transition: transform 0.2s;
         }
         
-        /* [V6.4] 鞋子微調：放大倍率 2.8 (安全範圍)，定位於底部 */
         .item-image-box img.wh-shoes {
             transform: scale(2.8); 
             transform-origin: bottom center;
-            margin-bottom: 0; /* 移除負邊距，避免被底部切掉 */
-            padding-bottom: 8px; /* 微微推高一點 */
+            margin-bottom: 0; 
+            padding-bottom: 8px;
         }
 
         .item-info {
-            padding: 8px 4px;
+            padding: 12px 4px;
             text-align: center;
             border-top: 1px solid #f9fafb;
             z-index: 10;
             background: #fff;
         }
         .item-label {
-            font-size: 10px;
+            font-size: 12px; /* 字體稍微放大 */
             font-weight: 700;
             color: #374151;
         }
 
         .color-dot {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 1px solid #eee; 
             cursor: pointer;
         }
-        .color-dot.white-swatch { border: 1px solid #d1d5db; }
+        .color-dot.white-swatch { border: 1px solid #9ca3af; }
         .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.15); }
 
         .scroll-row {
@@ -252,7 +251,7 @@
         .scroll-row::-webkit-scrollbar { display: none; }
         
         .category-btn {
-            padding: 6px 14px;
+            padding: 8px 18px; /* 加大觸控區 */
             border-radius: 99px;
             font-size: 11px;
             font-weight: 700;
@@ -269,10 +268,9 @@
             border-color: #000;
         }
 
-        /* 懸浮導航島 */
         .floating-nav-container {
             position: absolute;
-            bottom: 20px;
+            bottom: 24px;
             left: 0;
             width: 100%;
             display: flex;
@@ -504,13 +502,9 @@
 
             return (
                 <div className="app-container">
-                    {/* Header Action Zone */}
+                    {/* Header Zone: App Name Only */}
                     <div className="absolute top-0 w-full z-50 flex justify-between items-start p-6 pointer-events-none">
-                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.4</span></h1>
-                        <div className="flex gap-2 pointer-events-auto">
-                            <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="header-action-btn"><Icon name="refresh" className="w-3 h-3"/>重置</button>
-                            <button onClick={handleRandom} className="header-action-btn primary"><Icon name="dice" className="w-3 h-3"/>智慧搭配</button>
-                        </div>
+                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.5</span></h1>
                     </div>
 
                     <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
@@ -524,7 +518,28 @@
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
+                                {/* LEFT BOTTOM TOWER (Settings) */}
                                 <div className="control-stack left">
+                                    <div className="stack-group">
+                                        {['Winter', 'Summer'].map(s => (
+                                            <button key={s} className={`v-pill ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
+                                        ))}
+                                    </div>
+                                    <div className="stack-group">
+                                        {['Formal', 'Smart', 'Casual'].map(occ => (
+                                            <button key={occ} className={`v-pill ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
+                                                {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* RIGHT BOTTOM TOWER (Actions + Parts) */}
+                                <div className="control-stack right">
+                                    <div className="stack-group">
+                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-pill" title="重置">重置</button>
+                                        <button onClick={handleRandom} className="action-pill primary" title="智慧搭配">智慧搭配</button>
+                                    </div>
                                     <div className="stack-group">
                                         {[
                                             { p: 'o', label: '外套' },
@@ -535,21 +550,6 @@
                                             <button key={item.p} className={`v-pill ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
                                                 {item.label}
                                                 {outfit[item.p] && <div className="status-dot"></div>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="control-stack right">
-                                    <div className="stack-group">
-                                        {['Winter', 'Summer'].map(s => (
-                                            <button key={s} className={`v-pill ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
-                                        ))}
-                                    </div>
-                                    <div className="stack-group">
-                                        {['Formal', 'Smart', 'Casual'].map(occ => (
-                                            <button key={occ} className={`v-pill ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
-                                                {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
                                             </button>
                                         ))}
                                     </div>
@@ -581,7 +581,7 @@
                                             <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                             <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
-                                    )) : <div className="col-span-2 text-center py-12 text-gray-300 text-xs">此分類暫無單品</div>}
+                                    )) : <div className="text-center py-12 text-gray-300 text-xs">此分類暫無單品</div>}
                                 </div>
                             </div>
                         )}
