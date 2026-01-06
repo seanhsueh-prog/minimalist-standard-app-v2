@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V6.1</title>
+    <title>Minimalist Wardrobe V6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V6.1] 極致視野版：100dvh + 懸浮介面 */
+        /* [V6.2] 修正版：修復圖片被切、直立式控制項、鞋子遮擋優化 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -34,17 +34,15 @@
         .content-area {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 100px; /* 為了避開懸浮導航，增加底部留白 */
+            padding-bottom: 100px; 
             scrollbar-width: none;
             display: flex;
             flex-direction: column;
         }
-        /* 搭配頁面：全螢幕無捲動 */
         .content-area.styling-mode {
             overflow: hidden;
             padding-bottom: 0; 
         }
-        
         .content-area::-webkit-scrollbar { display: none; }
 
         @keyframes fade-in {
@@ -53,9 +51,9 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine V6.1 - 全屏畫布 */
+        /* Ghost Engine V6.2 */
         .ghost-canvas-container {
-            position: absolute; /* 強制全屏 */
+            position: absolute; 
             top: 0;
             left: 0;
             width: 100%;
@@ -75,8 +73,11 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* 邊距調整：上方留白給頭部，下方留白給控制項 */
-            padding: 5% 5% 15% 5%; 
+            /* [V6.2 重要修正] 
+               1. 底部 Padding 增加到 110px，確保鞋子浮在懸浮導航上方，完全不被遮擋。
+               2. 圖片縮放邏輯改為 contain，不會變小，而是將立足點上移。
+            */
+            padding: 4vh 4vw 110px 4vw; 
         }
 
         .layer-shoes { z-index: 10; }
@@ -84,79 +85,95 @@
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* [V6.1] 垂直控制塔 (Vertical Control Stacks) */
+        /* [V6.2] 直立式控制塔 (Vertical Control Stacks) */
         .control-stack {
             position: absolute;
-            bottom: 80px; /* 位於導航欄上方 */
+            bottom: 100px; /* 避開底部導航 */
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
             z-index: 50;
             padding: 4px;
         }
-        .control-stack.left { left: 12px; align-items: flex-start; }
-        .control-stack.right { right: 12px; align-items: flex-end; }
+        .control-stack.left { left: 8px; align-items: flex-start; }
+        .control-stack.right { right: 8px; align-items: flex-end; }
 
-        /* 垂直群組背景 */
         .stack-group {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 4px;
+            border-radius: 16px;
+            padding: 6px 4px;
             border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
+            align-items: center;
         }
 
-        /* 直立式按鈕 */
-        .v-btn {
-            width: 44px; /* 方形或微長方形 */
-            height: 36px;
-            border-radius: 8px;
+        /* [V6.2] 直立文字膠囊 */
+        .v-pill {
+            writing-mode: vertical-rl; /* 直排文字核心 */
+            text-orientation: upright; /* 文字正向 */
+            padding: 12px 6px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #9ca3af;
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: #9ca3af;
-            transition: all 0.2s;
-            cursor: pointer;
+            min-height: 44px;
             position: relative;
-            background: transparent;
         }
-        .v-btn:hover { background-color: rgba(0,0,0,0.05); }
-        .v-btn.active { 
-            background-color: #000; 
-            color: #fff; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        /* 動作按鈕特別樣式 */
-        .action-btn {
-            background-color: #fff;
-            border: 1px solid #e5e7eb;
-            color: #000;
-        }
-        .action-btn.primary {
-            background-color: #000;
+        .v-pill:hover { background: rgba(0,0,0,0.03); }
+        .v-pill.active {
+            background: #000;
             color: #fff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
+        
+        /* 動作按鈕特殊樣式 */
+        .action-pill {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            padding: 10px 8px;
+            border-radius: 12px; /* 稍微方一點以示區別 */
+            font-size: 11px;
+            font-weight: 800;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #374151;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-top: 2px;
+            cursor: pointer;
+            letter-spacing: 2px;
+        }
+        .action-pill.primary {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .action-pill:active { transform: scale(0.95); }
 
-        /* 狀態點 */
         .status-dot {
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
             background-color: #10b981;
             border-radius: 50%;
             position: absolute;
-            top: 4px;
-            right: 4px;
-            border: 1px solid white;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
-        /* 倉庫與衣櫥網格 V6.1 - 放大版 */
+        /* 網格系統 V6.2 - 安全放大版 */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -182,20 +199,20 @@
             background: #fafafa;
             position: relative;
             overflow: hidden;
-            padding: 0; /* V6.1 移除 Padding 以最大化 */
+            padding: 0; /* 最大化空間 */
         }
+        /* [V6.2 關鍵修正] 移除 scale(1.15)，改回 contain，確保絕對不切頭 */
         .item-image-box img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            /* V6.1 視覺放大 1.15倍，確保不被裁切但更滿 */
-            transform: scale(1.15); 
-            transition: transform 0.2s;
+            object-fit: contain; 
+            padding: 0; /* 讓圖片自然撐滿 */
         }
+        /* 鞋子維持放大，但透過 margin 調整位置避免被切 */
         .item-image-box img.wh-shoes {
             transform: scale(3.0); 
             transform-origin: bottom center;
-            margin-bottom: -10%;
+            margin-bottom: -15%; 
         }
 
         .item-info {
@@ -215,13 +232,12 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            border: 1px solid #eee; /* 預設邊框 */
+            border: 1px solid #eee; 
             cursor: pointer;
         }
-        .color-dot.white-swatch { border: 1px solid #e5e7eb; } /* V6.1 白色加強邊框 */
+        .color-dot.white-swatch { border: 1px solid #d1d5db; } /* V6.2 白色邊框加深 */
         .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.15); }
 
-        /* 橫向捲動列 */
         .scroll-row {
             display: flex;
             gap: 8px;
@@ -251,16 +267,16 @@
             border-color: #000;
         }
 
-        /* [V6.1] 懸浮導航島 (Floating Dock) */
+        /* 懸浮導航島 */
         .floating-nav-container {
             position: absolute;
-            bottom: 24px;
+            bottom: 20px;
             left: 0;
             width: 100%;
             display: flex;
             justify-content: center;
             z-index: 100;
-            pointer-events: none; /* 容器不擋點擊 */
+            pointer-events: none;
         }
         .floating-nav {
             pointer-events: auto;
@@ -274,9 +290,9 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
         .nav-pill {
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 99px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             color: #9ca3af;
             cursor: pointer;
@@ -427,7 +443,6 @@
                 else alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
             };
 
-            // 智慧搭配
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
@@ -487,7 +502,7 @@
             return (
                 <div className="app-container">
                     <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50 bg-white/0 flex-shrink-0 absolute top-0 w-full pointer-events-none">
-                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.1</span></h1>
+                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.2</span></h1>
                     </div>
 
                     <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
@@ -501,7 +516,7 @@
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
-                                {/* LEFT BOTTOM TOWER */}
+                                {/* LEFT CONTROL TOWER */}
                                 <div className="control-stack left">
                                     <div className="stack-group">
                                         {[
@@ -510,28 +525,28 @@
                                             { p: 'b', label: '褲裝' },
                                             { p: 's', label: '鞋款' }
                                         ].map(item => (
-                                            <button key={item.p} className={`v-btn ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
+                                            <button key={item.p} className={`v-pill ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
                                                 {item.label}
                                                 {outfit[item.p] && <div className="status-dot"></div>}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="stack-group">
-                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="v-btn action-btn" title="重置"><Icon name="trash" className="w-4 h-4"/></button>
-                                        <button onClick={handleRandom} className="v-btn action-btn primary" title="智慧搭配"><Icon name="dice" className="w-4 h-4"/></button>
+                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-pill" title="重置">重置</button>
+                                        <button onClick={handleRandom} className="action-pill primary" title="智慧搭配">智慧搭配</button>
                                     </div>
                                 </div>
 
-                                {/* RIGHT BOTTOM TOWER */}
+                                {/* RIGHT CONTROL TOWER */}
                                 <div className="control-stack right">
                                     <div className="stack-group">
                                         {['Winter', 'Summer'].map(s => (
-                                            <button key={s} className={`v-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
+                                            <button key={s} className={`v-pill ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
                                         ))}
                                     </div>
                                     <div className="stack-group">
                                         {['Formal', 'Smart', 'Casual'].map(occ => (
-                                            <button key={occ} className={`v-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
+                                            <button key={occ} className={`v-pill ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
                                                 {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
                                             </button>
                                         ))}
@@ -618,7 +633,7 @@
                         )}
                     </div>
 
-                    {/* V6.1 Floating Dock */}
+                    {/* Floating Nav */}
                     <div className="floating-nav-container">
                         <div className="floating-nav">
                             <div onClick={() => setActiveTab('styling')} className={`nav-pill ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-4 h-4"/>搭配</div>
