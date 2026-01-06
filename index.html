@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V6.3</title>
+    <title>Minimalist Wardrobe V6.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V6.3] 修正版：頂部功能區、人偶下移、列表圖片安全放大 */
+        /* [V6.4] 修正版：圖片完整性修復、保留 V6.3 的優秀佈局 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -51,7 +51,7 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine V6.3 */
+        /* Ghost Engine V6.4 - 畫布 */
         .ghost-canvas-container {
             position: absolute; 
             top: 0;
@@ -73,9 +73,7 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* [V6.3 重要修正] 
-               上方 Padding 加大至 15vh (避開標題)，下方保留 110px (避開導航) 
-            */
+            /* 保持 V6.3 的佈局優點：避開標題與底部導航 */
             padding: 15vh 4vw 110px 4vw; 
         }
 
@@ -84,7 +82,7 @@
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* [V6.3] 頂部功能區按鈕 */
+        /* 頂部功能區按鈕 */
         .header-action-btn {
             background-color: #fff;
             border: 1px solid #e5e7eb;
@@ -171,7 +169,7 @@
             transform: translateX(-50%);
         }
 
-        /* [V6.3 列表圖片優化] */
+        /* 網格系統 V6.4 */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -197,29 +195,26 @@
             justify-content: center;
             background: #fafafa;
             position: relative;
-            overflow: hidden; /* 關鍵：確保放大後不會溢出格子 */
+            overflow: hidden;
+            /* [V6.4] 使用 padding: 0 讓圖片極大化，但不使用 scale 強制放大，避免裁切 */
             padding: 0;
         }
 
-        /* [V6.3 安全放大術] 
-           1. 一般衣物：統一放大 1.5 倍 (scale 1.5)
-           2. 透過 overflow: hidden 自動裁切空白邊，視覺變大且結構安全
-        */
         .item-image-box img {
             width: 100%;
             height: 100%;
+            /* [V6.4] 核心修正：contain 確保完整顯示，不裁切任何部位 */
             object-fit: contain; 
-            transform: scale(1.5); 
+            transform: none; 
             transition: transform 0.2s;
         }
         
-        /* [V6.3 鞋子放大] 
-           鞋子維持 3.0 倍，並透過 margin 向下定位避免切頭
-        */
+        /* [V6.4] 鞋子微調：放大倍率 2.8 (安全範圍)，定位於底部 */
         .item-image-box img.wh-shoes {
-            transform: scale(3.0); 
+            transform: scale(2.8); 
             transform-origin: bottom center;
-            margin-bottom: -15%; 
+            margin-bottom: 0; /* 移除負邊距，避免被底部切掉 */
+            padding-bottom: 8px; /* 微微推高一點 */
         }
 
         .item-info {
@@ -509,9 +504,9 @@
 
             return (
                 <div className="app-container">
-                    {/* [V6.3] Header Action Zone */}
+                    {/* Header Action Zone */}
                     <div className="absolute top-0 w-full z-50 flex justify-between items-start p-6 pointer-events-none">
-                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.3</span></h1>
+                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.4</span></h1>
                         <div className="flex gap-2 pointer-events-auto">
                             <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="header-action-btn"><Icon name="refresh" className="w-3 h-3"/>重置</button>
                             <button onClick={handleRandom} className="header-action-btn primary"><Icon name="dice" className="w-3 h-3"/>智慧搭配</button>
@@ -529,7 +524,6 @@
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
-                                {/* LEFT BOTTOM TOWER (Items Only) */}
                                 <div className="control-stack left">
                                     <div className="stack-group">
                                         {[
@@ -546,7 +540,6 @@
                                     </div>
                                 </div>
 
-                                {/* RIGHT BOTTOM TOWER (Logic Only) */}
                                 <div className="control-stack right">
                                     <div className="stack-group">
                                         {['Winter', 'Summer'].map(s => (
