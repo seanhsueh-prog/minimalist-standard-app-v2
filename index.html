@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V6.6</title>
+    <title>Minimalist Wardrobe V6.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V6.6] 完美最終版：鎖定標題、獨立捲動、圖像安全放大 */
+        /* [V6.7] 最終修正版：智慧錨點縮放、右側單一操作區 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -30,7 +30,6 @@
             overflow: hidden;
         }
 
-        /* [V6.6] 全局內容區改為禁止捲動，捲動交給各 Tab 內部處理 */
         .content-area {
             flex: 1;
             overflow: hidden; 
@@ -45,7 +44,7 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* --- Ghost Engine V6.6 --- */
+        /* Ghost Engine */
         .ghost-canvas-container {
             position: absolute; 
             top: 0;
@@ -67,7 +66,6 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* [V6.6 微調] 上方留白減少至 11vh，讓圖案整體稍微變大，同時避開頂部按鈕 */
             padding: 11vh 3vw 110px 3vw; 
         }
 
@@ -76,7 +74,7 @@
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* [V6.6] 頂部功能區 (絕對定位於 Styling Tab) */
+        /* [V6.7] 僅保留標題的 Header */
         .styling-header {
             position: absolute;
             top: 0;
@@ -84,38 +82,10 @@
             width: 100%;
             z-index: 50;
             padding: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            pointer-events: none; /* 讓點擊穿透到下方圖層 */
+            pointer-events: none;
         }
-        .pointer-auto { pointer-events: auto; }
 
-        /* 按鈕樣式 */
-        .header-action-btn {
-            background-color: #fff;
-            border: 1px solid #e5e7eb;
-            color: #374151;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 99px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-        }
-        .header-action-btn.primary {
-            background-color: #000;
-            color: #fff;
-            border-color: #000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .header-action-btn:active { transform: scale(0.95); }
-
-        /* 直立式控制塔 */
+        /* 控制塔 */
         .control-stack {
             position: absolute;
             bottom: 100px;
@@ -185,7 +155,7 @@
             position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
         }
 
-        /* --- [V6.6] 鎖定標題架構 (Sticky Layout) --- */
+        /* 鎖定標題架構 */
         .fixed-header-section {
             flex-shrink: 0;
             background-color: #fff;
@@ -200,12 +170,12 @@
         .scrollable-list-section {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 16px 100px 16px; /* 底部留白給導航 */
+            padding: 16px 16px 100px 16px; 
             scrollbar-width: none;
         }
         .scrollable-list-section::-webkit-scrollbar { display: none; }
 
-        /* 網格系統 V6.6 - 單欄 + 放大 */
+        /* 單欄霸氣網格 */
         .grid-container {
             display: grid;
             grid-template-columns: 1fr; 
@@ -235,22 +205,34 @@
             padding: 0;
         }
 
-        /* [V6.6] 安全放大術：1.25倍 */
-        .item-image-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; 
-            /* 單欄寬度足夠，1.25倍只會吃掉左右留白，不會切到上下 */
-            transform: scale(1.25); 
+        /* [V6.7] 智慧錨點縮放技術 Classes */
+        
+        /* 1. 外套與內搭：錨點在頂部，放大時只會把下方透明處推出去 -> 不切頭 */
+        .img-top-focus {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            transform-origin: top center;
+            transform: scale(1.4); 
             transition: transform 0.2s;
         }
-        
-        /* 鞋子維持定位邏輯 */
-        .item-image-box img.wh-shoes {
-            transform: scale(2.8); 
+
+        /* 2. 褲裝：錨點在底部，放大時只會把上方透明處推出去 -> 不切腳 */
+        .img-bottom-focus {
+            width: 100%; height: 100%;
+            object-fit: contain;
             transform-origin: bottom center;
-            margin-bottom: 0; 
-            padding-bottom: 8px;
+            transform: scale(1.4); 
+            transition: transform 0.2s;
+        }
+
+        /* 3. 鞋子：錨點在底部，放大倍率更高 */
+        .img-shoe-focus {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            transform-origin: bottom center;
+            transform: scale(3.0); 
+            padding-bottom: 12px; 
+            transition: transform 0.2s;
         }
 
         .item-info {
@@ -312,7 +294,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST & CONFIG (Same as before) ---
+        // --- MANIFEST (92 FILES) ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_nv_01.png", "o_suitd_bk_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
@@ -341,6 +323,7 @@
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
+        // --- CONFIG & MAP ---
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
         const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
@@ -494,19 +477,23 @@
                     return true;
                 }), [wardrobe, clPart, clTypeFilter]);
 
+            // [V6.7] 智慧錨點計算函數
+            const getImageClass = (part) => {
+                if (part === 'o' || part === 'i') return 'img-top-focus';
+                if (part === 'b') return 'img-bottom-focus';
+                if (part === 's') return 'img-shoe-focus';
+                return '';
+            };
+
             return (
                 <div className="app-container">
                     <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
                         {/* TAB: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
-                                {/* [V6.6] Styling Header (Overlay) */}
+                                {/* Only Title Header */}
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic pointer-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.6</span></h1>
-                                    <div className="flex gap-2 pointer-auto">
-                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="header-action-btn"><Icon name="refresh" className="w-3 h-3"/>重置</button>
-                                        <button onClick={handleRandom} className="header-action-btn primary"><Icon name="dice" className="w-3 h-3"/>智慧搭配</button>
-                                    </div>
+                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.7</span></h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
@@ -532,6 +519,7 @@
                                 </div>
 
                                 <div className="control-stack right">
+                                    {/* Action Pills Moved Here */}
                                     <div className="stack-group">
                                         <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-pill" title="重置">重置</button>
                                         <button onClick={handleRandom} className="action-pill primary" title="智慧搭配">智慧搭配</button>
@@ -575,7 +563,8 @@
                                         {filteredClosetItems.length > 0 ? filteredClosetItems.map(item => (
                                             <div key={item.id} className="item-card relative cursor-pointer" onClick={() => { setOutfit(prev => ({...prev, [item.part]: item})); setActiveTab('styling'); }}>
                                                 <div className="item-image-box">
-                                                    <img src={`./${item.fileName}`} className={item.part === 's' ? 'wh-shoes' : ''} />
+                                                    {/* [V6.7] Apply Smart Zoom Class */}
+                                                    <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
                                                 </div>
                                                 <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                                 <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
@@ -624,7 +613,8 @@
                                         {filteredWhItems.map((item, idx) => (
                                             <div key={idx} className="item-card cursor-pointer group" onClick={() => addToWardrobe(item)}>
                                                 <div className="item-image-box">
-                                                    <img src={`./${item.fileName}`} className={item.part === 's' ? 'wh-shoes' : ''} />
+                                                    {/* [V6.7] Apply Smart Zoom Class */}
+                                                    <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
                                                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
                                                         <span className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-lg">新增入庫</span>
                                                     </div>
