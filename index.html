@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V6.2</title>
+    <title>Minimalist Wardrobe V6.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V6.2] 修正版：修復圖片被切、直立式控制項、鞋子遮擋優化 */
+        /* [V6.3] 修正版：頂部功能區、人偶下移、列表圖片安全放大 */
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -51,7 +51,7 @@
         }
         .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine V6.2 */
+        /* Ghost Engine V6.3 */
         .ghost-canvas-container {
             position: absolute; 
             top: 0;
@@ -73,11 +73,10 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* [V6.2 重要修正] 
-               1. 底部 Padding 增加到 110px，確保鞋子浮在懸浮導航上方，完全不被遮擋。
-               2. 圖片縮放邏輯改為 contain，不會變小，而是將立足點上移。
+            /* [V6.3 重要修正] 
+               上方 Padding 加大至 15vh (避開標題)，下方保留 110px (避開導航) 
             */
-            padding: 4vh 4vw 110px 4vw; 
+            padding: 15vh 4vw 110px 4vw; 
         }
 
         .layer-shoes { z-index: 10; }
@@ -85,10 +84,33 @@
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* [V6.2] 直立式控制塔 (Vertical Control Stacks) */
+        /* [V6.3] 頂部功能區按鈕 */
+        .header-action-btn {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 99px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .header-action-btn.primary {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .header-action-btn:active { transform: scale(0.95); }
+
+        /* 直立式控制塔 */
         .control-stack {
             position: absolute;
-            bottom: 100px; /* 避開底部導航 */
+            bottom: 100px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -111,10 +133,10 @@
             align-items: center;
         }
 
-        /* [V6.2] 直立文字膠囊 */
+        /* 直立文字膠囊 */
         .v-pill {
-            writing-mode: vertical-rl; /* 直排文字核心 */
-            text-orientation: upright; /* 文字正向 */
+            writing-mode: vertical-rl;
+            text-orientation: upright;
             padding: 12px 6px;
             border-radius: 99px;
             font-size: 11px;
@@ -138,30 +160,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         
-        /* 動作按鈕特殊樣式 */
-        .action-pill {
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            padding: 10px 8px;
-            border-radius: 12px; /* 稍微方一點以示區別 */
-            font-size: 11px;
-            font-weight: 800;
-            border: 1px solid #e5e7eb;
-            background: #fff;
-            color: #374151;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-top: 2px;
-            cursor: pointer;
-            letter-spacing: 2px;
-        }
-        .action-pill.primary {
-            background: #000;
-            color: #fff;
-            border-color: #000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .action-pill:active { transform: scale(0.95); }
-
         .status-dot {
             width: 4px;
             height: 4px;
@@ -173,7 +171,7 @@
             transform: translateX(-50%);
         }
 
-        /* 網格系統 V6.2 - 安全放大版 */
+        /* [V6.3 列表圖片優化] */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -190,6 +188,7 @@
             flex-direction: column;
             transition: all 0.2s;
         }
+        
         .item-image-box {
             aspect-ratio: 3/4; 
             width: 100%;
@@ -198,17 +197,25 @@
             justify-content: center;
             background: #fafafa;
             position: relative;
-            overflow: hidden;
-            padding: 0; /* 最大化空間 */
+            overflow: hidden; /* 關鍵：確保放大後不會溢出格子 */
+            padding: 0;
         }
-        /* [V6.2 關鍵修正] 移除 scale(1.15)，改回 contain，確保絕對不切頭 */
+
+        /* [V6.3 安全放大術] 
+           1. 一般衣物：統一放大 1.5 倍 (scale 1.5)
+           2. 透過 overflow: hidden 自動裁切空白邊，視覺變大且結構安全
+        */
         .item-image-box img {
             width: 100%;
             height: 100%;
             object-fit: contain; 
-            padding: 0; /* 讓圖片自然撐滿 */
+            transform: scale(1.5); 
+            transition: transform 0.2s;
         }
-        /* 鞋子維持放大，但透過 margin 調整位置避免被切 */
+        
+        /* [V6.3 鞋子放大] 
+           鞋子維持 3.0 倍，並透過 margin 向下定位避免切頭
+        */
         .item-image-box img.wh-shoes {
             transform: scale(3.0); 
             transform-origin: bottom center;
@@ -235,7 +242,7 @@
             border: 1px solid #eee; 
             cursor: pointer;
         }
-        .color-dot.white-swatch { border: 1px solid #d1d5db; } /* V6.2 白色邊框加深 */
+        .color-dot.white-swatch { border: 1px solid #d1d5db; }
         .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.15); }
 
         .scroll-row {
@@ -412,7 +419,8 @@
                 grid: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
                 dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>,
-                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>,
+                refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
@@ -501,8 +509,13 @@
 
             return (
                 <div className="app-container">
-                    <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50 bg-white/0 flex-shrink-0 absolute top-0 w-full pointer-events-none">
-                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.2</span></h1>
+                    {/* [V6.3] Header Action Zone */}
+                    <div className="absolute top-0 w-full z-50 flex justify-between items-start p-6 pointer-events-none">
+                        <h1 className="text-lg font-black tracking-tighter italic pointer-events-auto mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V6.3</span></h1>
+                        <div className="flex gap-2 pointer-events-auto">
+                            <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="header-action-btn"><Icon name="refresh" className="w-3 h-3"/>重置</button>
+                            <button onClick={handleRandom} className="header-action-btn primary"><Icon name="dice" className="w-3 h-3"/>智慧搭配</button>
+                        </div>
                     </div>
 
                     <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
@@ -516,7 +529,7 @@
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
-                                {/* LEFT CONTROL TOWER */}
+                                {/* LEFT BOTTOM TOWER (Items Only) */}
                                 <div className="control-stack left">
                                     <div className="stack-group">
                                         {[
@@ -531,13 +544,9 @@
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="stack-group">
-                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-pill" title="重置">重置</button>
-                                        <button onClick={handleRandom} className="action-pill primary" title="智慧搭配">智慧搭配</button>
-                                    </div>
                                 </div>
 
-                                {/* RIGHT CONTROL TOWER */}
+                                {/* RIGHT BOTTOM TOWER (Logic Only) */}
                                 <div className="control-stack right">
                                     <div className="stack-group">
                                         {['Winter', 'Summer'].map(s => (
@@ -557,7 +566,7 @@
 
                         {/* TAB: CLOSET */}
                         {activeTab === 'closet' && (
-                            <div className="p-6 animate-fade-in bg-white min-h-full pt-16">
+                            <div className="p-6 animate-fade-in bg-white min-h-full pt-20">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥</h2>
                                 <div className="scroll-row">
                                     {['o','i','b','s'].map(p => (
@@ -586,7 +595,7 @@
 
                         {/* TAB: WAREHOUSE */}
                         {activeTab === 'add' && (
-                            <div className="p-6 animate-fade-in bg-white min-h-full pt-16">
+                            <div className="p-6 animate-fade-in bg-white min-h-full pt-20">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
                                 <div className="scroll-row">
                                     {['o','i','b','s'].map(p => (
