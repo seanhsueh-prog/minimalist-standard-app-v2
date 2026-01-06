@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist Wardrobe V5.8</title>
+    <title>Minimalist Wardrobe V5.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
@@ -11,15 +11,16 @@
             -webkit-font-smoothing: antialiased; 
             background-color: #111; 
             margin: 0;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             justify-content: center; 
+            overflow: hidden; /* 防止 Body 捲動 */
         }
         
         .app-container {
             width: 100%;
             max-width: 480px; 
-            height: 100vh; 
+            height: 100vh; /* 強制滿版 */
             background-color: #ffffff;
             position: relative;
             box-shadow: 0 0 60px rgba(0,0,0,0.6);
@@ -28,28 +29,40 @@
             overflow: hidden;
         }
 
+        /* 內容區域：根據 Tab 不同會有不同行為 */
         .content-area {
             flex: 1;
-            overflow-y: auto;
+            overflow-y: auto; /* 預設可捲動 (衣櫥/倉庫) */
             padding-bottom: 90px; 
             scrollbar-width: none;
+            display: flex;
+            flex-direction: column;
         }
+        /* 搭配頁面專用：鎖定捲動，全屏佈局 */
+        .content-area.styling-mode {
+            overflow: hidden;
+            padding-bottom: 80px; /* 留給底部導航 */
+        }
+        
         .content-area::-webkit-scrollbar { display: none; }
 
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine - 搭配頁面 100% 對齊 V26.5 職人比例 */
+        /* Ghost Engine V5.9 - 極大化畫布 */
         .ghost-canvas-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 4 / 5; 
+            flex: 1; /* 佔滿剩餘所有空間 */
+            min-height: 0; /* Flexbox 溢出修復 */
             background-color: #f9fafb;
             overflow: hidden;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
         }
 
         .ghost-layer {
@@ -62,27 +75,29 @@
             object-position: bottom center;
             pointer-events: none;
             transition: opacity 0.3s ease-in-out;
-            /* 職人呼吸邊距：防止褲裝佔據框架，找回透視感 */
-            padding: 10% 8%; 
+            /* 調整邊距以最大化視覺，同時保留呼吸感 */
+            padding: 2% 4%; 
         }
 
-        /* 搭配頁面層級：全部 1:1，不縮放 */
+        /* 搭配頁面層級 */
         .layer-shoes { z-index: 10; }
         .layer-bottom { z-index: 20; }
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* Floating Controls - 全中文按鈕 */
+        /* Floating Controls - 左右對稱懸浮 */
         .floating-controls {
             position: absolute;
-            right: 12px;
             top: 50%;
-            transform: translateY(-40%); 
+            transform: translateY(-50%); 
             display: flex;
             flex-direction: column;
             gap: 12px;
             z-index: 50;
         }
+        .floating-controls.right { right: 12px; }
+        .floating-controls.left { left: 12px; }
+
         .control-group {
             display: flex;
             flex-direction: column;
@@ -105,10 +120,23 @@
             color: #9ca3af;
             transition: all 0.2s;
             cursor: pointer;
+            position: relative;
         }
         .mini-btn.active { background-color: #000; color: #fff; transform: scale(1.05); }
+        
+        /* 左側狀態點 - 當有穿戴該部位時顯示 */
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #10b981;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            border: 1px solid white;
+        }
 
-        /* 網格系統 - 倉庫 3.8 倍縮放細節 */
+        /* 網格系統 - 3:4 長方格 (V5.9) */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -126,28 +154,31 @@
             transition: all 0.2s;
         }
         .item-image-box {
-            aspect-ratio: 1/1;
+            aspect-ratio: 3/4; /* V5.9 改回長方形以放大視覺 */
             width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #fafafa;
             position: relative;
+            overflow: hidden;
         }
         .item-image-box img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            padding: 8px; /* 增加內距避免貼邊 */
         }
-        /* 倉庫與衣櫥專用：鞋子強制 3.8 倍縮放 */
+        /* 倉庫與衣櫥專用：鞋子強制放大 */
         .item-image-box img.wh-shoes {
-            transform: scale(3.8);
+            transform: scale(3.0); /* 配合 3:4 比例微調 */
             transform-origin: bottom center;
             padding: 0 !important;
+            margin-bottom: -10%;
         }
 
         .item-info {
-            padding: 6px 4px;
+            padding: 8px 4px;
             text-align: center;
             border-top: 1px solid #f9fafb;
         }
@@ -165,6 +196,32 @@
             cursor: pointer;
         }
         .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.15); }
+
+        /* 分類 Pills */
+        .pill-scroll {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-bottom: 12px;
+        }
+        .pill-scroll::-webkit-scrollbar { display: none; }
+        .pill-btn {
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 1px solid #e5e7eb;
+            white-space: nowrap;
+            color: #6b7280;
+            background: #fff;
+            transition: all 0.2s;
+        }
+        .pill-btn.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
 
         /* Bottom Nav */
         .bottom-nav {
@@ -300,7 +357,11 @@
                 grid: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
                 plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
                 dice: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>,
-                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>,
+                tshirt: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>,
+                layers: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+                pants: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M4 2h16l-2 20h-4v-8h-4v8H6z"/></svg>,
+                shoe: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 17h20v2H2z"/><path d="M5 17a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3M5 17l-3-6 4-6h12l4 6-3 6"/></svg>
             };
             return icons[name] ? React.cloneElement(icons[name], { className }) : null;
         };
@@ -312,10 +373,14 @@
             const [occasion, setOccasion] = useState('Smart');
             const [season, setSeason] = useState('Winter');
 
+            // Warehouse States
             const [whPart, setWhPart] = useState('o');
             const [whType, setWhType] = useState('suits');
             const [whColor, setWhColor] = useState('bk');
+
+            // Closet States (V5.9 Added)
             const [clPart, setClPart] = useState('o');
+            const [clTypeFilter, setClTypeFilter] = useState('all');
 
             useEffect(() => { loadWardrobe(); }, []);
 
@@ -331,6 +396,14 @@
                     Object.keys(next).forEach(k => { if(next[k]?.id === id) next[k] = null; });
                     return next;
                 });
+            };
+
+            const togglePart = (p) => {
+                if (outfit[p]) {
+                    setOutfit(prev => ({...prev, [p]: null}));
+                } else {
+                    alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
+                }
             };
 
             // 智慧搭配 - 100% 繼承 V26.5 鎖定慧根
@@ -364,6 +437,7 @@
                 setOutfit(newOutfit);
             }, [wardrobe, occasion, season, outfit]);
 
+            // Warehouse Logic
             const availableTypes = useMemo(() => {
                 const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === whPart);
                 const types = [...new Set(all.map(i => i.type))];
@@ -394,16 +468,38 @@
                 setWhColor(all.find(i => i.type === firstType).color);
             };
 
+            // Closet Logic (V5.9 Added)
+            const handleClPartSwitch = (p) => {
+                setClPart(p);
+                setClTypeFilter('all');
+            };
+
+            const closetAvailableTypes = useMemo(() => {
+                const items = wardrobe.filter(i => i.part === clPart);
+                const types = [...new Set(items.map(i => i.type))];
+                if (clPart === 'i') return types.sort((a, b) => INNER_ORDER.indexOf(a.replace(/[ns]$/, '')) - INNER_ORDER.indexOf(b.replace(/[ns]$/, '')));
+                if (clPart === 'b') return types.sort((a, b) => BOTTOM_ORDER.indexOf(a) - BOTTOM_ORDER.indexOf(b));
+                return types;
+            }, [wardrobe, clPart]);
+
+            const filteredClosetItems = useMemo(() => {
+                return wardrobe.filter(item => {
+                    if (item.part !== clPart) return false;
+                    if (clTypeFilter !== 'all' && item.type !== clTypeFilter) return false;
+                    return true;
+                });
+            }, [wardrobe, clPart, clTypeFilter]);
+
             return (
                 <div className="app-container">
-                    <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50 bg-white">
-                        <h1 className="text-lg font-black tracking-tighter italic">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V5.8</span></h1>
+                    <div className="px-6 pt-6 pb-2 flex justify-between items-center z-50 bg-white shadow-sm">
+                        <h1 className="text-lg font-black tracking-tighter italic">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V5.9</span></h1>
                     </div>
 
-                    <div className="content-area">
-                        {/* TAB: STYLING */}
+                    <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
+                        {/* TAB: STYLING (V5.9 Optimized Layout) */}
                         {activeTab === 'styling' && (
-                            <div className="animate-fade-in">
+                            <div className="animate-fade-in relative flex-1">
                                 <div className="ghost-canvas-container">
                                     {/* [核心視覺：搭配頁面 1:1 自然渲染，底邊對齊，層級回歸] */}
                                     {outfit.s && <img src={`./${outfit.s.fileName}`} className="ghost-layer layer-shoes" />}
@@ -411,37 +507,41 @@
                                     {outfit.i && <img src={`./${outfit.i.fileName}`} className="ghost-layer layer-inner" />}
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                     
-                                    <div className="floating-controls">
+                                    {/* Left Controls: Parts (V5.9) */}
+                                    <div className="floating-controls left">
                                         <div className="control-group">
+                                            {[
+                                                { p: 'o', label: '外', icon: 'tshirt' },
+                                                { p: 'i', label: '內', icon: 'layers' },
+                                                { p: 'b', label: '褲', icon: 'pants' },
+                                                { p: 's', label: '鞋', icon: 'shoe' }
+                                            ].map(item => (
+                                                <button key={item.p} className={`mini-btn ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
+                                                    {item.label}
+                                                    {outfit[item.p] && <div className="status-dot"></div>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Right Controls: Logic */}
+                                    <div className="floating-controls right">
+                                        <div className="control-group mb-3">
                                             {['Winter', 'Summer'].map(s => (
-                                                <button key={s} className={`mini-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
+                                                <button key={s} className={`mini-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬' : '夏'}</button>
                                             ))}
                                         </div>
                                         <div className="control-group">
                                             {['Formal', 'Smart', 'Casual'].map(occ => (
                                                 <button key={occ} className={`mini-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
-                                                    {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
+                                                    {occ === 'Formal' ? '正' : occ === 'Smart' ? '大' : '休'}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div className="px-6 mt-4">
-                                    <div className="grid grid-cols-4 gap-2 mb-4">
-                                        {['o','i','b','s'].map(p => (
-                                            <div key={p} onClick={() => setOutfit(prev => ({...prev, [p]: null}))} className={`aspect-square rounded-xl border-2 flex items-center justify-center relative overflow-hidden transition-all cursor-pointer ${outfit[p] ? 'border-black bg-white shadow-sm' : 'border-dashed border-gray-200 bg-gray-50'}`}>
-                                                {outfit[p] ? (
-                                                    <img 
-                                                        src={`./${outfit[p].fileName}`} 
-                                                        className="w-full h-full object-contain"
-                                                        /* 預覽小方格同樣套用 3.8x 以便識別 */
-                                                        style={p === 's' ? { transform: 'scale(3.8)', transformOrigin: 'bottom center' } : { padding: '4px' }}
-                                                    />
-                                                ) : <span className="text-[9px] font-bold text-gray-400 uppercase">{PART_MAP[p]}</span>}
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="px-6 pb-6 pt-4 bg-white z-40">
                                     <div className="flex gap-2">
                                         <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="flex-1 py-4 bg-white border border-gray-200 rounded-2xl flex justify-center items-center gap-2 text-xs font-bold active:scale-95 transition-all"><Icon name="trash" className="w-4 h-4"/> 重置</button>
                                         <button onClick={handleRandom} className="flex-[2.5] py-4 bg-black text-white rounded-2xl flex justify-center items-center gap-2 text-xs font-bold shadow-xl active:scale-95 transition-all"><Icon name="dice" className="w-4 h-4"/> 智慧搭配</button>
@@ -450,17 +550,26 @@
                             </div>
                         )}
 
-                        {/* TAB: CLOSET */}
+                        {/* TAB: CLOSET (V5.9 Improved) */}
                         {activeTab === 'closet' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">我的衣櫥</h2>
-                                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                                {/* Main Category Tabs */}
+                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     {['o','i','b','s'].map(p => (
-                                        <button key={p} onClick={() => setClPart(p)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${clPart === p ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>{PART_MAP[p]}</button>
+                                        <button key={p} onClick={() => handleClPartSwitch(p)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${clPart === p ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>{PART_MAP[p]}</button>
                                     ))}
                                 </div>
+                                {/* Sub Category Pills (V5.9 Added) */}
+                                <div className="pill-scroll">
+                                    <button onClick={() => setClTypeFilter('all')} className={`pill-btn ${clTypeFilter === 'all' ? 'active' : ''}`}>全部</button>
+                                    {closetAvailableTypes.map(t => (
+                                        <button key={t} onClick={() => setClTypeFilter(t)} className={`pill-btn ${clTypeFilter === t ? 'active' : ''}`}>{TYPE_MAP[t] || t}</button>
+                                    ))}
+                                </div>
+
                                 <div className="grid-container">
-                                    {wardrobe.filter(i => i.part === clPart).map(item => (
+                                    {filteredClosetItems.length > 0 ? filteredClosetItems.map(item => (
                                         <div key={item.id} className="item-card relative cursor-pointer" onClick={() => { setOutfit(prev => ({...prev, [item.part]: item})); setActiveTab('styling'); }}>
                                             <div className="item-image-box">
                                                 <img src={`./${item.fileName}`} className={item.part === 's' ? 'wh-shoes' : ''} />
@@ -468,12 +577,14 @@
                                             <div className="item-info"><div className="item-label">{item.displayName}</div></div>
                                             <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="col-span-2 text-center py-12 text-gray-300 text-xs">此分類暫無單品</div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB: WAREHOUSE */}
+                        {/* TAB: WAREHOUSE (V5.9 Visual Upgrade) */}
                         {activeTab === 'add' && (
                             <div className="p-6 animate-fade-in bg-white min-h-full">
                                 <h2 className="text-xl font-bold mb-4">單品倉庫</h2>
@@ -482,6 +593,18 @@
                                         <button key={p} onClick={() => handlePartSwitch(p)} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${whPart === p ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200'}`}>{PART_MAP[p]}</button>
                                     ))}
                                 </div>
+
+                                {/* V5.9 Inner Hint from V26.5 */}
+                                {whPart === 'i' && (
+                                    <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        <p className="text-[11px] text-[#4b5563] leading-relaxed">
+                                            <span className="font-bold block mb-1">💡 搭配提示</span>
+                                            必須同時準備<span className="font-bold text-black">有袖 (t/s系列)</span>與<span className="font-bold text-black">無袖 (i/n系列)</span>單品。
+                                            <br/>無袖用於外套層次，有袖用於單穿展現。
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar py-1">
                                     {availableTypes.map(t => (
                                         <button key={t} onClick={() => setWhType(t)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border whitespace-nowrap transition-all ${whType === t ? 'bg-black text-white border-black shadow-md' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{TYPE_MAP[t] || t}</button>
@@ -497,7 +620,7 @@
                                     {filteredWhItems.map((item, idx) => (
                                         <div key={idx} className="item-card cursor-pointer group" onClick={() => addToWardrobe(item)}>
                                             <div className="item-image-box">
-                                                {/* 核心邏輯：倉庫單品強制 3.8x 縮放以看清細節 */}
+                                                {/* V5.9: 3:4 Aspect Ratio, Shoes Enlarged */}
                                                 <img src={`./${item.fileName}`} className={item.part === 's' ? 'wh-shoes' : ''} />
                                                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
                                                     <span className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-lg">新增入庫</span>
