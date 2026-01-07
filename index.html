@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v7.1_restore.html -->
+<!-- minimalist-wardrobe-core_v7.2_patch.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Style Guardian V7.1 (Data Restored)</title>
+    <title>Style Guardian V7.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V7.1] 視覺引擎：繼承自 V6.7 (智慧錨點縮放、右側單一操作區) */
+        /* [V7.2] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
         /* 嚴格禁止修改此區塊的任何渲染邏輯，以維持極簡美學與最佳比例 */
         
         body { 
@@ -207,7 +207,7 @@
             padding: 0;
         }
 
-        /* [V6.7/V7.0] 智慧錨點縮放技術 (Smart Zoom) - 核心保留區 */
+        /* [V6.7/V7.2] 智慧錨點縮放技術 (Smart Zoom) - 核心保留區 */
         
         /* 1. 外套與內搭：錨點在頂部 */
         .img-top-focus {
@@ -227,7 +227,7 @@
             transition: transform 0.2s;
         }
 
-        /* 3. 鞋子：錨點在底部，倍率調校至 3.2 (V7.0 優化) */
+        /* 3. 鞋子：錨點在底部，倍率調校至 3.2 */
         .img-shoe-focus {
             width: 100%; height: 100%;
             object-fit: contain;
@@ -296,7 +296,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST (Data Source V6.7) ---
+        // --- MANIFEST ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_nv_01.png", "o_suitd_bk_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
@@ -326,7 +326,7 @@
         ];
 
         // --- CONFIG & MAP ---
-        // [IMPORTANT FIX] Restored DB name to 'Minimalist_Master_Vault' to recover user data!
+        // [IMPORTANT] Preserving user data with original DB name
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
         
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
@@ -350,8 +350,7 @@
             be: { name: '大地', hex: '#d4b483' }, dm: { name: '丹寧', hex: '#4f83cc' }
         };
 
-        // [V7.0 FIX] STYLE_LOGIC Update - Injecting Logic from V26.5
-        // 修正：明確定義襯衫為 Formal/Smart，避免正式模式下無內搭的 Bug
+        // [V7.2 FIX] Correct Logic Definition
         const STYLE_LOGIC = {
             // Outer
             'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 
@@ -432,7 +431,20 @@
             const [clTypeFilter, setClTypeFilter] = useState('all');
 
             useEffect(() => { loadWardrobe(); }, []);
-            const loadWardrobe = async () => { setWardrobe(await dbHelper.getAll()); };
+
+            // [V7.2 CRITICAL FIX] Auto-Patch Logic
+            // This forces existing items in the database to adopt the NEW style logic.
+            // Old items tagged as 'Casual' (due to V6.7 bug) will now be read as 'Formal' etc.
+            const loadWardrobe = async () => { 
+                const rawItems = await dbHelper.getAll();
+                const patchedItems = rawItems.map(item => ({
+                    ...item,
+                    // Force re-calculation of style based on V7.2 logic
+                    style: STYLE_LOGIC[item.type] || ['Casual'] 
+                }));
+                setWardrobe(patchedItems); 
+            };
+
             const addToWardrobe = async (item) => { await dbHelper.save(item); await loadWardrobe(); alert('單品已入庫'); };
             const removeFromWardrobe = async (id) => {
                 if(!confirm("確定從衣櫥移除？")) return;
@@ -445,37 +457,34 @@
                 else alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
             };
 
-            // [V7.0 FIX] 移植 V26.5 的智慧搭配邏輯
+            // [V7.2] 移植 V26.5 的智慧搭配邏輯 (With Patched Data)
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
                 
-                // 1. Summer Logic: Only Formal allows Outerwear. Otherwise strip it.
+                // 1. Summer Logic: Only Formal allows Outerwear.
                 let skipOuter = (season === 'Summer' && occasion !== 'Formal');
                 if (skipOuter) { newOutfit.o = null; }
 
                 parts.forEach(p => {
-                    // Skip 'o' if summer logic applies
                     if (p === 'o' && skipOuter) return;
                     
                     let candidates = wardrobe.filter(item => item.part === p);
 
-                    // Filter by Occasion (using fixed STYLE_LOGIC)
+                    // Filter by Occasion
+                    // Since data is auto-patched, 'shirtn' now correctly passes 'Formal' check
                     candidates = candidates.filter(item => item.style.includes(occasion));
 
                     // Inner Logic (The V26.5 Brain)
                     if (p === 'i') {
-                        // Check if we HAVE an outer (either existing or just rolled)
                         const hasOuter = !!newOutfit.o;
-                        
-                        // Rule: Outer exists -> Sleeveless (n). No Outer -> Sleeved (s).
+                        // Strict Rule: Outer -> Sleeveless, No Outer -> Sleeved
                         candidates = candidates.filter(item => {
-                            const isSleeveless = item.type.endsWith('n'); // shirtn, knitn, tshirtn
-                            const isSleeved = item.type.endsWith('s') || item.type === 'sweats'; // shirts, knits, tshirts, sweats
+                            const isSleeveless = item.type.endsWith('n'); 
+                            const isSleeved = item.type.endsWith('s') || item.type === 'sweats'; 
                             return hasOuter ? isSleeveless : isSleeved;
                         });
 
-                        // Summer Rule: No warm innerwear
                         if (season === 'Summer') {
                             candidates = candidates.filter(item => !['knits', 'knitn', 'sweats'].includes(item.type));
                         }
@@ -489,7 +498,6 @@
 
                     // Shoe Logic
                     if (p === 's' && occasion === 'Smart' && newOutfit.b?.type === 'suit') {
-                        // Don't wear pure sport shoes with suit trousers in Smart mode
                         candidates = candidates.filter(item => item.type !== 'sport_s');
                     }
 
@@ -501,7 +509,7 @@
                     }
                 });
                 setOutfit(newOutfit);
-            }, [wardrobe, occasion, season, outfit]); // Dependencies
+            }, [wardrobe, occasion, season, outfit]);
 
             const getSortedTypes = (part) => {
                  const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === part);
@@ -534,7 +542,7 @@
                     return true;
                 }), [wardrobe, clPart, clTypeFilter]);
 
-            // [V7.0] 視覺核心：智慧錨點計算函數 (Smart Zoom)
+            // [V7.2] 視覺核心：智慧錨點計算函數 (Smart Zoom)
             const getImageClass = (part) => {
                 if (part === 'o' || part === 'i') return 'img-top-focus';
                 if (part === 'b') return 'img-bottom-focus';
@@ -548,9 +556,8 @@
                         {/* TAB: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
-                                {/* Only Title Header */}
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.1</span></h1>
+                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.2</span></h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
@@ -644,7 +651,7 @@
                                     {whPart === 'i' && (
                                         <div className="mb-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                             <p className="text-[11px] text-[#4b5563] leading-relaxed">
-                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.1)</span>
+                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.2)</span>
                                                 請同時+<span className="font-bold text-black">無袖</span> (有外套時用) 與 +<span className="font-bold text-black">有袖</span> (無外套時用) 款式，系統將自動判斷切換。
                                             </p>
                                         </div>
