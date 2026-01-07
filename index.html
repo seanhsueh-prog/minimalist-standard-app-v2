@@ -1,23 +1,24 @@
-<!-- minimalist-wardrobe-core_v7.4_locking.html -->
+<!-- minimalist-wardrobe-core_v8.0_hoshiba.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Style Guardian V7.4</title>
+    <title>Style Guardian V8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V7.4] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
+        /* [V8.0] Hoshiba Minimalist Style - The "Skin" Upgrade */
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #111; 
+            background-color: #f4f4f5; /* Zinc-100 for outer bg */
             margin: 0;
             height: 100dvh; 
             display: flex;
             justify-content: center; 
             overflow: hidden;
+            color: #18181b; /* Zinc-900 */
         }
         
         .app-container {
@@ -26,7 +27,7 @@
             height: 100%; 
             background-color: #ffffff;
             position: relative;
-            box-shadow: 0 0 60px rgba(0,0,0,0.6);
+            box-shadow: 0 0 40px rgba(0,0,0,0.1); /* Softer shadow */
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -44,239 +45,181 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in { animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Ghost Engine - V6.7 Core */
+        /* --- [LOCKED CORE] GHOST ENGINE & SMART ZOOM --- */
+        /* 嚴禁修改以下區塊，確保渲染比例與 V7.4 完全一致 */
         .ghost-canvas-container {
             position: absolute; 
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            background-color: #f9fafb;
-            overflow: hidden;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; background-color: #fafafa; overflow: hidden;
         }
-
         .ghost-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain; 
-            object-position: bottom center;
-            pointer-events: none;
-            transition: opacity 0.3s ease-in-out;
-            padding: 11vh 3vw 110px 3vw; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; object-position: bottom center;
+            pointer-events: none; transition: opacity 0.3s ease-in-out;
+            padding: 11vh 3vw 110px 3vw; /* Padding Locked */
         }
-
         .layer-shoes { z-index: 10; }
         .layer-bottom { z-index: 20; }
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
-        /* Header */
+        /* Smart Zoom Classes (Locked) */
+        .img-top-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: top center; transform: scale(1.4); transition: transform 0.2s; }
+        .img-bottom-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(1.4); transition: transform 0.2s; }
+        .img-shoe-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(3.2); padding-bottom: 12px; transition: transform 0.2s; }
+        /* ----------------------------------------------- */
+
+        /* [V8.0] UI Components - Text Only, Minimalist */
+        
         .styling-header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 50;
-            padding: 24px;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%; z-index: 50;
+            padding: 24px; pointer-events: none;
+        }
+        .header-title {
+            font-size: 12px; font-weight: 900; letter-spacing: 0.05em; color: #000;
         }
 
-        /* Control Stack */
+        /* Control Stacks */
         .control-stack {
-            position: absolute;
-            bottom: 100px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 50;
-            padding: 4px;
+            position: absolute; bottom: 100px;
+            display: flex; flex-direction: column; gap: 16px;
+            z-index: 50; padding: 0 12px;
         }
-        .control-stack.left { left: 8px; align-items: flex-start; }
-        .control-stack.right { right: 8px; align-items: flex-end; }
+        .control-stack.left { left: 0; align-items: flex-start; }
+        .control-stack.right { right: 0; align-items: flex-end; }
 
         .stack-group {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            padding: 6px 4px;
-            border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            align-items: center;
+            background: rgba(255, 255, 255, 0.70);
+            backdrop-filter: blur(16px);
+            border-radius: 4px; /* Slightly squared */
+            padding: 4px;
+            border: 0.5px solid #e4e4e7; /* Zinc-200 */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); /* Minimal shadow */
+            display: flex; flex-direction: column; gap: 4px;
+            align-items: center; min-width: 42px;
         }
 
-        .v-pill {
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            padding: 12px 6px;
-            border-radius: 99px;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #9ca3af;
-            background: transparent;
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 44px;
-        }
-        .v-pill:hover { background: rgba(0,0,0,0.03); }
-        .v-pill.active { background: #000; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        
-        .action-pill {
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-            padding: 12px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            border: 1px solid #e5e7eb;
-            background: #fff;
-            color: #374151;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            cursor: pointer;
-            margin-bottom: 2px;
-        }
-        .action-pill.primary { background: #000; color: #fff; border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .action-pill:active { transform: scale(0.95); }
-
-        .status-dot {
-            width: 4px; height: 4px; background-color: #10b981; border-radius: 50%;
-            position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-        }
-
-        /* Lists & Grid */
-        .fixed-header-section {
-            flex-shrink: 0;
-            background-color: #fff;
-            z-index: 20;
-            padding: 24px 24px 12px 24px;
-            border-bottom: 1px solid #f9fafb;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .scrollable-list-section {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 16px 100px 16px; 
-            scrollbar-width: none;
-        }
-        .scrollable-list-section::-webkit-scrollbar { display: none; }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr; 
-            gap: 24px; 
-        }
-        
-        .item-card {
-            background: #fff;
-            border-radius: 16px;
-            border: 1px solid #f3f4f6;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        }
-        
-        .item-image-box {
-            aspect-ratio: 3/4; 
+        /* Text Buttons (No Icons) */
+        .text-btn {
+            writing-mode: horizontal-tb; /* Reset to horizontal for readability */
             width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fafafa;
+            padding: 10px 4px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em; /* Wide tracking */
+            color: #a1a1aa; /* Zinc-400 */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
             position: relative;
-            overflow: hidden;
-            padding: 0;
         }
-
-        /* [V6.7/V7.2] Smart Zoom */
-        .img-top-focus {
-            width: 100%; height: 100%;
-            object-fit: contain;
-            transform-origin: top center;
-            transform: scale(1.4); 
-            transition: transform 0.2s;
-        }
-        .img-bottom-focus {
-            width: 100%; height: 100%;
-            object-fit: contain;
-            transform-origin: bottom center;
-            transform: scale(1.4); 
-            transition: transform 0.2s;
-        }
-        .img-shoe-focus {
-            width: 100%; height: 100%;
-            object-fit: contain;
-            transform-origin: bottom center;
-            transform: scale(3.2); 
-            padding-bottom: 12px; 
-            transition: transform 0.2s;
-        }
-
-        .item-info {
-            padding: 12px 4px;
-            text-align: center;
-            border-top: 1px solid #f9fafb;
-            z-index: 10;
-            background: #fff;
-        }
-        .item-label { font-size: 12px; font-weight: 700; color: #374151; }
-
-        .color-dot {
-            width: 20px; height: 20px; border-radius: 50%; border: 1px solid #eee; cursor: pointer;
-        }
-        .color-dot.white-swatch { border: 1px solid #9ca3af; }
-        .color-dot.active { ring: 2px ring-offset-1 ring-black; transform: scale(1.15); }
-
-        .scroll-row {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
-            flex-shrink: 0; -webkit-overflow-scrolling: touch;
-        }
-        .scroll-row::-webkit-scrollbar { display: none; }
+        .text-btn:hover { color: #52525b; }
+        .text-btn.active { color: #000; font-weight: 700; }
         
-        .category-btn {
-            padding: 8px 18px; border-radius: 99px; font-size: 11px; font-weight: 700;
-            border: 1px solid #e5e7eb; white-space: nowrap; color: #6b7280; background: #fff;
-            transition: all 0.2s; flex-shrink: 0;
+        .status-dot {
+            width: 3px; height: 3px; background-color: #000; border-radius: 50%;
+            position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
         }
-        .category-btn.active { background: #000; color: #fff; border-color: #000; }
 
+        /* Primary Action Button (Smart Style) */
+        .action-btn-black {
+            width: 40px; height: auto;
+            writing-mode: vertical-rl; text-orientation: upright;
+            padding: 16px 8px;
+            background: #000; color: #fff;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.2em;
+            border-radius: 2px;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.1s;
+        }
+        .action-btn-black:active { transform: scale(0.96); }
+
+        .action-btn-white {
+            width: 40px; height: auto;
+            writing-mode: vertical-rl; text-orientation: upright;
+            padding: 12px 8px;
+            background: #fff; color: #52525b;
+            border: 0.5px solid #e4e4e7;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.2em;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .action-btn-white:active { transform: scale(0.96); background: #f4f4f5; }
+
+        /* Nav Bar (Text Only) */
         .floating-nav-container {
-            position: absolute; bottom: 24px; left: 0; width: 100%;
+            position: absolute; bottom: 28px; left: 0; width: 100%;
             display: flex; justify-content: center; z-index: 100; pointer-events: none;
         }
         .floating-nav {
             pointer-events: auto;
-            background: rgba(255, 255, 255, 0.90);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.5);
-            padding: 6px 6px;
+            border: 0.5px solid #e4e4e7;
+            padding: 4px 6px;
             border-radius: 99px;
-            display: flex; gap: 4px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex; gap: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-        .nav-pill {
-            padding: 8px 16px; border-radius: 99px; font-size: 11px; font-weight: 700;
-            color: #9ca3af; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+        .nav-text {
+            padding: 8px 16px; border-radius: 99px; 
+            font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+            color: #a1a1aa; cursor: pointer; transition: all 0.2s;
         }
-        .nav-pill.active { background-color: #000; color: #fff; }
+        .nav-text.active { color: #000; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* Warehouse & Closet Lists */
+        .fixed-header-section {
+            flex-shrink: 0; background-color: #fff; z-index: 20;
+            padding: 24px 24px 12px 24px;
+            border-bottom: 0.5px solid #f4f4f5;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .section-title { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; color: #18181b; }
+
+        .scrollable-list-section {
+            flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: none;
+        }
+        .scrollable-list-section::-webkit-scrollbar { display: none; }
+
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        
+        .item-card {
+            background: #fff; border-radius: 8px; /* Sharper corners */
+            border: 0.5px solid #e4e4e7;
+            overflow: hidden; display: flex; flex-direction: column;
+            transition: all 0.2s;
+        }
+        .item-image-box {
+            aspect-ratio: 3/4; width: 100%; display: flex; align-items: center; justify-content: center;
+            background: #fafafa; position: relative; overflow: hidden; padding: 0;
+        }
+        .item-info {
+            padding: 10px 4px; text-align: center; border-top: 0.5px solid #f4f4f5; background: #fff;
+        }
+        .item-label { font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.05em; }
+
+        /* Category & Color Pills */
+        .category-btn {
+            padding: 6px 16px; border-radius: 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+            border: 0.5px solid #e4e4e7; color: #a1a1aa; background: #fff;
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .category-btn.active { background: #18181b; color: #fff; border-color: #18181b; }
+
+        .color-dot {
+            width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid #e4e4e7; cursor: pointer;
+        }
+        .color-dot.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3px #18181b; }
+        .scroll-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
+        .scroll-row::-webkit-scrollbar { display: none; }
+
     </style>
 </head>
 <body>
@@ -289,7 +232,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST (V7.3 Updated) ---
+        // --- MANIFEST (V7.3/7.4 Full Data) ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
@@ -320,8 +263,9 @@
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        // --- CONFIG & MAP ---
+        // --- DB CONFIG (LOCKED) ---
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
+        
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
         const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
         const BOTTOM_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
@@ -338,23 +282,15 @@
         };
 
         const COLOR_MAP = {
-            bk: { name: '黑', hex: '#111' }, 
-            wh: { name: '白', hex: '#fff' }, 
-            gy: { name: '灰', hex: '#888' },
-            nv: { name: '深藍', hex: '#1e3a8a' }, 
-            br: { name: '棕', hex: '#78350f' }, 
-            gn: { name: '綠', hex: '#166534' },
-            be: { name: '大地', hex: '#d4b483' }, 
-            dm: { name: '丹寧', hex: '#4f83cc' },
-            rd: { name: '酒紅', hex: '#7f1d1d' }
+            bk: { name: '黑', hex: '#111' }, wh: { name: '白', hex: '#fff' }, gy: { name: '灰', hex: '#888' },
+            nv: { name: '深藍', hex: '#1e3a8a' }, br: { name: '棕', hex: '#78350f' }, gn: { name: '綠', hex: '#166534' },
+            be: { name: '大地', hex: '#d4b483' }, dm: { name: '丹寧', hex: '#4f83cc' }, rd: { name: '酒紅', hex: '#7f1d1d' }
         };
 
         const STYLE_LOGIC = {
             'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 
-            'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 
-            'down': ['Casual'],
-            'shirts': ['Formal', 'Smart'], 
-            'shirtn': ['Formal', 'Smart'], 
+            'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
+            'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
             'knits': ['Smart', 'Casual'], 'knitn': ['Smart', 'Casual'],
             'sweats': ['Casual'],
             'tshirts': ['Casual', 'Smart'], 'tshirtn': ['Casual', 'Smart'],
@@ -399,16 +335,6 @@
             }
         };
 
-        const Icon = ({ name, className }) => {
-            const icons = {
-                hanger: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 4.9 6H7.1a5 5 0 0 1 4.9-6Z"/><path d="M21 21H3V11c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v10Z"/></svg>,
-                grid: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
-                plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>,
-                trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
-            };
-            return icons[name] ? React.cloneElement(icons[name], { className }) : null;
-        };
-
         const App = () => {
             const [activeTab, setActiveTab] = useState('styling');
             const [wardrobe, setWardrobe] = useState([]);
@@ -444,23 +370,22 @@
                 else alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
             };
 
-            // [V7.4] 智慧搭配邏輯更新：Partial Locking
+            // [LOCKED LOGIC] V7.4 Partial Locking & Smart Fallback
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
                 
                 parts.forEach(p => {
-                    // 1. Summer Outer Removal Rule (Force Remove)
+                    // Summer Logic (Force Remove Outer)
                     if (p === 'o' && season === 'Summer' && occasion !== 'Formal') {
                         newOutfit.o = null;
                         return;
                     }
 
-                    // 2. Locking Rule: If slot has item, SKIP (unless forced null above)
-                    // 這就是你要的「只補空缺，不動現狀」
+                    // Locking Logic (Skip if exists)
                     if (newOutfit[p]) return;
                     
-                    // 3. Filling Logic (Only runs if slot is empty)
+                    // Filling Logic
                     let candidates = wardrobe.filter(item => item.part === p);
                     candidates = candidates.filter(item => item.style.includes(occasion));
 
@@ -471,10 +396,7 @@
                             const isSleeved = item.type.endsWith('s') || item.type === 'sweats'; 
                             return hasOuter ? isSleeveless : isSleeved;
                         });
-
-                        if (season === 'Summer') {
-                            candidates = candidates.filter(item => !['knits', 'knitn', 'sweats'].includes(item.type));
-                        }
+                        if (season === 'Summer') candidates = candidates.filter(item => !['knits', 'knitn', 'sweats'].includes(item.type));
                     }
 
                     if (p === 'b' && occasion === 'Formal' && newOutfit.o && (newOutfit.o.type === 'suits' || newOutfit.o.type === 'suitd')) {
@@ -526,6 +448,7 @@
                     return true;
                 }), [wardrobe, clPart, clTypeFilter]);
 
+            // [LOCKED CSS] Smart Zoom
             const getImageClass = (part) => {
                 if (part === 'o' || part === 'i') return 'img-top-focus';
                 if (part === 'b') return 'img-bottom-focus';
@@ -539,7 +462,7 @@
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.4</span></h1>
+                                    <h1 className="header-title">STYLE GUARDIAN V8.0</h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
@@ -549,25 +472,29 @@
                                     {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
+                                {/* LEFT STACK: Seasons & Occasion (Vertical) */}
                                 <div className="control-stack left">
                                     <div className="stack-group">
-                                        {['Winter', 'Summer'].map(s => (
-                                            <button key={s} className={`v-pill ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>{s === 'Winter' ? '冬季' : '夏季'}</button>
+                                        {['Summer', 'Winter'].map(s => (
+                                            <button key={s} className={`text-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>
+                                                {s === 'Summer' ? '春夏' : '秋冬'}
+                                            </button>
                                         ))}
                                     </div>
                                     <div className="stack-group">
                                         {['Formal', 'Smart', 'Casual'].map(occ => (
-                                            <button key={occ} className={`v-pill ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
+                                            <button key={occ} className={`text-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
                                                 {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
+                                {/* RIGHT STACK: Parts & Actions (Vertical Text Only) */}
                                 <div className="control-stack right">
-                                    <div className="stack-group">
-                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-pill" title="重置">重置</button>
-                                        <button onClick={handleRandom} className="action-pill primary" title="智慧搭配">智慧搭配</button>
+                                    <div className="stack-group" style={{gap: '8px', paddingBottom: '8px'}}>
+                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-btn-white" title="重置">重置</button>
+                                        <button onClick={handleRandom} className="action-btn-black" title="智慧搭配">智慧</button>
                                     </div>
                                     <div className="stack-group">
                                         {[
@@ -576,7 +503,7 @@
                                             { p: 'b', label: '褲裝' },
                                             { p: 's', label: '鞋款' }
                                         ].map(item => (
-                                            <button key={item.p} className={`v-pill ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
+                                            <button key={item.p} className={`text-btn ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
                                                 {item.label}
                                                 {outfit[item.p] && <div className="status-dot"></div>}
                                             </button>
@@ -589,7 +516,7 @@
                         {activeTab === 'closet' && (
                             <div className="animate-fade-in flex flex-col h-full bg-white">
                                 <div className="fixed-header-section">
-                                    <h2 className="text-xl font-bold">我的衣櫥</h2>
+                                    <h2 className="section-title">我的衣櫥</h2>
                                     <div className="scroll-row">
                                         {['o','i','b','s'].map(p => (
                                             <button key={p} onClick={() => handleClPartSwitch(p)} className={`category-btn ${clPart === p ? 'active' : ''}`}>{PART_MAP[p]}</button>
@@ -610,9 +537,9 @@
                                                     <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
                                                 </div>
                                                 <div className="item-info"><div className="item-label">{item.displayName}</div></div>
-                                                <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-gray-300 hover:text-red-500"><Icon name="trash" className="w-3 h-3" /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded text-[10px] text-zinc-400 font-bold hover:text-red-500 hover:bg-red-50">移除</button>
                                             </div>
-                                        )) : <div className="col-span-2 text-center py-12 text-gray-300 text-xs">此分類暫無單品</div>}
+                                        )) : <div className="col-span-2 text-center py-12 text-zinc-300 text-xs tracking-widest">此分類暫無單品</div>}
                                     </div>
                                 </div>
                             </div>
@@ -621,17 +548,17 @@
                         {activeTab === 'add' && (
                             <div className="animate-fade-in flex flex-col h-full bg-white">
                                 <div className="fixed-header-section">
-                                    <h2 className="text-xl font-bold">單品倉庫</h2>
+                                    <h2 className="section-title">單品倉庫</h2>
                                     <div className="scroll-row">
                                         {['o','i','b','s'].map(p => (
                                             <button key={p} onClick={() => handlePartSwitch(p)} className={`category-btn ${whPart === p ? 'active' : ''}`}>{PART_MAP[p]}</button>
                                         ))}
                                     </div>
                                     {whPart === 'i' && (
-                                        <div className="mb-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                            <p className="text-[11px] text-[#4b5563] leading-relaxed">
-                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.4)</span>
-                                                請同時+<span className="font-bold text-black">無袖</span> (有外套時用) 與 +<span className="font-bold text-black">有袖</span> (無外套時用) 款式，系統將自動判斷切換。
+                                        <div className="mb-2 bg-zinc-50 p-3 rounded border border-zinc-100">
+                                            <p className="text-[10px] text-zinc-500 leading-relaxed tracking-wide">
+                                                <span className="font-bold block mb-1 text-zinc-800">搭配邏輯</span>
+                                                請同時入庫 <span className="font-bold">無袖 (i系列)</span> 與 <span className="font-bold">有袖 (t系列)</span>，系統將自動依據外套切換。
                                             </p>
                                         </div>
                                     )}
@@ -640,11 +567,11 @@
                                             <button key={t} onClick={() => setWhType(t)} className={`category-btn ${whType === t ? 'active' : ''}`}>{TYPE_MAP[t] || t}</button>
                                         ))}
                                     </div>
-                                    <div className="flex gap-4 py-2 border-b border-gray-50 overflow-x-auto no-scrollbar items-center">
+                                    <div className="flex gap-4 py-2 border-b border-zinc-50 overflow-x-auto no-scrollbar items-center">
                                         {availableColors.map(c => (
                                             <div key={c} onClick={() => setWhColor(c)} className={`color-dot flex-shrink-0 ${whColor === c ? 'active' : ''} ${c === 'wh' ? 'white-swatch' : ''}`} style={{ background: COLOR_MAP[c]?.hex || '#ccc' }}></div>
                                         ))}
-                                        <span className="text-[10px] font-bold text-gray-500 ml-auto flex-shrink-0 uppercase">{COLOR_MAP[whColor]?.name}</span>
+                                        <span className="text-[10px] font-bold text-zinc-400 ml-auto flex-shrink-0 uppercase tracking-wider">{COLOR_MAP[whColor]?.name}</span>
                                     </div>
                                 </div>
                                 <div className="scrollable-list-section">
@@ -654,7 +581,7 @@
                                                 <div className="item-image-box">
                                                     <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
                                                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                                                        <span className="bg-black text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-lg">新增入庫</span>
+                                                        <span className="bg-black text-white text-[10px] px-3 py-1 rounded font-bold shadow-sm tracking-widest">入庫</span>
                                                     </div>
                                                 </div>
                                                 <div className="item-info"><div className="item-label">{item.displayName}</div></div>
@@ -665,11 +592,13 @@
                             </div>
                         )}
                     </div>
+                    
+                    {/* Bottom Nav (Text Only) */}
                     <div className="floating-nav-container">
                         <div className="floating-nav">
-                            <div onClick={() => setActiveTab('styling')} className={`nav-pill ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-4 h-4"/>搭配</div>
-                            <div onClick={() => setActiveTab('closet')} className={`nav-pill ${activeTab === 'closet' ? 'active' : ''}`}><Icon name="grid" className="w-4 h-4"/>衣櫥</div>
-                            <div onClick={() => setActiveTab('add')} className={`nav-pill ${activeTab === 'add' ? 'active' : ''}`}><Icon name="plus" className="w-4 h-4"/>倉庫</div>
+                            <div onClick={() => setActiveTab('styling')} className={`nav-text ${activeTab === 'styling' ? 'active' : ''}`}>搭配</div>
+                            <div onClick={() => setActiveTab('closet')} className={`nav-text ${activeTab === 'closet' ? 'active' : ''}`}>衣櫥</div>
+                            <div onClick={() => setActiveTab('add')} className={`nav-text ${activeTab === 'add' ? 'active' : ''}`}>倉庫</div>
                         </div>
                     </div>
                 </div>
