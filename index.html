@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v7.0.html -->
+<!-- minimalist-wardrobe-core_v7.1_restore.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Style Guardian V7.0</title>
+    <title>Style Guardian V7.1 (Data Restored)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V7.0] 視覺引擎：繼承自 V6.7 (智慧錨點縮放、右側單一操作區) */
+        /* [V7.1] 視覺引擎：繼承自 V6.7 (智慧錨點縮放、右側單一操作區) */
         /* 嚴格禁止修改此區塊的任何渲染邏輯，以維持極簡美學與最佳比例 */
         
         body { 
@@ -326,7 +326,9 @@
         ];
 
         // --- CONFIG & MAP ---
-        const DB_CONFIG = { name: 'StyleGuardian_V7', version: 1, store: 'inventory' };
+        // [IMPORTANT FIX] Restored DB name to 'Minimalist_Master_Vault' to recover user data!
+        const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
+        
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
         const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
         const BOTTOM_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
@@ -456,12 +458,6 @@
                     // Skip 'o' if summer logic applies
                     if (p === 'o' && skipOuter) return;
                     
-                    // Don't overwrite existing user selection unless empty (optional preference, here we overwrite if needed or keep? Let's keep V6.7 logic: if slot is empty or we want full random? 
-                    // V6.7 logic was: try to fill. But usually user clicks "Random" to fill all. Let's respect "Lock" concept? 
-                    // No, "Smart Style" usually rerolls. But let's keep slots if user didn't clear them? 
-                    // To be safe and consistent with "Smart Style" button: let's re-roll based on occasion.
-                    // But V26.5 logic re-evaluates.
-                    
                     let candidates = wardrobe.filter(item => item.part === p);
 
                     // Filter by Occasion (using fixed STYLE_LOGIC)
@@ -501,8 +497,6 @@
                     if (candidates.length > 0) {
                         newOutfit[p] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
-                        // Only nullify if we strictly need to (e.g. changing from Formal to Casual and old item doesn't fit)
-                        // But for "Random", we overwrite. If no candidate, slot is null.
                          newOutfit[p] = null;
                     }
                 });
@@ -544,7 +538,7 @@
             const getImageClass = (part) => {
                 if (part === 'o' || part === 'i') return 'img-top-focus';
                 if (part === 'b') return 'img-bottom-focus';
-                if (part === 's') return 'img-shoe-focus'; // V7.0 使用優化後的 class
+                if (part === 's') return 'img-shoe-focus'; 
                 return '';
             };
 
@@ -556,7 +550,7 @@
                             <div className="animate-fade-in relative flex-1">
                                 {/* Only Title Header */}
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.0</span></h1>
+                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.1</span></h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
@@ -650,7 +644,7 @@
                                     {whPart === 'i' && (
                                         <div className="mb-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                             <p className="text-[11px] text-[#4b5563] leading-relaxed">
-                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.0)</span>
+                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.1)</span>
                                                 請同時+<span className="font-bold text-black">無袖</span> (有外套時用) 與 +<span className="font-bold text-black">有袖</span> (無外套時用) 款式，系統將自動判斷切換。
                                             </p>
                                         </div>
