@@ -1,13 +1,13 @@
-<!-- minimalist-wardrobe-core_v7.2_patch.html -->
+<!-- minimalist-wardrobe-core_v7.3_data_update.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Style Guardian V7.2</title>
+    <title>Style Guardian V7.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V7.2] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
+        /* [V7.3] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
         /* 嚴格禁止修改此區塊的任何渲染邏輯，以維持極簡美學與最佳比例 */
         
         body { 
@@ -296,9 +296,11 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST ---
+        // --- MANIFEST (Updated V7.3 - 92 Items) ---
         const RAW_MANIFEST = [
-            "o_suits_bk_01.png", "o_suits_nv_01.png", "o_suitd_bk_01.png", "o_suitd_nv_01.png",
+            // 📂 1. 外套類 (o_) —— 共 34 件
+            "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
+            "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
             "o_leather_br_01.png", "o_leather_br_02.png", "o_leather_br_03.png",
             "o_jacket_bk_01.png", "o_jacket_bk_03.png", "o_jacket_bk_04.png",
@@ -307,21 +309,25 @@
             "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
             "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
             "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
-            "i_knits_bk_01.png", "i_knits_gy_01.png", "i_knits_nv_01.png", "i_knits_wh_01.png",
-            "i_knitn_bk_01.png", "i_knitn_gy_01.png", "i_knitn_nv_01.png", "i_knitn_wh_01.png",
-            "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png", "i_shirts_wh_02.png",
-            "i_shirtn_bk_01.png", "i_shirtn_nv_01.png", "i_shirtn_wh_01.png", "i_shirtn_wh_02.png",
-            "i_sweats_bk_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png",
-            "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_nv_01.png", "i_tshirts_wh_01.png",
+            // 👕 2. 內搭類 (i_) —— 共 28 件
+            "i_knits_be_01.png", "i_knits_bk_01.png", "i_knits_br_01.png", "i_knits_gy_01.png", "i_knits_rd_01.png",
+            "i_knitn_be_01.png", "i_knitn_bk_01.png", "i_knitn_br_01.png", "i_knitn_gy_01.png", "i_knitn_rd_01.png",
+            "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png",
+            "i_shirtn_bk_01.png", "i_shirtn_nv_01.png", "i_shirtn_wh_01.png",
+            "i_sweats_bk_01.png", "i_sweats_gn_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png", "i_sweats_wh_01.png",
+            "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_wh_01.png",
             "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
-            "b_cargo_bk_01.png", "b_cargo_gn_01.png", "b_cargo_gy_01.png",
-            "b_chino_be_01.png", "b_chino_bk_01.png", "b_chino_nv_01.png",
-            "b_jeans_bk_01.png", "b_jeans_dm_01.png", "b_jeans_gy_01.png",
-            "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png",
-            "b_suit_bk_01.png", "b_suit_gy_01.png", "b_suit_nv_01.png",
+            // 👖 3. 下身類 (b_) —— 共 20 件
+            "b_cargo_be_01.png", "b_cargo_bk_01.png", "b_cargo_gn_01.png",
+            "b_chino_be_01.png",
+            "b_jeans_bk_01.png", "b_jeans_nv_01.png",
+            "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png", "b_sport_wh_01.png",
+            "b_suit_be_02.png", "b_suit_bk_01.png", "b_suit_bk_02.png", "b_suit_br_01.png", "b_suit_br_02.png",
+            "b_suit_gn_01.png", "b_suit_gn_02.png", "b_suit_gy_01.png", "b_suit_gy_02.png", "b_suit_nv_01.png",
+            // 👞 4. 鞋類 (s_) —— 共 10 件
             "s_dress_bk_01.png", "s_dress_br_01.png",
             "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
-            "s_loafer_bk_01.png", "s_loafer_br_01.png",
+            "s_loafer_bk_01.png", "s_loafer_br_01.png", "s_loafer_nv_01.png",
             "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
@@ -344,10 +350,17 @@
             dress: '皮鞋', leasnk: '休閒皮鞋', loafer: '樂福鞋', sport_s: '運動鞋'
         };
 
+        // [V7.3] Updated Color Map
         const COLOR_MAP = {
-            bk: { name: '黑', hex: '#111' }, wh: { name: '白', hex: '#fff' }, gy: { name: '灰', hex: '#888' },
-            nv: { name: '深藍', hex: '#1e3a8a' }, br: { name: '棕', hex: '#78350f' }, gn: { name: '綠', hex: '#166534' },
-            be: { name: '大地', hex: '#d4b483' }, dm: { name: '丹寧', hex: '#4f83cc' }
+            bk: { name: '黑', hex: '#111' }, 
+            wh: { name: '白', hex: '#fff' }, 
+            gy: { name: '灰', hex: '#888' },
+            nv: { name: '深藍', hex: '#1e3a8a' }, 
+            br: { name: '棕', hex: '#78350f' }, 
+            gn: { name: '綠', hex: '#166534' },
+            be: { name: '大地', hex: '#d4b483' }, 
+            dm: { name: '丹寧', hex: '#4f83cc' },
+            rd: { name: '酒紅', hex: '#7f1d1d' } // Added Burgundy
         };
 
         // [V7.2 FIX] Correct Logic Definition
@@ -557,7 +570,7 @@
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.2</span></h1>
+                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.3</span></h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
