@@ -1,14 +1,13 @@
-<!-- minimalist-wardrobe-core_v7.3_data_update.html -->
+<!-- minimalist-wardrobe-core_v7.4_locking.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Style Guardian V7.3</title>
+    <title>Style Guardian V7.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V7.3] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
-        /* 嚴格禁止修改此區塊的任何渲染邏輯，以維持極簡美學與最佳比例 */
+        /* [V7.4] 視覺引擎：完全繼承 V6.7 (智慧錨點縮放、右側單一操作區) */
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -207,9 +206,7 @@
             padding: 0;
         }
 
-        /* [V6.7/V7.2] 智慧錨點縮放技術 (Smart Zoom) - 核心保留區 */
-        
-        /* 1. 外套與內搭：錨點在頂部 */
+        /* [V6.7/V7.2] Smart Zoom */
         .img-top-focus {
             width: 100%; height: 100%;
             object-fit: contain;
@@ -217,8 +214,6 @@
             transform: scale(1.4); 
             transition: transform 0.2s;
         }
-
-        /* 2. 褲裝：錨點在底部 */
         .img-bottom-focus {
             width: 100%; height: 100%;
             object-fit: contain;
@@ -226,8 +221,6 @@
             transform: scale(1.4); 
             transition: transform 0.2s;
         }
-
-        /* 3. 鞋子：錨點在底部，倍率調校至 3.2 */
         .img-shoe-focus {
             width: 100%; height: 100%;
             object-fit: contain;
@@ -296,9 +289,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST (Updated V7.3 - 92 Items) ---
+        // --- MANIFEST (V7.3 Updated) ---
         const RAW_MANIFEST = [
-            // 📂 1. 外套類 (o_) —— 共 34 件
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
             "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
@@ -309,7 +301,6 @@
             "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
             "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
             "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
-            // 👕 2. 內搭類 (i_) —— 共 28 件
             "i_knits_be_01.png", "i_knits_bk_01.png", "i_knits_br_01.png", "i_knits_gy_01.png", "i_knits_rd_01.png",
             "i_knitn_be_01.png", "i_knitn_bk_01.png", "i_knitn_br_01.png", "i_knitn_gy_01.png", "i_knitn_rd_01.png",
             "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png",
@@ -317,14 +308,12 @@
             "i_sweats_bk_01.png", "i_sweats_gn_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png", "i_sweats_wh_01.png",
             "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_wh_01.png",
             "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
-            // 👖 3. 下身類 (b_) —— 共 20 件
             "b_cargo_be_01.png", "b_cargo_bk_01.png", "b_cargo_gn_01.png",
             "b_chino_be_01.png",
             "b_jeans_bk_01.png", "b_jeans_nv_01.png",
             "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png", "b_sport_wh_01.png",
             "b_suit_be_02.png", "b_suit_bk_01.png", "b_suit_bk_02.png", "b_suit_br_01.png", "b_suit_br_02.png",
             "b_suit_gn_01.png", "b_suit_gn_02.png", "b_suit_gy_01.png", "b_suit_gy_02.png", "b_suit_nv_01.png",
-            // 👞 4. 鞋類 (s_) —— 共 10 件
             "s_dress_bk_01.png", "s_dress_br_01.png",
             "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
             "s_loafer_bk_01.png", "s_loafer_br_01.png", "s_loafer_nv_01.png",
@@ -332,9 +321,7 @@
         ];
 
         // --- CONFIG & MAP ---
-        // [IMPORTANT] Preserving user data with original DB name
         const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
-        
         const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
         const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
         const BOTTOM_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
@@ -342,7 +329,7 @@
         const TYPE_MAP = {
             suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨',
             knits: '有袖針織', knitn: '無袖針織', 
-            shirts: '有袖襯衫', shirtn: '無袖襯衫', // Critical for Formal Logic
+            shirts: '有袖襯衫', shirtn: '無袖襯衫', 
             sweats: '衛衣',
             tshirts: '有袖T', tshirtn: '無袖T', 
             cargo: '工裝褲', chino: '卡其褲', jeans: '牛仔褲',
@@ -350,7 +337,6 @@
             dress: '皮鞋', leasnk: '休閒皮鞋', loafer: '樂福鞋', sport_s: '運動鞋'
         };
 
-        // [V7.3] Updated Color Map
         const COLOR_MAP = {
             bk: { name: '黑', hex: '#111' }, 
             wh: { name: '白', hex: '#fff' }, 
@@ -360,29 +346,21 @@
             gn: { name: '綠', hex: '#166534' },
             be: { name: '大地', hex: '#d4b483' }, 
             dm: { name: '丹寧', hex: '#4f83cc' },
-            rd: { name: '酒紅', hex: '#7f1d1d' } // Added Burgundy
+            rd: { name: '酒紅', hex: '#7f1d1d' }
         };
 
-        // [V7.2 FIX] Correct Logic Definition
         const STYLE_LOGIC = {
-            // Outer
             'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 
             'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 
             'down': ['Casual'],
-            
-            // Inner (The Critical Fix)
-            'shirts': ['Formal', 'Smart'], // Fixed: Shirt is King of Formal
-            'shirtn': ['Formal', 'Smart'], // Fixed: Sleeveless Shirt for layering
+            'shirts': ['Formal', 'Smart'], 
+            'shirtn': ['Formal', 'Smart'], 
             'knits': ['Smart', 'Casual'], 'knitn': ['Smart', 'Casual'],
             'sweats': ['Casual'],
-            'tshirts': ['Casual', 'Smart'], 'tshirtn': ['Casual', 'Smart'], // T-shirts can be Smart under jacket
-            
-            // Bottom
+            'tshirts': ['Casual', 'Smart'], 'tshirtn': ['Casual', 'Smart'],
             'suit': ['Formal', 'Smart'], 
             'chino': ['Smart', 'Casual'], 'jeans': ['Smart', 'Casual'],
             'cargo': ['Casual'], 'sport': ['Casual'],
-            
-            // Shoes
             'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 
             'leasnk': ['Smart', 'Casual'], 'sport_s': ['Casual']
         };
@@ -393,7 +371,7 @@
             return {
                 fileName: fn, part: p[0], type: type, color: p[2], suffixId: p[3],
                 displayName: `${TYPE_MAP[type] || type} / ${COLOR_MAP[p[2]]?.name || p[2]}`,
-                style: STYLE_LOGIC[type] || ['Casual'] // Now maps correctly
+                style: STYLE_LOGIC[type] || ['Casual']
             };
         };
 
@@ -445,14 +423,10 @@
 
             useEffect(() => { loadWardrobe(); }, []);
 
-            // [V7.2 CRITICAL FIX] Auto-Patch Logic
-            // This forces existing items in the database to adopt the NEW style logic.
-            // Old items tagged as 'Casual' (due to V6.7 bug) will now be read as 'Formal' etc.
             const loadWardrobe = async () => { 
                 const rawItems = await dbHelper.getAll();
                 const patchedItems = rawItems.map(item => ({
                     ...item,
-                    // Force re-calculation of style based on V7.2 logic
                     style: STYLE_LOGIC[item.type] || ['Casual'] 
                 }));
                 setWardrobe(patchedItems); 
@@ -470,28 +444,28 @@
                 else alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
             };
 
-            // [V7.2] 移植 V26.5 的智慧搭配邏輯 (With Patched Data)
+            // [V7.4] 智慧搭配邏輯更新：Partial Locking
             const handleRandom = useCallback(() => {
                 let newOutfit = { ...outfit };
                 const parts = ['o', 'i', 'b', 's'];
                 
-                // 1. Summer Logic: Only Formal allows Outerwear.
-                let skipOuter = (season === 'Summer' && occasion !== 'Formal');
-                if (skipOuter) { newOutfit.o = null; }
-
                 parts.forEach(p => {
-                    if (p === 'o' && skipOuter) return;
-                    
-                    let candidates = wardrobe.filter(item => item.part === p);
+                    // 1. Summer Outer Removal Rule (Force Remove)
+                    if (p === 'o' && season === 'Summer' && occasion !== 'Formal') {
+                        newOutfit.o = null;
+                        return;
+                    }
 
-                    // Filter by Occasion
-                    // Since data is auto-patched, 'shirtn' now correctly passes 'Formal' check
+                    // 2. Locking Rule: If slot has item, SKIP (unless forced null above)
+                    // 這就是你要的「只補空缺，不動現狀」
+                    if (newOutfit[p]) return;
+                    
+                    // 3. Filling Logic (Only runs if slot is empty)
+                    let candidates = wardrobe.filter(item => item.part === p);
                     candidates = candidates.filter(item => item.style.includes(occasion));
 
-                    // Inner Logic (The V26.5 Brain)
                     if (p === 'i') {
                         const hasOuter = !!newOutfit.o;
-                        // Strict Rule: Outer -> Sleeveless, No Outer -> Sleeved
                         candidates = candidates.filter(item => {
                             const isSleeveless = item.type.endsWith('n'); 
                             const isSleeved = item.type.endsWith('s') || item.type === 'sweats'; 
@@ -503,18 +477,15 @@
                         }
                     }
 
-                    // Bottom Logic (Suit Matching)
                     if (p === 'b' && occasion === 'Formal' && newOutfit.o && (newOutfit.o.type === 'suits' || newOutfit.o.type === 'suitd')) {
                         const matchedSuit = candidates.filter(item => item.type === 'suit' && item.color === newOutfit.o.color);
                         if (matchedSuit.length > 0) candidates = matchedSuit;
                     }
 
-                    // Shoe Logic
                     if (p === 's' && occasion === 'Smart' && newOutfit.b?.type === 'suit') {
                         candidates = candidates.filter(item => item.type !== 'sport_s');
                     }
 
-                    // Pick
                     if (candidates.length > 0) {
                         newOutfit[p] = candidates[Math.floor(Math.random() * candidates.length)];
                     } else {
@@ -555,7 +526,6 @@
                     return true;
                 }), [wardrobe, clPart, clTypeFilter]);
 
-            // [V7.2] 視覺核心：智慧錨點計算函數 (Smart Zoom)
             const getImageClass = (part) => {
                 if (part === 'o' || part === 'i') return 'img-top-focus';
                 if (part === 'b') return 'img-bottom-focus';
@@ -566,11 +536,10 @@
             return (
                 <div className="app-container">
                     <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
-                        {/* TAB: STYLING */}
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
                                 <div className="styling-header">
-                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.3</span></h1>
+                                    <h1 className="text-lg font-black tracking-tighter italic mt-1">MINIMALIST <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full not-italic">V7.4</span></h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
@@ -617,7 +586,6 @@
                             </div>
                         )}
 
-                        {/* TAB: CLOSET */}
                         {activeTab === 'closet' && (
                             <div className="animate-fade-in flex flex-col h-full bg-white">
                                 <div className="fixed-header-section">
@@ -650,7 +618,6 @@
                             </div>
                         )}
 
-                        {/* TAB: WAREHOUSE */}
                         {activeTab === 'add' && (
                             <div className="animate-fade-in flex flex-col h-full bg-white">
                                 <div className="fixed-header-section">
@@ -660,22 +627,19 @@
                                             <button key={p} onClick={() => handlePartSwitch(p)} className={`category-btn ${whPart === p ? 'active' : ''}`}>{PART_MAP[p]}</button>
                                         ))}
                                     </div>
-
                                     {whPart === 'i' && (
                                         <div className="mb-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                             <p className="text-[11px] text-[#4b5563] leading-relaxed">
-                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.2)</span>
+                                                <span className="font-bold block mb-1">💡 穿搭邏輯 (V7.4)</span>
                                                 請同時+<span className="font-bold text-black">無袖</span> (有外套時用) 與 +<span className="font-bold text-black">有袖</span> (無外套時用) 款式，系統將自動判斷切換。
                                             </p>
                                         </div>
                                     )}
-
                                     <div className="scroll-row">
                                         {availableTypes.map(t => (
                                             <button key={t} onClick={() => setWhType(t)} className={`category-btn ${whType === t ? 'active' : ''}`}>{TYPE_MAP[t] || t}</button>
                                         ))}
                                     </div>
-
                                     <div className="flex gap-4 py-2 border-b border-gray-50 overflow-x-auto no-scrollbar items-center">
                                         {availableColors.map(c => (
                                             <div key={c} onClick={() => setWhColor(c)} className={`color-dot flex-shrink-0 ${whColor === c ? 'active' : ''} ${c === 'wh' ? 'white-swatch' : ''}`} style={{ background: COLOR_MAP[c]?.hex || '#ccc' }}></div>
@@ -701,8 +665,6 @@
                             </div>
                         )}
                     </div>
-
-                    {/* Floating Nav */}
                     <div className="floating-nav-container">
                         <div className="floating-nav">
                             <div onClick={() => setActiveTab('styling')} className={`nav-pill ${activeTab === 'styling' ? 'active' : ''}`}><Icon name="hanger" className="w-4 h-4"/>搭配</div>
