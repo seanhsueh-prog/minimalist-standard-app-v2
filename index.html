@@ -1,42 +1,38 @@
-<!-- minimalist-wardrobe-core_v8.1_pwa.html -->
+<!-- minimalist-wardrobe-core_v8.2_final.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport setting optimized for PWA (prevents accidental zooming) -->
+    <!-- [PWA CONFIG 1] Viewport: 確保不隨意縮放，適配全螢幕 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <title>Style Guardian V8.1</title>
+    <title>Style Guardian V8.2</title>
     
-    <!-- [PWA CONFIG START] -->
-    <!-- 1. Android / Chrome: Link to manifest -->
+    <!-- [PWA CONFIG 2] 連線 Manifest (Android 核心) -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#ffffff">
 
-    <!-- 2. iOS / Safari: Standalone Mode Triggers -->
+    <!-- [PWA CONFIG 3] iOS Safari 專用設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="StyleGuardian">
-    
-    <!-- 3. iOS Icon (Looks for icon-192.png in root) -->
     <link rel="apple-touch-icon" href="./icon-192.png">
-    <!-- [PWA CONFIG END] -->
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* [V8.0/8.1] Hoshiba Minimalist Style */
+        /* [V8.0 Style] Hoshiba Minimalist - The "Skin" Upgrade */
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #f4f4f5; 
+            background-color: #f4f4f5; /* Zinc-100 */
             margin: 0;
             height: 100dvh; 
             display: flex;
             justify-content: center; 
             overflow: hidden;
-            color: #18181b;
-            /* Safe area for iPhone X+ */
+            color: #18181b; /* Zinc-900 */
+            /* iOS Safe Area Support */
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -77,24 +73,24 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: contain; object-position: bottom center;
             pointer-events: none; transition: opacity 0.3s ease-in-out;
-            padding: 11vh 3vw 110px 3vw; 
+            padding: 11vh 3vw 110px 3vw; /* Padding Locked */
         }
         .layer-shoes { z-index: 10; }
         .layer-bottom { z-index: 20; }
         .layer-inner { z-index: 30; }
         .layer-outer { z-index: 40; }
 
+        /* Smart Zoom Classes (Locked) */
         .img-top-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: top center; transform: scale(1.4); transition: transform 0.2s; }
         .img-bottom-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(1.4); transition: transform 0.2s; }
         .img-shoe-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(3.2); padding-bottom: 12px; transition: transform 0.2s; }
         /* ----------------------------------------------- */
 
-        /* [V8.0] UI Components - Text Only, Minimalist */
+        /* [V8.0 Style] UI Components - Text Only */
         
         .styling-header {
             position: absolute; top: 0; left: 0; width: 100%; z-index: 50;
             padding: 24px; pointer-events: none;
-            /* Adjust for safe area */
             padding-top: max(24px, env(safe-area-inset-top)); 
         }
         .header-title {
@@ -112,16 +108,16 @@
         .stack-group {
             background: rgba(255, 255, 255, 0.70);
             backdrop-filter: blur(16px);
-            border-radius: 4px; 
+            border-radius: 4px;
             padding: 4px;
-            border: 0.5px solid #e4e4e7; 
+            border: 0.5px solid #e4e4e7;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
             display: flex; flex-direction: column; gap: 4px;
             align-items: center; min-width: 42px;
         }
 
         .text-btn {
-            writing-mode: horizontal-tb; 
+            writing-mode: horizontal-tb;
             width: 100%;
             padding: 10px 4px;
             border-radius: 2px;
@@ -248,7 +244,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- MANIFEST (V7.3/7.4 Full Data) ---
+        // --- MANIFEST (V7.3 Updated) ---
         const RAW_MANIFEST = [
             "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
             "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
@@ -478,7 +474,7 @@
                         {activeTab === 'styling' && (
                             <div className="animate-fade-in relative flex-1">
                                 <div className="styling-header">
-                                    <h1 className="header-title">STYLE GUARDIAN V8.1</h1>
+                                    <h1 className="header-title">STYLE GUARDIAN V8.2</h1>
                                 </div>
 
                                 <div className="ghost-canvas-container">
