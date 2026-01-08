@@ -1,559 +1,627 @@
-<!-- DbSSTUDIO-Showroom.v4.8.html -->
+<!-- minimalist-wardrobe-core_v8.1_pwa.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <!-- Viewport setting optimized for PWA (prevents accidental zooming) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>Style Guardian V8.1</title>
+    
+    <!-- [PWA CONFIG START] -->
+    <!-- 1. Android / Chrome: Link to manifest -->
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#ffffff">
+
+    <!-- 2. iOS / Safari: Standalone Mode Triggers -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>DbSSTUDIO v4.8 - Ultimate Archive</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StyleGuardian">
     
-    <!-- Libraries -->
+    <!-- 3. iOS Icon (Looks for icon-192.png in root) -->
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <!-- [PWA CONFIG END] -->
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        /* [DbSSTUDIO v4.8 - Core Layout Engine] */
-        html, body, #root { 
-            width: 100%; height: 100dvh; margin: 0; padding: 0; 
-            overflow: hidden; background: #000; 
+        /* [V8.0/8.1] Hoshiba Minimalist Style */
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+            background-color: #f4f4f5; 
+            margin: 0;
+            height: 100dvh; 
+            display: flex;
+            justify-content: center; 
+            overflow: hidden;
+            color: #18181b;
+            /* Safe area for iPhone X+ */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         
-        .app-container { 
-            width: 100%; max-width: 480px; height: 100%; 
-            display: flex; flex-direction: column; 
-            background: #fff; margin: 0 auto; position: relative; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.2);
+        .app-container {
+            width: 100%;
+            max-width: 480px; 
+            height: 100%; 
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        :root {
-            --sab: env(safe-area-inset-bottom);
-            --sat: env(safe-area-inset-top);
+        .content-area {
+            flex: 1;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
-        /* Utilities */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* Global Smart Image Transition */
-        .smart-img-base {
-            opacity: 0; transition: opacity 0.2s ease, transform 0.3s ease;
+        /* --- [LOCKED CORE] GHOST ENGINE & SMART ZOOM --- */
+        .ghost-canvas-container {
+            position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; background-color: #fafafa; overflow: hidden;
         }
-        .smart-img-base.loaded { opacity: 1; }
-
-        /* Grid */
-        .catalog-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 1px; background-color: #f2f2f2; padding-bottom: 120px;
-        }
-        .grid-item {
-            background: #fff; aspect-ratio: 3/4; position: relative;
-            cursor: pointer; overflow: hidden;
-        }
-        .grid-item img {
-            width: 100%; height: 100%; object-fit: contain; padding: 8px;
-        }
-        .grid-item:active img { transform: scale(0.95); }
-
-        /* Style Room Layers */
         .ghost-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: contain; object-position: bottom center;
-            pointer-events: none; transition: opacity 0.2s ease-out;
-            opacity: 0;
+            pointer-events: none; transition: opacity 0.3s ease-in-out;
+            padding: 11vh 3vw 110px 3vw; 
         }
-        .ghost-layer.loaded { opacity: 1; }
+        .layer-shoes { z-index: 10; }
+        .layer-bottom { z-index: 20; }
+        .layer-inner { z-index: 30; }
+        .layer-outer { z-index: 40; }
 
-        /* Nav & Tabs */
-        .sticky-tabs {
-            position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.98);
-            border-bottom: 1px solid #f0f0f0; 
-            display: flex; overflow-x: auto;
-        }
-        .tab-btn {
-            padding: 14px 18px; font-size: 11px; font-weight: 600; color: #aaa;
-            white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s;
-            letter-spacing: 0.5px;
-        }
-        .tab-btn.active { color: #000; border-bottom-color: #000; }
+        .img-top-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: top center; transform: scale(1.4); transition: transform 0.2s; }
+        .img-bottom-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(1.4); transition: transform 0.2s; }
+        .img-shoe-focus { width: 100%; height: 100%; object-fit: contain; transform-origin: bottom center; transform: scale(3.2); padding-bottom: 12px; transition: transform 0.2s; }
+        /* ----------------------------------------------- */
 
-        /* Style Controls */
-        .style-controls {
-            background: #fff; border-top: 1px solid #f9f9f9;
-            z-index: 30; padding-bottom: 10px;
-        }
+        /* [V8.0] UI Components - Text Only, Minimalist */
         
-        .cat-switch {
-            display: flex; gap: 8px; padding: 12px;
-            overflow-x: auto; scrollbar-width: none;
+        .styling-header {
+            position: absolute; top: 0; left: 0; width: 100%; z-index: 50;
+            padding: 24px; pointer-events: none;
+            /* Adjust for safe area */
+            padding-top: max(24px, env(safe-area-inset-top)); 
         }
-        .cat-btn {
-            padding: 8px 16px; border-radius: 99px;
-            font-size: 11px; font-weight: 600;
-            background: #f5f5f5; color: #888; white-space: nowrap;
+        .header-title {
+            font-size: 12px; font-weight: 900; letter-spacing: 0.05em; color: #000;
+        }
+
+        .control-stack {
+            position: absolute; bottom: 100px;
+            display: flex; flex-direction: column; gap: 16px;
+            z-index: 50; padding: 0 12px;
+        }
+        .control-stack.left { left: 0; align-items: flex-start; }
+        .control-stack.right { right: 0; align-items: flex-end; }
+
+        .stack-group {
+            background: rgba(255, 255, 255, 0.70);
+            backdrop-filter: blur(16px);
+            border-radius: 4px; 
+            padding: 4px;
+            border: 0.5px solid #e4e4e7; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+            display: flex; flex-direction: column; gap: 4px;
+            align-items: center; min-width: 42px;
+        }
+
+        .text-btn {
+            writing-mode: horizontal-tb; 
+            width: 100%;
+            padding: 10px 4px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em; 
+            color: #a1a1aa; 
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .text-btn:hover { color: #52525b; }
+        .text-btn.active { color: #000; font-weight: 700; }
+        
+        .status-dot {
+            width: 3px; height: 3px; background-color: #000; border-radius: 50%;
+            position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+        }
+
+        .action-btn-black {
+            width: 40px; height: auto;
+            writing-mode: vertical-rl; text-orientation: upright;
+            padding: 16px 8px;
+            background: #000; color: #fff;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.2em;
+            border-radius: 2px;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.1s;
+        }
+        .action-btn-black:active { transform: scale(0.96); }
+
+        .action-btn-white {
+            width: 40px; height: auto;
+            writing-mode: vertical-rl; text-orientation: upright;
+            padding: 12px 8px;
+            background: #fff; color: #52525b;
+            border: 0.5px solid #e4e4e7;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.2em;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .action-btn-white:active { transform: scale(0.96); background: #f4f4f5; }
+
+        .floating-nav-container {
+            position: absolute; bottom: 28px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 100; pointer-events: none;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .floating-nav {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 0.5px solid #e4e4e7;
+            padding: 4px 6px;
+            border-radius: 99px;
+            display: flex; gap: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .nav-text {
+            padding: 8px 16px; border-radius: 99px; 
+            font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+            color: #a1a1aa; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-text.active { color: #000; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .fixed-header-section {
+            flex-shrink: 0; background-color: #fff; z-index: 20;
+            padding: 24px 24px 12px 24px;
+            border-bottom: 0.5px solid #f4f4f5;
+            display: flex; flex-direction: column; gap: 12px;
+            padding-top: max(24px, env(safe-area-inset-top));
+        }
+        .section-title { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; color: #18181b; }
+
+        .scrollable-list-section {
+            flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: none;
+        }
+        .scrollable-list-section::-webkit-scrollbar { display: none; }
+
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        
+        .item-card {
+            background: #fff; border-radius: 8px; 
+            border: 0.5px solid #e4e4e7;
+            overflow: hidden; display: flex; flex-direction: column;
             transition: all 0.2s;
         }
-        .cat-btn.active { background: #000; color: #fff; }
+        .item-image-box {
+            aspect-ratio: 3/4; width: 100%; display: flex; align-items: center; justify-content: center;
+            background: #fafafa; position: relative; overflow: hidden; padding: 0;
+        }
+        .item-info {
+            padding: 10px 4px; text-align: center; border-top: 0.5px solid #f4f4f5; background: #fff;
+        }
+        .item-label { font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.05em; }
 
-        .sub-filter-bar {
-            display: flex; gap: 6px; padding: 0 12px 8px 12px;
-            overflow-x: auto; scrollbar-width: none; animation: fadeIn 0.3s ease;
+        .category-btn {
+            padding: 6px 16px; border-radius: 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+            border: 0.5px solid #e4e4e7; color: #a1a1aa; background: #fff;
+            transition: all 0.2s; flex-shrink: 0;
         }
-        .sub-btn {
-            padding: 4px 12px; border-radius: 99px; border: 1px solid #eee;
-            font-size: 10px; color: #999; white-space: nowrap; transition: all 0.2s;
-        }
-        .sub-btn.active { border-color: #000; color: #000; font-weight: 600; background: #fff; }
+        .category-btn.active { background: #18181b; color: #fff; border-color: #18181b; }
 
-        .bottom-nav {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: rgba(255,255,255,0.98); border-top: 1px solid #f0f0f0;
-            display: flex; justify-content: space-around;
-            padding-bottom: calc(16px + var(--sab)); padding-top: 16px; 
-            z-index: 50;
+        .color-dot {
+            width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid #e4e4e7; cursor: pointer;
         }
+        .color-dot.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3px #18181b; }
+        .scroll-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; flex-shrink: 0; }
+        .scroll-row::-webkit-scrollbar { display: none; }
+
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root" class="w-full flex justify-center h-full"></div>
 
-    <!-- React Framework -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- 1. CONFIGURATION (v4.8) ---
-        const CONFIG = [
-            { id: 'short_t', group: 'Tops', label: '短T', prefix: 'st', count: 20 },
-            { id: 'long_t',  group: 'Tops', label: '長T', prefix: 'lt', count: 20 },
-            { id: 'sweatshirt', group: 'Tops', label: '衛衣', prefix: 'sw', count: 15 },
-            { id: 'bottom',  group: 'Pants', label: '褲裝', prefix: 'b',  count: 30 },
-            { id: 'shoes',   group: 'Shoes', label: '鞋履', prefix: 's',  count: 15 } 
+        // --- MANIFEST (V7.3/7.4 Full Data) ---
+        const RAW_MANIFEST = [
+            "o_suits_bk_01.png", "o_suits_br_01.png", "o_suits_gy_01.png", "o_suits_nv_01.png",
+            "o_suitd_bk_01.png", "o_suitd_br_01.png", "o_suitd_gy_01.png", "o_suitd_nv_01.png",
+            "o_leather_bk_01.png", "o_leather_bk_02.png", "o_leather_bk_03.png", "o_leather_bk_04.png",
+            "o_leather_br_01.png", "o_leather_br_02.png", "o_leather_br_03.png",
+            "o_jacket_bk_01.png", "o_jacket_bk_03.png", "o_jacket_bk_04.png",
+            "o_jacket_br_01.png", "o_jacket_br_02.png", "o_jacket_br_03.png",
+            "o_jacket_gn_01.png", "o_jacket_gn_02.png", "o_jacket_gn_03.png",
+            "o_jacket_gy_01.png", "o_jacket_gy_02.png", "o_jacket_gy_03.png", "o_jacket_gy_04.png",
+            "o_jacket_nv_01.png", "o_jacket_nv_02.png", "o_jacket_nv_03.png",
+            "o_down_gy_01.png", "o_down_nv_01.png", "o_down_wh_01.png",
+            "i_knits_be_01.png", "i_knits_bk_01.png", "i_knits_br_01.png", "i_knits_gy_01.png", "i_knits_rd_01.png",
+            "i_knitn_be_01.png", "i_knitn_bk_01.png", "i_knitn_br_01.png", "i_knitn_gy_01.png", "i_knitn_rd_01.png",
+            "i_shirts_bk_01.png", "i_shirts_nv_01.png", "i_shirts_wh_01.png",
+            "i_shirtn_bk_01.png", "i_shirtn_nv_01.png", "i_shirtn_wh_01.png",
+            "i_sweats_bk_01.png", "i_sweats_gn_01.png", "i_sweats_gy_01.png", "i_sweats_nv_01.png", "i_sweats_wh_01.png",
+            "i_tshirts_bk_01.png", "i_tshirts_gy_01.png", "i_tshirts_wh_01.png",
+            "i_tshirtn_bk_01.png", "i_tshirtn_gy_01.png", "i_tshirtn_nv_01.png", "i_tshirtn_wh_01.png",
+            "b_cargo_be_01.png", "b_cargo_bk_01.png", "b_cargo_gn_01.png",
+            "b_chino_be_01.png",
+            "b_jeans_bk_01.png", "b_jeans_nv_01.png",
+            "b_sport_bk_01.png", "b_sport_gy_01.png", "b_sport_nv_01.png", "b_sport_wh_01.png",
+            "b_suit_be_02.png", "b_suit_bk_01.png", "b_suit_bk_02.png", "b_suit_br_01.png", "b_suit_br_02.png",
+            "b_suit_gn_01.png", "b_suit_gn_02.png", "b_suit_gy_01.png", "b_suit_gy_02.png", "b_suit_nv_01.png",
+            "s_dress_bk_01.png", "s_dress_br_01.png",
+            "s_leasnk_bk_01.png", "s_leasnk_wh_01.png",
+            "s_loafer_bk_01.png", "s_loafer_br_01.png", "s_loafer_nv_01.png",
+            "s_sport_bk_01.png", "s_sport_gy_01.png", "s_sport_wh_01.png"
         ];
 
-        const CATALOG_TABS = [
-            { id: 'short_t', label: '短T' },
-            { id: 'long_t', label: '長T' },
-            { id: 'sweatshirt', label: '衛衣' },
-            { id: 'bottom', label: '褲裝' },
-            { id: 'shoes', label: '鞋履' }
-        ];
+        // --- DB CONFIG (LOCKED) ---
+        const DB_CONFIG = { name: 'Minimalist_Master_Vault', version: 1, store: 'inventory' };
+        
+        const PART_MAP = { o: '外套', i: '內搭', b: '褲裝', s: '鞋款' };
+        const INNER_ORDER = ['shirts', 'tshirts', 'polos', 'knits', 'sweats'];
+        const BOTTOM_ORDER = ['suit', 'jeans', 'chino', 'shorts', 'sport', 'cargo'];
 
-        const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
-        const LINE_ID = "@dbsstudio";
+        const TYPE_MAP = {
+            suits: '單排西裝', suitd: '雙排西裝', leather: '皮衣', jacket: '夾克', down: '羽絨',
+            knits: '有袖針織', knitn: '無袖針織', 
+            shirts: '有袖襯衫', shirtn: '無袖襯衫', 
+            sweats: '衛衣',
+            tshirts: '有袖T', tshirtn: '無袖T', 
+            cargo: '工裝褲', chino: '卡其褲', jeans: '牛仔褲',
+            sport: '運動褲', suit: '西裝褲', 
+            dress: '皮鞋', leasnk: '休閒皮鞋', loafer: '樂福鞋', sport_s: '運動鞋'
+        };
 
-        // --- 2. BASE COMPONENTS ---
+        const COLOR_MAP = {
+            bk: { name: '黑', hex: '#111' }, wh: { name: '白', hex: '#fff' }, gy: { name: '灰', hex: '#888' },
+            nv: { name: '深藍', hex: '#1e3a8a' }, br: { name: '棕', hex: '#78350f' }, gn: { name: '綠', hex: '#166534' },
+            be: { name: '大地', hex: '#d4b483' }, dm: { name: '丹寧', hex: '#4f83cc' }, rd: { name: '酒紅', hex: '#7f1d1d' }
+        };
 
-        const Icon = ({ name, size=20, className="" }) => {
-            const paths = {
-                x: <path d="M18 6L6 18M6 6l12 12" />,
-                cart: <path d="M9 20a1 1 0 100-2 1 1 0 000 2zM20 20a1 1 0 100-2 1 1 0 000 2zM1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />,
-                grid: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>,
-                hanger: <path d="M12 2a5 5 0 015 5v2h2v12H5V9h2V7a5 5 0 015-5z" />,
-                info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></>,
-                plus: <path d="M12 5v14M5 12h14" />,
-                trash: <><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></>,
-                eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+        const STYLE_LOGIC = {
+            'suits': ['Formal', 'Smart'], 'suitd': ['Formal', 'Smart'], 
+            'leather': ['Smart', 'Casual'], 'jacket': ['Smart', 'Casual'], 'down': ['Casual'],
+            'shirts': ['Formal', 'Smart'], 'shirtn': ['Formal', 'Smart'], 
+            'knits': ['Smart', 'Casual'], 'knitn': ['Smart', 'Casual'],
+            'sweats': ['Casual'],
+            'tshirts': ['Casual', 'Smart'], 'tshirtn': ['Casual', 'Smart'],
+            'suit': ['Formal', 'Smart'], 
+            'chino': ['Smart', 'Casual'], 'jeans': ['Smart', 'Casual'],
+            'cargo': ['Casual'], 'sport': ['Casual'],
+            'dress': ['Formal', 'Smart'], 'loafer': ['Formal', 'Smart'], 
+            'leasnk': ['Smart', 'Casual'], 'sport_s': ['Casual']
+        };
+
+        const parseFileName = (fn) => {
+            const p = fn.replace('.png', '').split('_');
+            const type = (p[1] === 'sport' && p[0] === 's') ? 'sport_s' : p[1];
+            return {
+                fileName: fn, part: p[0], type: type, color: p[2], suffixId: p[3],
+                displayName: `${TYPE_MAP[type] || type} / ${COLOR_MAP[p[2]]?.name || p[2]}`,
+                style: STYLE_LOGIC[type] || ['Casual']
             };
-            return (
-                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {paths[name] || null}
-                </svg>
-            );
         };
 
-        // v4.8: Optimized Loading Sequence (Prioritize 001)
-        const SmartImage = ({ prefix, index, suffix, className, onClick, style, onHide }) => {
-            const [src, setSrc] = useState('');
-            const [errorStep, setErrorStep] = useState(0);
-            const [loaded, setLoaded] = useState(false);
-
-            const candidates = useMemo(() => {
-                const sIdx = String(index);
-                // v4.8 Speed Fix: Prioritize 3-digit padding (001) as it's the standard
-                return [
-                    `./${prefix}${sIdx.padStart(3, '0')}${suffix}`, // Priority 1: st001
-                    `./${prefix}${sIdx.padStart(4, '0')}${suffix}`, // Priority 2: st0001
-                    `./${prefix}${sIdx.padStart(2, '0')}${suffix}`, // Priority 3: st01
-                    `./${prefix}${index}${suffix}`                   // Priority 4: st1
-                ];
-            }, [prefix, index, suffix]);
-
-            useEffect(() => {
-                setSrc(candidates[0]);
-                setErrorStep(0);
-                setLoaded(false);
-            }, [candidates]);
-
-            const handleError = () => {
-                const next = errorStep + 1;
-                if (next < candidates.length) {
-                    setSrc(candidates[next]);
-                    setErrorStep(next);
-                } else {
-                    if(onHide) onHide();
-                }
-            };
-
-            return (
-                <img 
-                    src={src} 
-                    className={`smart-img-base ${loaded ? 'loaded' : ''} ${className}`}
-                    alt="" 
-                    onClick={onClick}
-                    onError={handleError}
-                    onLoad={() => setLoaded(true)}
-                    style={style}
-                />
-            );
+        const dbHelper = {
+            open: () => new Promise((res) => {
+                const req = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+                req.onupgradeneeded = (e) => e.target.result.createObjectStore(DB_CONFIG.store, { keyPath: 'id', autoIncrement: true });
+                req.onsuccess = () => res(req.result);
+            }),
+            save: async (item) => {
+                const db = await dbHelper.open();
+                const tx = db.transaction(DB_CONFIG.store, 'readwrite');
+                const cleanItem = { ...item }; delete cleanItem.id;
+                tx.objectStore(DB_CONFIG.store).add(cleanItem);
+            },
+            getAll: async () => {
+                const db = await dbHelper.open();
+                return new Promise((res) => {
+                    db.transaction(DB_CONFIG.store, 'readonly').objectStore(DB_CONFIG.store).getAll().onsuccess = (e) => res(e.target.result);
+                });
+            },
+            delete: async (id) => {
+                const db = await dbHelper.open();
+                db.transaction(DB_CONFIG.store, 'readwrite').objectStore(DB_CONFIG.store).delete(id);
+            }
         };
 
-        const NavBtn = ({ icon, label, active, onClick }) => (
-            <div className={`flex flex-col items-center gap-1 cursor-pointer transition-colors duration-300 ${active ? 'text-black' : 'text-gray-300'}`} onClick={onClick}>
-                <Icon name={icon} size={22} strokeWidth={active ? 2 : 1.5} />
-                <span className="text-[10px] font-bold tracking-widest">{label}</span>
-            </div>
-        );
-
-        const DetailView = ({ item, onClose, onAdd }) => {
-            const [size, setSize] = useState(null);
-            
-            return (
-                <div className="fixed inset-0 z-[60] bg-white flex flex-col fade-in">
-                    <div className="absolute top-0 right-0 p-6 z-50">
-                        <button onClick={onClose} className="bg-white/90 backdrop-blur rounded-full p-2 shadow-sm hover:scale-105 transition">
-                            <Icon name="x" size={24} />
-                        </button>
-                    </div>
-                    
-                    {/* v4.8: Maximized Image Area (Reduced padding, removed width cap) */}
-                    <div className="flex-1 flex items-center justify-center p-2 bg-gray-50 relative overflow-hidden">
-                         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                            <span className="text-9xl font-bold">DbS</span>
-                        </div>
-                        <SmartImage 
-                            prefix={item.rawPrefix} 
-                            index={item.rawIndex} 
-                            suffix="_d.png" 
-                            className="w-full h-full object-contain drop-shadow-xl z-10" 
-                        />
-                    </div>
-
-                    <div className="bg-white p-6 pb-[calc(24px+env(safe-area-inset-bottom))] border-t border-gray-100">
-                        <div className="mb-6">
-                            <h2 className="text-2xl font-bold font-mono tracking-tight">{item.displayId}</h2>
-                            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{item.name} Collection</p>
-                        </div>
-
-                        <div className="flex gap-3 mb-8">
-                            {SIZES.map(s => (
-                                <button key={s} onClick={() => setSize(s)}
-                                    className={`w-12 h-12 rounded-full border flex items-center justify-center text-xs font-semibold transition-all ${size===s ? 'bg-black text-white border-black scale-110' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button 
-                            onClick={() => { if(!size) return alert('請選擇尺寸'); onAdd(item, size); }}
-                            className="w-full bg-black text-white py-4 rounded-lg text-xs font-bold tracking-[0.1em] flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all">
-                            <span>加入詢問單</span>
-                            <Icon name="plus" size={14} />
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-
-        const CartView = ({ list, onClose, onRemove, onSend }) => (
-            <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 fade-in" onClick={onClose}>
-                <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col max-h-[85vh] slide-up" onClick={e => e.stopPropagation()}>
-                    <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-                        <h3 className="font-bold text-sm tracking-widest">詢問清單 ({list.length})</h3>
-                        <button onClick={onClose}><Icon name="x" size={20} /></button>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-5 bg-gray-50/50">
-                        {list.length === 0 ? (
-                            <div className="py-12 text-center text-gray-400 text-xs tracking-widest">清單是空的</div>
-                        ) : (
-                            <div className="space-y-3">
-                                {list.map(item => (
-                                    <div key={item.cartId} className="bg-white p-3 rounded-lg border border-gray-100 flex items-center gap-4 shadow-sm">
-                                        <div className="w-14 h-14 bg-gray-50 rounded-md p-1">
-                                            <SmartImage prefix={item.rawPrefix} index={item.rawIndex} suffix="_d.png" className="w-full h-full object-contain" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="font-mono text-sm font-bold">{item.displayId}</div>
-                                            <div className="text-[10px] text-gray-500 font-medium mt-1">尺寸: {item.size}</div>
-                                        </div>
-                                        <button onClick={() => onRemove(item.cartId)} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors">
-                                            <Icon name="trash" size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-5 border-t border-gray-100 bg-white pb-[calc(20px+env(safe-area-inset-bottom))]">
-                        <button 
-                            disabled={list.length===0} 
-                            onClick={onSend}
-                            className="w-full bg-[#06C755] text-white py-4 rounded-lg text-xs font-bold tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105 transition-all shadow-lg shadow-green-100">
-                            Line 線上諮詢
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-
-        // --- 3. MAIN APPLICATION ---
         const App = () => {
-            const [page, setPage] = useState('catalog');
-            const [filter, setFilter] = useState('short_t');
-            const [cart, setCart] = useState([]);
-            const [detailItem, setDetailItem] = useState(null);
-            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [activeTab, setActiveTab] = useState('styling');
+            const [wardrobe, setWardrobe] = useState([]);
+            const [outfit, setOutfit] = useState({ o: null, i: null, b: null, s: null });
+            const [occasion, setOccasion] = useState('Smart');
+            const [season, setSeason] = useState('Winter');
+            const [whPart, setWhPart] = useState('o');
+            const [whType, setWhType] = useState('suits');
+            const [whColor, setWhColor] = useState('bk');
+            const [clPart, setClPart] = useState('o');
+            const [clTypeFilter, setClTypeFilter] = useState('all');
 
-            // Style Room State
-            const [outfit, setOutfit] = useState({ top: null, pant: null, shoes: null });
-            const [styleMode, setStyleMode] = useState('Tops');
-            const [styleSubFilter, setStyleSubFilter] = useState('All');
+            useEffect(() => { loadWardrobe(); }, []);
 
-            // Data Generation
-            const catalog = useMemo(() => {
-                let list = [];
-                CONFIG.forEach(cfg => {
-                    for(let i=1; i<=cfg.count; i++){
-                        let prefix = cfg.prefix;
-                        let rawIndex = i;
+            const loadWardrobe = async () => { 
+                const rawItems = await dbHelper.getAll();
+                const patchedItems = rawItems.map(item => ({
+                    ...item,
+                    style: STYLE_LOGIC[item.type] || ['Casual'] 
+                }));
+                setWardrobe(patchedItems); 
+            };
 
-                        // Shoe Logic: 1-5(s), 6-10(w), 11-15(x)
-                        if (cfg.id === 'shoes') {
-                            if (i <= 5) { prefix = 's'; rawIndex = i; }
-                            else if (i <= 10) { prefix = 'w'; rawIndex = i-5; }
-                            else { prefix = 'x'; rawIndex = i-10; }
-                        }
+            const addToWardrobe = async (item) => { await dbHelper.save(item); await loadWardrobe(); alert('單品已入庫'); };
+            const removeFromWardrobe = async (id) => {
+                if(!confirm("確定從衣櫥移除？")) return;
+                await dbHelper.delete(id); await loadWardrobe();
+                setOutfit(prev => { const next = {...prev}; Object.keys(next).forEach(k => { if(next[k]?.id === id) next[k] = null; }); return next; });
+            };
 
-                        list.push({
-                            uid: `${cfg.id}-${i}`,
-                            displayId: `${prefix.toUpperCase()}${String(rawIndex).padStart(3,'0')}`,
-                            group: cfg.group,
-                            categoryId: cfg.id, 
-                            rawPrefix: prefix,
-                            rawIndex: rawIndex,
-                            name: cfg.label
+            const togglePart = (p) => {
+                if (outfit[p]) setOutfit(prev => ({...prev, [p]: null}));
+                else alert('請使用「智慧搭配」或「衣櫥」來選擇單品');
+            };
+
+            // [LOCKED LOGIC] V7.4 Partial Locking & Smart Fallback
+            const handleRandom = useCallback(() => {
+                let newOutfit = { ...outfit };
+                const parts = ['o', 'i', 'b', 's'];
+                
+                parts.forEach(p => {
+                    // Summer Logic (Force Remove Outer)
+                    if (p === 'o' && season === 'Summer' && occasion !== 'Formal') {
+                        newOutfit.o = null;
+                        return;
+                    }
+
+                    // Locking Logic (Skip if exists)
+                    if (newOutfit[p]) return;
+                    
+                    // Filling Logic
+                    let candidates = wardrobe.filter(item => item.part === p);
+                    candidates = candidates.filter(item => item.style.includes(occasion));
+
+                    if (p === 'i') {
+                        const hasOuter = !!newOutfit.o;
+                        candidates = candidates.filter(item => {
+                            const isSleeveless = item.type.endsWith('n'); 
+                            const isSleeved = item.type.endsWith('s') || item.type === 'sweats'; 
+                            return hasOuter ? isSleeveless : isSleeved;
                         });
+                        if (season === 'Summer') candidates = candidates.filter(item => !['knits', 'knitn', 'sweats'].includes(item.type));
+                    }
+
+                    if (p === 'b' && occasion === 'Formal' && newOutfit.o && (newOutfit.o.type === 'suits' || newOutfit.o.type === 'suitd')) {
+                        const matchedSuit = candidates.filter(item => item.type === 'suit' && item.color === newOutfit.o.color);
+                        if (matchedSuit.length > 0) candidates = matchedSuit;
+                    }
+
+                    if (p === 's' && occasion === 'Smart' && newOutfit.b?.type === 'suit') {
+                        candidates = candidates.filter(item => item.type !== 'sport_s');
+                    }
+
+                    if (candidates.length > 0) {
+                        newOutfit[p] = candidates[Math.floor(Math.random() * candidates.length)];
+                    } else {
+                         newOutfit[p] = null;
                     }
                 });
-                return list;
-            }, []);
+                setOutfit(newOutfit);
+            }, [wardrobe, occasion, season, outfit]);
 
-            // Catalog Filtering
-            const filteredItems = useMemo(() => {
-                return catalog.filter(c => c.categoryId === filter);
-            }, [catalog, filter]);
-
-            // Style Room Filtering (with sub-filters)
-            const styleThumbnails = useMemo(() => {
-                let pool = [];
-                if (styleMode === 'Tops') {
-                    if (styleSubFilter === 'All') {
-                        pool = catalog.filter(c => c.group === 'Tops');
-                    } else {
-                        pool = catalog.filter(c => c.categoryId === styleSubFilter);
-                    }
-                } else if (styleMode === 'Pants') {
-                    pool = catalog.filter(c => c.categoryId === 'bottom');
-                } else if (styleMode === 'Shoes') {
-                    pool = catalog.filter(c => c.categoryId === 'shoes');
-                }
-                return pool;
-            }, [catalog, styleMode, styleSubFilter]);
-
-            const addToCart = (item, size) => {
-                setCart(prev => [...prev, { ...item, size, cartId: Date.now() }]);
-                setDetailItem(null);
+            const getSortedTypes = (part) => {
+                 const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === part);
+                 const types = [...new Set(all.map(i => i.type))];
+                 if (part === 'i') return types.sort((a, b) => INNER_ORDER.indexOf(a.replace(/[ns]$/, '')) - INNER_ORDER.indexOf(b.replace(/[ns]$/, '')));
+                 if (part === 'b') return types.sort((a, b) => BOTTOM_ORDER.indexOf(a) - BOTTOM_ORDER.indexOf(b));
+                 return types;
             };
 
-            const removeFromCart = (id) => setCart(prev => prev.filter(i => i.cartId !== id));
+            const availableTypes = useMemo(() => getSortedTypes(whPart), [whPart]);
+            const availableColors = useMemo(() => {
+                const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === whPart && i.type === whType);
+                return [...new Set(all.map(i => i.color))];
+            }, [whPart, whType]);
+            const filteredWhItems = useMemo(() => RAW_MANIFEST.map(parseFileName).filter(item => item.part === whPart && item.type === whType && item.color === whColor), [whPart, whType, whColor]);
 
-            const sendInquiry = () => {
-                let msg = "您好，我想詢問以下單品庫存：\n\n";
-                cart.forEach((i, idx) => msg += `${idx+1}. ${i.displayId} [${i.size}]\n`);
-                msg += "\n感謝。";
-                window.location.href = `https://line.me/R/oaMessage/${LINE_ID}/?${encodeURIComponent(msg)}`;
+            const handlePartSwitch = (p) => {
+                setWhPart(p);
+                const sortedTypes = getSortedTypes(p);
+                setWhType(sortedTypes[0]);
+                const all = RAW_MANIFEST.map(parseFileName).filter(i => i.part === p);
+                setWhColor(all.find(i => i.type === sortedTypes[0]).color);
+            };
+
+            const handleClPartSwitch = (p) => { setClPart(p); setClTypeFilter('all'); };
+            const closetAvailableTypes = useMemo(() => getSortedTypes(clPart), [clPart]);
+            const filteredClosetItems = useMemo(() => wardrobe.filter(item => {
+                    if (item.part !== clPart) return false;
+                    if (clTypeFilter !== 'all' && item.type !== clTypeFilter) return false;
+                    return true;
+                }), [wardrobe, clPart, clTypeFilter]);
+
+            // [LOCKED CSS] Smart Zoom
+            const getImageClass = (part) => {
+                if (part === 'o' || part === 'i') return 'img-top-focus';
+                if (part === 'b') return 'img-bottom-focus';
+                if (part === 's') return 'img-shoe-focus'; 
+                return '';
             };
 
             return (
-                <div className="app-container pt-[var(--sat)]">
-                    
-                    {/* PAGE: CATALOG */}
-                    {page === 'catalog' && (
-                        <>
-                            <div className="bg-white pt-6 pb-4 flex flex-col items-center border-b border-gray-50">
-                                <img src="./brand_logo.png" alt="DbS" className="w-[180px] object-contain mb-2" />
-                                <span className="text-[9px] text-gray-400 tracking-[0.3em] font-medium">v4.8 Ultimate Archive</span>
-                            </div>
-
-                            <div className="sticky-tabs">
-                                {CATALOG_TABS.map(t => (
-                                    <button key={t.id} onClick={() => setFilter(t.id)} 
-                                        className={`tab-btn ${filter === t.id ? 'active' : ''}`}>
-                                        {t.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto no-scrollbar content-area bg-[#f9f9f9]">
-                                <div className="catalog-grid">
-                                    {filteredItems.map(item => (
-                                        <div id={`cat-${item.uid}`} key={item.uid} className="grid-item" onClick={() => setDetailItem(item)}>
-                                            <SmartImage 
-                                                prefix={item.rawPrefix} 
-                                                index={item.rawIndex} 
-                                                suffix="_d.png" 
-                                                className="w-full h-full object-contain"
-                                                onHide={() => {
-                                                    const el = document.getElementById(`cat-${item.uid}`);
-                                                    if(el) el.style.display = 'none';
-                                                }}
-                                            />
-                                            <div className="absolute bottom-1 right-2 text-[8px] font-mono text-gray-400">{item.displayId}</div>
-                                        </div>
-                                    ))}
+                <div className="app-container">
+                    <div className={`content-area ${activeTab === 'styling' ? 'styling-mode' : ''}`}>
+                        {activeTab === 'styling' && (
+                            <div className="animate-fade-in relative flex-1">
+                                <div className="styling-header">
+                                    <h1 className="header-title">STYLE GUARDIAN V8.1</h1>
                                 </div>
-                                <div className="py-12 text-center">
-                                    <span className="text-[9px] text-gray-300 tracking-[0.2em]">END OF COLLECTION</span>
-                                </div>
-                            </div>
-                        </>
-                    )}
 
-                    {/* PAGE: STYLE ROOM */}
-                    {page === 'style' && (
-                        <div className="flex flex-col h-full bg-white">
-                            <div className="flex-1 relative bg-white overflow-hidden flex items-center justify-center">
-                                <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
-                                    <span className="text-8xl font-black tracking-tighter">STYLE</span>
+                                <div className="ghost-canvas-container">
+                                    {outfit.s && <img src={`./${outfit.s.fileName}`} className="ghost-layer layer-shoes" />}
+                                    {outfit.b && <img src={`./${outfit.b.fileName}`} className="ghost-layer layer-bottom" />}
+                                    {outfit.i && <img src={`./${outfit.i.fileName}`} className="ghost-layer layer-inner" />}
+                                    {outfit.o && <img src={`./${outfit.o.fileName}`} className="ghost-layer layer-outer" />}
                                 </div>
                                 
-                                {/* Layers: Shoes(10) < Pants(20) < Tops(30) */}
-                                {outfit.shoes && <SmartImage prefix={outfit.shoes.rawPrefix} index={outfit.shoes.rawIndex} suffix="_g.png" className="ghost-layer z-10" />}
-                                {outfit.pant && <SmartImage prefix={outfit.pant.rawPrefix} index={outfit.pant.rawIndex} suffix="_g.png" className="ghost-layer z-20" />}
-                                {outfit.top && <SmartImage prefix={outfit.top.rawPrefix} index={outfit.top.rawIndex} suffix="_g.png" className="ghost-layer z-30" />}
-
-                                {(!outfit.top && !outfit.pant && !outfit.shoes) && (
-                                    <div className="flex flex-col items-center justify-center text-gray-300">
-                                        <Icon name="eye" size={32} className="opacity-20 mb-2" />
-                                        <span className="text-[10px] tracking-widest uppercase">請選擇下方單品進行搭配</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="style-controls pb-[80px]">
-                                <div className="cat-switch">
-                                    {['Tops', 'Pants', 'Shoes'].map(m => (
-                                        <button key={m} onClick={() => { setStyleMode(m); setStyleSubFilter('All'); }}
-                                            className={`cat-btn ${styleMode===m ? 'active' : ''}`}>
-                                            {m === 'Tops' ? '上衣' : m === 'Pants' ? '褲裝' : '鞋履'}
-                                        </button>
-                                    ))}
-                                </div>
-                                
-                                {/* Sub Filters for Tops */}
-                                {styleMode === 'Tops' && (
-                                    <div className="sub-filter-bar">
-                                        {['All', 'short_t', 'long_t', 'sweatshirt'].map(sub => (
-                                            <button key={sub} onClick={() => setStyleSubFilter(sub)}
-                                                className={`sub-btn ${styleSubFilter===sub ? 'active' : ''}`}>
-                                                {sub==='All'?'全部':sub==='short_t'?'短T':sub==='long_t'?'長T':'衛衣'}
+                                {/* LEFT STACK */}
+                                <div className="control-stack left">
+                                    <div className="stack-group">
+                                        {['Summer', 'Winter'].map(s => (
+                                            <button key={s} className={`text-btn ${season === s ? 'active' : ''}`} onClick={() => setSeason(s)}>
+                                                {s === 'Summer' ? '春夏' : '秋冬'}
                                             </button>
                                         ))}
                                     </div>
-                                )}
+                                    <div className="stack-group">
+                                        {['Formal', 'Smart', 'Casual'].map(occ => (
+                                            <button key={occ} className={`text-btn ${occasion === occ ? 'active' : ''}`} onClick={() => setOccasion(occ)}>
+                                                {occ === 'Formal' ? '正式' : occ === 'Smart' ? '大人' : '休閒'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                                <div className="h-[100px] flex items-center gap-2 px-3 overflow-x-auto no-scrollbar py-2 border-t border-gray-50">
-                                    {styleThumbnails.map(item => (
-                                        <div id={`style-${item.uid}`} key={item.uid} 
-                                            onClick={() => {
-                                                const key = styleMode === 'Tops' ? 'top' : styleMode === 'Pants' ? 'pant' : 'shoes';
-                                                setOutfit(prev => ({...prev, [key]: item}));
-                                            }}
-                                            className="min-w-[70px] h-[80px] border border-gray-100 rounded-md p-1 relative cursor-pointer hover:border-black transition-colors bg-white">
-                                            <SmartImage 
-                                                prefix={item.rawPrefix} 
-                                                index={item.rawIndex} 
-                                                suffix="_d.png" 
-                                                className="w-full h-full object-contain" 
-                                                onHide={() => {
-                                                    const el = document.getElementById(`style-${item.uid}`);
-                                                    if(el) el.style.display = 'none';
-                                                }}
-                                            />
-                                            {outfit[styleMode === 'Tops' ? 'top' : styleMode === 'Pants' ? 'pant' : 'shoes']?.uid === item.uid && 
-                                                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-black rounded-full"></div>
-                                            }
-                                        </div>
-                                    ))}
+                                {/* RIGHT STACK */}
+                                <div className="control-stack right">
+                                    <div className="stack-group" style={{gap: '8px', paddingBottom: '8px'}}>
+                                        <button onClick={() => setOutfit({o:null,i:null,b:null,s:null})} className="action-btn-white" title="重置">重置</button>
+                                        <button onClick={handleRandom} className="action-btn-black" title="智慧搭配">智慧</button>
+                                    </div>
+                                    <div className="stack-group">
+                                        {[
+                                            { p: 'o', label: '外套' },
+                                            { p: 'i', label: '內搭' },
+                                            { p: 'b', label: '褲裝' },
+                                            { p: 's', label: '鞋款' }
+                                        ].map(item => (
+                                            <button key={item.p} className={`text-btn ${outfit[item.p] ? 'active' : ''}`} onClick={() => togglePart(item.p)}>
+                                                {item.label}
+                                                {outfit[item.p] && <div className="status-dot"></div>}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* PAGE: INFO */}
-                    {page === 'info' && (
-                        <div className="h-full flex flex-col items-center justify-center p-10 text-center bg-white">
-                            <img src="./brand_logo.png" alt="Logo" className="w-[180px] object-contain mb-10" />
-                            <div className="w-8 h-0.5 bg-black mb-6"></div>
-                            <h2 className="text-sm font-bold tracking-widest mb-2">DbSSTUDIO</h2>
-                            <p className="text-[10px] text-gray-400 tracking-[0.2em] mb-8">ARCHIVE 2026</p>
-                            <p className="text-xs text-gray-600 leading-relaxed max-w-[240px] mb-10 font-light">
-                                極簡主義與實用美學的交匯點。<br/>
-                                每一件單品皆為獨立靈魂設計。
-                            </p>
-                            <button onClick={() => window.location.href=`https://line.me/R/oaMessage/${LINE_ID}/?Hi`} 
-                                className="bg-[#06C755] text-white px-8 py-3 rounded-full text-xs font-bold shadow-lg shadow-green-100 hover:scale-105 transition-transform">
-                                LINE 線上諮詢
-                            </button>
-                        </div>
-                    )}
-
-                    {/* FLOATING CART BUTTON */}
-                    {cart.length > 0 && !isCartOpen && (
-                        <div onClick={() => setIsCartOpen(true)} 
-                             className="absolute bottom-[100px] right-5 w-12 h-12 bg-black text-white rounded-full flex items-center justify-center shadow-2xl z-40 cursor-pointer hover:scale-110 transition-transform mb-[var(--sab)]">
-                            <Icon name="cart" size={20} />
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center border-2 border-white">
-                                {cart.length}
+                        {activeTab === 'closet' && (
+                            <div className="animate-fade-in flex flex-col h-full bg-white">
+                                <div className="fixed-header-section">
+                                    <h2 className="section-title">我的衣櫥</h2>
+                                    <div className="scroll-row">
+                                        {['o','i','b','s'].map(p => (
+                                            <button key={p} onClick={() => handleClPartSwitch(p)} className={`category-btn ${clPart === p ? 'active' : ''}`}>{PART_MAP[p]}</button>
+                                        ))}
+                                    </div>
+                                    <div className="scroll-row">
+                                        <button onClick={() => setClTypeFilter('all')} className={`category-btn ${clTypeFilter === 'all' ? 'active' : ''}`}>全部</button>
+                                        {closetAvailableTypes.map(t => (
+                                            <button key={t} onClick={() => setClTypeFilter(t)} className={`category-btn ${clTypeFilter === t ? 'active' : ''}`}>{TYPE_MAP[t] || t}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="scrollable-list-section">
+                                    <div className="grid-container">
+                                        {filteredClosetItems.length > 0 ? filteredClosetItems.map(item => (
+                                            <div key={item.id} className="item-card relative cursor-pointer" onClick={() => { setOutfit(prev => ({...prev, [item.part]: item})); setActiveTab('styling'); }}>
+                                                <div className="item-image-box">
+                                                    <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
+                                                </div>
+                                                <div className="item-info"><div className="item-label">{item.displayName}</div></div>
+                                                <button onClick={(e) => { e.stopPropagation(); removeFromWardrobe(item.id); }} className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded text-[10px] text-zinc-400 font-bold hover:text-red-500 hover:bg-red-50">移除</button>
+                                            </div>
+                                        )) : <div className="col-span-2 text-center py-12 text-zinc-300 text-xs tracking-widest">此分類暫無單品</div>}
+                                    </div>
+                                </div>
                             </div>
+                        )}
+
+                        {activeTab === 'add' && (
+                            <div className="animate-fade-in flex flex-col h-full bg-white">
+                                <div className="fixed-header-section">
+                                    <h2 className="section-title">單品倉庫</h2>
+                                    <div className="scroll-row">
+                                        {['o','i','b','s'].map(p => (
+                                            <button key={p} onClick={() => handlePartSwitch(p)} className={`category-btn ${whPart === p ? 'active' : ''}`}>{PART_MAP[p]}</button>
+                                        ))}
+                                    </div>
+                                    {whPart === 'i' && (
+                                        <div className="mb-2 bg-zinc-50 p-3 rounded border border-zinc-100">
+                                            <p className="text-[10px] text-zinc-500 leading-relaxed tracking-wide">
+                                                <span className="font-bold block mb-1 text-zinc-800">搭配邏輯</span>
+                                                請同時入庫 <span className="font-bold">無袖 (i系列)</span> 與 <span className="font-bold">有袖 (t系列)</span>，系統將自動依據外套切換。
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="scroll-row">
+                                        {availableTypes.map(t => (
+                                            <button key={t} onClick={() => setWhType(t)} className={`category-btn ${whType === t ? 'active' : ''}`}>{TYPE_MAP[t] || t}</button>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-4 py-2 border-b border-zinc-50 overflow-x-auto no-scrollbar items-center">
+                                        {availableColors.map(c => (
+                                            <div key={c} onClick={() => setWhColor(c)} className={`color-dot flex-shrink-0 ${whColor === c ? 'active' : ''} ${c === 'wh' ? 'white-swatch' : ''}`} style={{ background: COLOR_MAP[c]?.hex || '#ccc' }}></div>
+                                        ))}
+                                        <span className="text-[10px] font-bold text-zinc-400 ml-auto flex-shrink-0 uppercase tracking-wider">{COLOR_MAP[whColor]?.name}</span>
+                                    </div>
+                                </div>
+                                <div className="scrollable-list-section">
+                                    <div className="grid-container">
+                                        {filteredWhItems.map((item, idx) => (
+                                            <div key={idx} className="item-card cursor-pointer group" onClick={() => addToWardrobe(item)}>
+                                                <div className="item-image-box">
+                                                    <img src={`./${item.fileName}`} className={getImageClass(item.part)} />
+                                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                                        <span className="bg-black text-white text-[10px] px-3 py-1 rounded font-bold shadow-sm tracking-widest">入庫</span>
+                                                    </div>
+                                                </div>
+                                                <div className="item-info"><div className="item-label">{item.displayName}</div></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Bottom Nav (Text Only) */}
+                    <div className="floating-nav-container">
+                        <div className="floating-nav">
+                            <div onClick={() => setActiveTab('styling')} className={`nav-text ${activeTab === 'styling' ? 'active' : ''}`}>搭配</div>
+                            <div onClick={() => setActiveTab('closet')} className={`nav-text ${activeTab === 'closet' ? 'active' : ''}`}>衣櫥</div>
+                            <div onClick={() => setActiveTab('add')} className={`nav-text ${activeTab === 'add' ? 'active' : ''}`}>倉庫</div>
                         </div>
-                    )}
-
-                    {/* MODALS */}
-                    {detailItem && <DetailView item={detailItem} onClose={() => setDetailItem(null)} onAdd={addToCart} />}
-                    {isCartOpen && <CartView list={cart} onClose={() => setIsCartOpen(false)} onRemove={removeFromCart} onSend={sendInquiry} />}
-
-                    {/* NAVIGATION */}
-                    <div className="bottom-nav">
-                        <NavBtn icon="grid" label="目錄" active={page==='catalog'} onClick={()=>setPage('catalog')} />
-                        <NavBtn icon="hanger" label="搭配" active={page==='style'} onClick={()=>setPage('style')} />
-                        <NavBtn icon="info" label="關於" active={page==='info'} onClick={()=>setPage('info')} />
                     </div>
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
